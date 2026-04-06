@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chauffeur Booking</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <h1>Book Your Chauffeur</h1>
+    <p class="sub">Premium transfers and hourly rides across Bahrain and GCC.</p>
+
+    <form id="booking-form" class="card">
+      <div class="grid">
+        <label>Service Type
+          <select name="service_type" required>
+            <option value="trip">Trip</option>
+            <option value="hourly">Hourly</option>
+          </select>
+        </label>
+
+        <label>Transfer Type
+          <select name="transfer_type">
+            <option value="oneway">One Way</option>
+            <option value="roundtrip">Round Trip</option>
+          </select>
+        </label>
+
+        <label>Pickup Location
+          <input type="text" id="pickup" name="pickup_location" required />
+        </label>
+
+        <label>Dropoff Location
+          <input type="text" id="dropoff" name="dropoff_location" />
+        </label>
+
+        <label>Departure Date
+          <input type="date" name="departure_date" required />
+        </label>
+
+        <label>Departure Time
+          <input type="time" name="departure_time" required />
+        </label>
+
+        <label>Hourly Duration
+          <input type="number" name="hourly_duration" min="2" max="12" />
+        </label>
+
+        <label>Passengers
+          <input type="number" name="passengers" min="1" max="8" required />
+        </label>
+
+        <label>Luggage
+          <input type="number" name="luggage" min="0" max="8" value="0" />
+        </label>
+
+        <label>Vehicle
+          <select id="vehicle-select" name="vehicle_id" required></select>
+        </label>
+
+        <label>Promo Code
+          <input type="text" name="promo_code" />
+        </label>
+
+        <label>First Name
+          <input type="text" name="first_name" required />
+        </label>
+
+        <label>Last Name
+          <input type="text" name="last_name" required />
+        </label>
+
+        <label>Email
+          <input type="email" name="email" required />
+        </label>
+
+        <label>Country Code
+          <select name="country_code" required>
+            <option value="+973">+973</option>
+            <option value="+966">+966</option>
+            <option value="+971">+971</option>
+            <option value="+974">+974</option>
+            <option value="+965">+965</option>
+            <option value="+968">+968</option>
+          </select>
+        </label>
+
+        <label>Phone
+          <input type="text" name="phone" required />
+        </label>
+
+        <label class="full">Special Requests
+          <textarea name="special_requests" rows="3"></textarea>
+        </label>
+      </div>
+
+      <button type="submit">Submit Booking</button>
+      <p id="result"></p>
+    </form>
+
+    <section class="card">
+      <h2>Location Autocomplete</h2>
+      <p class="hint">Start typing pickup or dropoff and select suggested OSM location.</p>
+      <ul id="geo-results"></ul>
+    </section>
+  </main>
+
+  <script src="/js/app.js" defer></script>
+</body>
+</html>
