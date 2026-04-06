@@ -35,6 +35,19 @@ async function migrate() {
     `);
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS chauffeurs (
+        id SERIAL PRIMARY KEY,
+        full_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        email TEXT,
+        languages JSONB NOT NULL DEFAULT '["en"]'::jsonb,
+        notes TEXT,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS promo_codes (
         id SERIAL PRIMARY KEY,
         code TEXT UNIQUE NOT NULL,
@@ -88,11 +101,21 @@ async function migrate() {
         country_code TEXT NOT NULL,
         phone TEXT NOT NULL,
         special_requests TEXT,
+        add_ons JSONB NOT NULL DEFAULT '{}'::jsonb,
+        add_ons_price NUMERIC(10,3) NOT NULL DEFAULT 0,
         promo_code TEXT,
         base_price NUMERIC(10,3) NOT NULL,
         discount_amount NUMERIC(10,3) NOT NULL DEFAULT 0,
         final_price NUMERIC(10,3) NOT NULL,
         distance_km NUMERIC(10,2),
+        language_code TEXT NOT NULL DEFAULT 'en',
+        chauffeur_id INTEGER REFERENCES chauffeurs(id),
+        payment_provider TEXT,
+        payment_status TEXT NOT NULL DEFAULT 'pending',
+        payment_reference TEXT,
+        customer_rating INTEGER CHECK (customer_rating BETWEEN 1 AND 5),
+        chauffeur_rating INTEGER CHECK (chauffeur_rating BETWEEN 1 AND 5),
+        feedback_text TEXT,
         status TEXT NOT NULL DEFAULT 'pending',
         ip_address TEXT,
         source TEXT,
@@ -118,6 +141,73 @@ async function migrate() {
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS payment_transactions (
+        id SERIAL PRIMARY KEY,
+        booking_id INTEGER NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+        provider TEXT NOT NULL,
+        external_id TEXT,
+        amount NUMERIC(10,3) NOT NULL,
+        currency_code TEXT NOT NULL DEFAULT 'BHD',
+        status TEXT NOT NULL DEFAULT 'initiated',
+        payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS notification_events (
+        id SERIAL PRIMARY KEY,
+        booking_id INTEGER REFERENCES bookings(id) ON DELETE CASCADE,
+        channel TEXT NOT NULL CHECK (channel IN ('email', 'whatsapp')),
+        recipient TEXT NOT NULL,
+        event_type TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'queued',
+        payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS booking_calendar_sync (
+        id SERIAL PRIMARY KEY,
+        booking_id INTEGER NOT NULL UNIQUE REFERENCES bookings(id) ON DELETE CASCADE,
+        provider TEXT NOT NULL DEFAULT 'google_calendar',
+        external_event_id TEXT,
+        sync_status TEXT NOT NULL DEFAULT 'pending',
+        last_error TEXT,
+        synced_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+
+    await client.query("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS add_ons JSONB NOT NULL DEFAULT '{}'::jsonb");
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS add_ons_price NUMERIC(10,3) NOT NULL DEFAULT 0');
+    await client.query("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS language_code TEXT NOT NULL DEFAULT 'en'");
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS chauffeur_id INTEGER REFERENCES chauffeurs(id)');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_provider TEXT');
+    await client.query("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'pending'");
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS payment_reference TEXT');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS customer_rating INTEGER CHECK (customer_rating BETWEEN 1 AND 5)');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS chauffeur_rating INTEGER CHECK (chauffeur_rating BETWEEN 1 AND 5)');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS feedback_text TEXT');
+
+    await client.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_promos_code ON promo_codes (code)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_chauffeurs_active ON chauffeurs (is_active)');
+    await client.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_chauffeurs_phone_unique ON chauffeurs (phone)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings (status)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_created_at ON bookings (created_at DESC)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_ref ON bookings (booking_ref)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_vehicle ON bookings (vehicle_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_chauffeur ON bookings (chauffeur_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_departure_date ON bookings (departure_date)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_booking_logs_booking_id ON booking_logs (booking_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_payment_transactions_booking_id ON payment_transactions (booking_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_notification_events_booking_id ON notification_events (booking_id)');
 
     await client.query('COMMIT');
     console.log('Migration completed successfully.');

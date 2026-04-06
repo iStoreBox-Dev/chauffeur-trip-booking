@@ -16,6 +16,14 @@ const DEFAULT_SETTINGS = {
   secondary_color: '#0d1622',
   maintenance_mode: false,
   booking_enabled: true,
+  default_language: 'en',
+  supported_languages: ['en', 'ar'],
+  default_theme: 'dark',
+  add_on_prices: {
+    child_seat: 2.5,
+    extra_luggage: 1.2,
+    pet_friendly: 3.0
+  },
   social_links: {
     instagram: '',
     x: '',
@@ -42,6 +50,10 @@ function sanitizePublic(settings) {
     secondary_color: settings.secondary_color,
     maintenance_mode: settings.maintenance_mode,
     booking_enabled: settings.booking_enabled,
+    default_language: settings.default_language,
+    supported_languages: settings.supported_languages,
+    default_theme: settings.default_theme,
+    add_on_prices: settings.add_on_prices,
     social_links: settings.social_links,
     seo_indexable: settings.seo_indexable
   };

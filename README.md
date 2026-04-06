@@ -5,6 +5,9 @@ Production-ready chauffeur booking app with:
 - PostgreSQL (raw SQL via pg)
 - JWT auth + role-based admin
 - Luxury 4-step SPA booking flow
+- Live quote endpoint with add-ons and promo-aware pricing
+- English + Arabic locale-ready API responses and frontend toggles
+- Chauffeur entity and assignment-ready booking model
 - Full admin control center (bookings, vehicles, promos, users)
 - Heroku deployment support
 
@@ -21,6 +24,14 @@ A local `.env` is created for testing. Update values as needed:
 - `JWT_SECRET`
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
+- `OPERATOR_EMAIL` (optional)
+- `OPERATOR_PASSWORD` (optional)
+
+Additional integration-ready vars (optional for this phase):
+- `CORS_ORIGIN`
+- `JWT_EXPIRES_IN`
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`
+- `WHATSAPP_WEBHOOK_URL`
 
 ### 3) Create local database
 ```bash
@@ -96,3 +107,13 @@ heroku open --app your-app-name
 - Prices are handled in BHD with 3 decimals.
 - Public vehicle endpoint only returns active vehicles.
 - Admin can manage inactive/active vehicles from the control center.
+- Booking quote endpoint: `POST /api/bookings/quote` (supports add-ons, promo code, locale, recommendations).
+- New booking fields include add-ons, language code, chauffeur assignment, and payment metadata.
+- Locale can be selected via query (`?lang=en|ar`) or header (`X-Lang`).
+
+## New API Highlights
+- `POST /api/bookings/quote` — compute base/add-ons/discount/final price plus top vehicle recommendations.
+- `PATCH /api/bookings/:id/assign` — assign/unassign chauffeur to an existing booking (operator+).
+- `GET /api/chauffeurs` — list chauffeurs (operator+).
+- `POST /api/chauffeurs` — create chauffeur (admin).
+- `PATCH /api/chauffeurs/:id/toggle` — toggle chauffeur active status (admin).

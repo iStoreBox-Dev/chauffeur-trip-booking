@@ -1,51 +1,91 @@
 ---
-description: Describe when these instructions should be loaded by the agent based on task context
-# applyTo: 'Describe when these instructions should be loaded by the agent based on task context' # when provided, instructions will automatically be added to the request context when the pattern matches an attached file
+name: Luxury Chauffeur Booking System Standard
+description: "Use when implementing or updating booking flow, admin panel, Express APIs, PostgreSQL schema, UX/UI, notifications, pricing, i18n, deployment, or architecture for the chauffeur-trip-booking project."
+applyTo: "**"
 ---
 
-<!-- Tip: Use /create-instructions in chat to generate content with agent assistance -->
+# Luxury Chauffeur Booking System Standard
 
-Build a full-featured luxury chauffeur trip booking system with frontend, backend, and admin panel. Follow best practices, responsive design, and world-class UX. Ensure all of the following are implemented and verified:
+Apply these rules when adding or changing frontend, backend, admin, database, deployment, and product UX functionality.
 
-1. Booking Form:
-   - Fully responsive for desktop, tablet, and mobile.
-   - Fields: Pickup, Dropoff, Date & Time, Car type, Passengers, Notes, Promo code input.
-   - Real-time validation and price calculation with promo codes.
-   - Smooth animations, luxury black & gold theme, elegant typography.
-   - Template-based layout with header, footer, and content section.
+## Product Goal
 
-2. Admin Panel:
-   - Secure login page; sidebar hidden until login.
-   - Dashboard with bookings statistics, revenue overview, vehicle & promo code management.
-   - Booking management: view, edit, delete, search & filter.
-   - Role-based access: Admin / Operator.
-   - Export CSV and analytics charts.
-   - Smooth transitions, sticky headers, color-coded status, mobile-responsive.
+Build a ready-to-run luxury chauffeur trip booking platform with:
+- Public booking experience
+- Secure admin dashboard
+- Express + PostgreSQL backend
+- Heroku-compatible deployment setup
 
-3. Backend / API:
-   - Node.js + Express with PostgreSQL database.
-   - Booking API: CRUD operations and promo code validation.
-   - Admin API: authentication, booking, vehicle, pricing, promo management, analytics endpoints.
-   - Secure: password hashing, input validation, HTTPS-ready.
+## Hard Requirements
 
-4. Extra Features:
-   - Email & WhatsApp notifications.
-   - Distance-based pricing engine.
-   - Optional add-ons (child seat, chauffeur notes).
-   - Dark mode toggle, multi-language support (English + Arabic), microinteractions.
+### 1) Booking Form (Public)
 
-5. UI / Design:
-   - Luxury black & gold theme, modern minimalist style.
-   - Smooth animations, microinteractions, responsive layout.
-   - High-end UX optimized for speed, accessibility, and SEO.
+- Must be fully responsive on desktop, tablet, and mobile.
+- Must include: pickup, dropoff, date/time, car type, passengers, notes, promo code.
+- Must support real-time validation and live price updates including promo code effects.
+- Must use reusable layout sections (header, content, footer).
+- Must include smooth transitions and purposeful microinteractions.
 
-6. Deliverables:
-   - Full responsive booking form with promo code.
-   - Secure login and admin panel.
-   - Template-based reusable layout (header, footer, sidebar, content).
-   - Backend API with full functionality.
-   - PostgreSQL schema ready for Heroku.
-   - Clean, maintainable code following best practices.
-   - Deployment-ready structure (Heroku-compatible).
+### 2) Admin Panel
 
-Check every requirement and produce a **ready-to-run full project** with all files, folders, templates, and configurations. Ensure nothing is missing, and follow **modern UX/UI best practices**. Provide instructions for running locally and deploying to Heroku.  
+- Must enforce secure login.
+- Sidebar/navigation must remain hidden until successful authentication.
+- Must include dashboard metrics: bookings overview, revenue, vehicles, promo code performance.
+- Must support booking CRUD, search, and filtering.
+- Must implement role-based access control with at least Admin and Operator roles.
+- Must support CSV export and analytics chart visualizations.
+- Must preserve mobile usability with sticky table headers and readable status indicators.
+
+### 3) Backend/API and Security
+
+- Stack must remain Node.js + Express + PostgreSQL.
+- Must provide booking CRUD endpoints and promo validation endpoint(s).
+- Must provide admin endpoints for auth, bookings, vehicles, pricing, promo codes, and analytics.
+- Must use password hashing, strict input validation, and security-oriented middleware.
+- Must keep configuration HTTPS-ready for production deployment.
+
+### 4) Extra Features
+
+- Must support email and WhatsApp notifications.
+- Must include distance-based pricing logic.
+- Must support optional add-ons (for example child seat and chauffeur notes).
+- Must support dark mode toggle.
+- Must support English and Arabic localization.
+
+### 5) UI/UX Direction
+
+- Visual style is mandatory: luxury black-and-gold, modern, premium tone.
+- UX must prioritize clarity, speed, accessibility, and SEO fundamentals.
+- Use meaningful animations only; avoid noisy effects that reduce performance.
+- Make sure all pages are nice and functional on mobile, with touch-friendly controls and readable text.
+
+### 6) Deliverables Rule
+
+Every implementation request must produce a complete, coherent end-to-end update set:
+- Frontend booking flow with promo support
+- Secure admin login and dashboard workflows
+- Reusable structural templates (header/footer/sidebar/content)
+- Backend/API coverage for booking/admin/pricing/promo/analytics
+- PostgreSQL schema and migration readiness for Heroku
+- Clear local run and Heroku deployment instructions in README when behavior changes
+
+Strictness policy:
+- Even if the user asks for a narrow change, include and verify all dependent layers (UI, backend/API, data model, and operational docs) required to keep the system production-ready.
+- Do not leave partial implementations or TODO placeholders for core requirements listed in this instruction.
+
+## Implementation and Quality Guardrails
+
+- Prefer maintainable, modular code over one-file solutions.
+- Keep validation rules consistent between client and server.
+- Ensure server responses are explicit and predictable for UI integration.
+- Include verification steps for each major requirement touched.
+- If a request is ambiguous or conflicting, ask focused clarification before changing architecture.
+
+## Definition of Done (Per Feature)
+
+- Functionality implemented end-to-end (UI, API, and DB impact where applicable)
+- Responsive behavior verified at common breakpoints
+- Input validation and permission checks confirmed
+- Error states and empty states handled
+- Basic accessibility checks done (labels, contrast, keyboard reachability)
+- Run/deploy instructions updated if setup or commands changed

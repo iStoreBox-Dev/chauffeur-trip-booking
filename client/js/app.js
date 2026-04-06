@@ -1,12 +1,16 @@
 (function () {
   'use strict';
 
+  const LANG_KEY = 'chauffeur_locale';
+  const THEME_KEY = 'chauffeur_theme';
+
   const state = {
     step: 1,
     serviceType: 'trip',
     transferType: 'oneway',
     selectedVehicle: null,
     vehicles: [],
+    recommendations: [],
     locationSelected: {
       pickup: false,
       dropoff: false,
@@ -19,17 +23,56 @@
     },
     settings: null,
     currencyCode: 'BHD',
-    appliedPromo: null
+    appliedPromo: null,
+    quote: null,
+    quoteBusy: false,
+    locale: 'en',
+    theme: 'dark',
+    translations: {
+      en: {},
+      ar: {}
+    }
   };
 
   const refs = {
     message: document.getElementById('form-message'),
     vehicleGrid: document.getElementById('vehicle-grid'),
-    promoMessage: document.getElementById('promo-message')
+    promoMessage: document.getElementById('promo-message'),
+    quoteLoading: document.getElementById('quote-loading'),
+    recommendationsBox: document.getElementById('recommendations-box')
   };
 
   function qs(selector, ctx = document) { return ctx.querySelector(selector); }
   function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
+
+  function getValueByPath(obj, dottedPath) {
+    return String(dottedPath || '')
+      .split('.')
+      .filter(Boolean)
+      .reduce((acc, key) => (acc && Object.prototype.hasOwnProperty.call(acc, key) ? acc[key] : undefined), obj);
+  }
+
+  function interpolate(template, params = {}) {
+    return String(template).replace(/\{(\w+)\}/g, (_match, key) => {
+      return Object.prototype.hasOwnProperty.call(params, key) ? String(params[key]) : `{${key}}`;
+    });
+  }
+
+  function tr(key, params) {
+    const table = state.translations[state.locale] || {};
+    const fallback = state.translations.en || {};
+    const value = getValueByPath(table, key) ?? getValueByPath(fallback, key) ?? key;
+    return interpolate(value, params);
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
 
   function setMessage(text, type) {
     refs.message.textContent = text || '';
@@ -56,6 +99,48 @@
     return `${r}, ${g}, ${b}`;
   }
 
+  function setTheme(theme, persist = true) {
+    const finalTheme = theme === 'light' ? 'light' : 'dark';
+    state.theme = finalTheme;
+    document.documentElement.setAttribute('data-theme', finalTheme);
+    const themeBtn = qs('#theme-toggle');
+    if (themeBtn) {
+      themeBtn.textContent = finalTheme === 'dark' ? tr('theme.switchToLight') : tr('theme.switchToDark');
+    }
+    if (persist) {
+      localStorage.setItem(THEME_KEY, finalTheme);
+    }
+  }
+
+  function toggleTheme() {
+    setTheme(state.theme === 'dark' ? 'light' : 'dark');
+  }
+
+  function setLocale(locale, persist = true) {
+    const finalLocale = locale === 'ar' ? 'ar' : 'en';
+    state.locale = finalLocale;
+
+    document.documentElement.lang = finalLocale;
+    document.documentElement.dir = finalLocale === 'ar' ? 'rtl' : 'ltr';
+
+    const langBtn = qs('#lang-toggle');
+    if (langBtn) {
+      langBtn.textContent = finalLocale === 'en' ? 'AR' : 'EN';
+    }
+
+    translatePage();
+    renderSummary();
+    renderRecommendations();
+
+    if (persist) {
+      localStorage.setItem(LANG_KEY, finalLocale);
+    }
+  }
+
+  function toggleLocale() {
+    setLocale(state.locale === 'en' ? 'ar' : 'en');
+  }
+
   function applySettings(settings) {
     state.settings = settings;
     state.currencyCode = settings.currency_code || 'BHD';
@@ -72,7 +157,12 @@
       if (rgb) root.style.setProperty('--accent-2-rgb', rgb);
     }
 
+    if (settings.default_theme && !localStorage.getItem(THEME_KEY)) {
+      setTheme(settings.default_theme, false);
+    }
+
     document.title = settings.seo_title || `${settings.app_name || 'Booking'} | Chauffeur`;
+
     const metaDescription = qs('meta[name="description"]');
     const metaKeywords = qs('meta[name="keywords"]');
     const metaRobots = qs('meta[name="robots"]');
@@ -85,28 +175,22 @@
       brand.textContent = settings.app_name;
     }
 
-    const introTagline = qs('#intro-tagline');
-    const introTitle = qs('#intro-title');
-    const introSubtitle = qs('#intro-subtitle');
-    if (introTagline) introTagline.textContent = settings.app_tagline || 'Luxury Chauffeur Services';
-    if (introTitle) introTitle.textContent = settings.hero_title || 'Book Your Chauffeur in 4 Simple Steps';
-    if (introSubtitle) introSubtitle.textContent = settings.hero_subtitle || 'Fast booking, accurate routes, and premium comfort with transparent pricing.';
-
     const footerBrand = qs('#footer-brand');
-    const footerContact = qs('#footer-contact');
     if (footerBrand && settings.app_name) footerBrand.textContent = settings.app_name;
+
+    const footerContact = qs('#footer-contact');
     if (footerContact) {
       const contactBits = [settings.support_phone, settings.support_email].filter(Boolean);
-      footerContact.textContent = contactBits.length ? `Contact: ${contactBits.join(' • ')}` : 'Premium chauffeur experiences.';
+      footerContact.textContent = contactBits.length ? `Contact: ${contactBits.join(' • ')}` : tr('footer.defaultContact');
     }
 
     const banner = qs('#system-banner');
     if (banner) {
       if (settings.maintenance_mode) {
-        banner.textContent = 'The service is currently in maintenance mode. Please try again shortly.';
+        banner.textContent = tr('messages.maintenanceMode');
         banner.classList.remove('hidden');
       } else if (!settings.booking_enabled) {
-        banner.textContent = 'Booking is temporarily disabled. Please contact support.';
+        banner.textContent = tr('messages.bookingDisabled');
         banner.classList.remove('hidden');
       } else {
         banner.textContent = '';
@@ -117,7 +201,7 @@
 
   async function loadSettings() {
     try {
-      const res = await fetch('/api/settings');
+      const res = await fetch(`/api/settings?lang=${state.locale}`);
       const data = await res.json();
       if (res.ok && data.settings) {
         applySettings(data.settings);
@@ -125,6 +209,45 @@
     } catch (_error) {
       // Keep defaults when settings API is unavailable.
     }
+  }
+
+  async function loadTranslations() {
+    try {
+      const [enRes, arRes] = await Promise.all([
+        fetch('/js/i18n/en.json'),
+        fetch('/js/i18n/ar.json')
+      ]);
+
+      const [enData, arData] = await Promise.all([enRes.json(), arRes.json()]);
+      state.translations.en = enData || {};
+      state.translations.ar = arData || {};
+    } catch (_error) {
+      state.translations.en = {};
+      state.translations.ar = {};
+    }
+  }
+
+  function translatePage() {
+    qsa('[data-i18n]').forEach((node) => {
+      const key = node.getAttribute('data-i18n');
+      node.textContent = tr(key);
+    });
+
+    qsa('[data-i18n-placeholder]').forEach((node) => {
+      const key = node.getAttribute('data-i18n-placeholder');
+      node.setAttribute('placeholder', tr(key));
+    });
+
+    qsa('option[data-i18n]').forEach((option) => {
+      option.textContent = tr(option.getAttribute('data-i18n'));
+    });
+
+    const titleNode = qs('title');
+    if (titleNode && state.settings?.seo_title) {
+      titleNode.textContent = state.settings.seo_title;
+    }
+
+    setTheme(state.theme, false);
   }
 
   function imageForCategory(category) {
@@ -137,7 +260,12 @@
   function updateStep(step) {
     state.step = step;
     qsa('.form-step').forEach((el) => el.classList.add('hidden'));
-    qs(`#step-${step}`).classList.remove('hidden');
+    const activeStep = qs(`#step-${step}`);
+    if (activeStep) {
+      activeStep.classList.remove('hidden');
+      activeStep.classList.add('step-fade-in');
+      setTimeout(() => activeStep.classList.remove('step-fade-in'), 260);
+    }
 
     qsa('.step').forEach((el) => {
       const s = Number(el.dataset.step);
@@ -145,6 +273,7 @@
     });
 
     if (step === 4) {
+      refreshQuote({ silent: true });
       renderSummary();
     }
   }
@@ -154,11 +283,13 @@
     qsa('.service-btn').forEach((btn) => btn.classList.toggle('active', btn.dataset.service === type));
     qs('#trip-panel').classList.toggle('active', type === 'trip');
     qs('#hourly-panel').classList.toggle('active', type === 'hourly');
+    refreshQuote({ silent: true });
   }
 
   function setTransferType(type) {
     state.transferType = type;
     qsa('.return-only').forEach((el) => el.classList.toggle('hidden', type !== 'roundtrip'));
+    refreshQuote({ silent: true });
   }
 
   function currentPassengers() {
@@ -168,32 +299,86 @@
     return Number(qs('#passengers').value || 0);
   }
 
+  function collectAddOns() {
+    const childSeatChecked = qs('#addon-child-seat')?.checked;
+    const childSeatCount = Number(qs('#addon-child-seat-count')?.value || 0);
+    const extraLuggageChecked = qs('#addon-extra-luggage')?.checked;
+    const extraLuggageCount = Number(qs('#addon-extra-luggage-count')?.value || 0);
+    const petFriendlyChecked = qs('#addon-pet-friendly')?.checked;
+
+    return {
+      child_seat: Boolean(childSeatChecked || childSeatCount > 0),
+      child_seat_count: childSeatChecked ? childSeatCount : 0,
+      extra_luggage: Boolean(extraLuggageChecked || extraLuggageCount > 0),
+      extra_luggage_count: extraLuggageChecked ? extraLuggageCount : 0,
+      pet_friendly: Boolean(petFriendlyChecked)
+    };
+  }
+
+  function collectAddOnNames(addOns) {
+    const names = [];
+    if (addOns.child_seat && Number(addOns.child_seat_count) > 0) {
+      names.push(`${tr('addons.childSeat')} x${addOns.child_seat_count}`);
+    }
+    if (addOns.extra_luggage && Number(addOns.extra_luggage_count) > 0) {
+      names.push(`${tr('addons.extraLuggage')} x${addOns.extra_luggage_count}`);
+    }
+    if (addOns.pet_friendly) {
+      names.push(tr('addons.petFriendly'));
+    }
+    return names;
+  }
+
+  function estimateDistanceKm() {
+    if (state.serviceType !== 'trip') return 0;
+    const a = state.geo.pickup;
+    const b = state.geo.dropoff;
+    if (!a || !b) return 0;
+
+    const lat1 = Number(a.lat);
+    const lon1 = Number(a.lng);
+    const lat2 = Number(b.lat);
+    const lon2 = Number(b.lng);
+    if (![lat1, lon1, lat2, lon2].every(Number.isFinite)) return 0;
+
+    const r = 6371;
+    const toRad = (value) => (value * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const p1 = toRad(lat1);
+    const p2 = toRad(lat2);
+
+    const h = Math.sin(dLat / 2) ** 2 + Math.sin(dLon / 2) ** 2 * Math.cos(p1) * Math.cos(p2);
+    const distance = 2 * r * Math.asin(Math.sqrt(h));
+    return Number(distance.toFixed(2));
+  }
+
   function validateStep(step) {
     if (step === 1) {
       if (state.serviceType === 'trip') {
         const required = ['#pickup-location', '#dropoff-location', '#departure-date', '#departure-time', '#passengers'];
         if (required.some((id) => !qs(id).value.trim())) {
-          setMessage('Please complete all required trip fields.', 'error');
+          setMessage(tr('messages.requiredTripFields'), 'error');
           return false;
         }
         if (!state.locationSelected.pickup || !state.locationSelected.dropoff) {
-          setMessage('Please select pickup and dropoff from the location suggestions.', 'error');
+          setMessage(tr('messages.locationSelectTrip'), 'error');
           return false;
         }
         if (state.transferType === 'roundtrip') {
           if (!qs('#return-date').value || !qs('#return-time').value) {
-            setMessage('Please add return date and time for round trip.', 'error');
+            setMessage(tr('messages.roundTripRequired'), 'error');
             return false;
           }
         }
       } else {
         const required = ['#hourly-pickup', '#hourly-date', '#hourly-time', '#hourly-duration', '#hourly-passengers'];
         if (required.some((id) => !qs(id).value.trim())) {
-          setMessage('Please complete all required hourly fields.', 'error');
+          setMessage(tr('messages.requiredHourlyFields'), 'error');
           return false;
         }
         if (!state.locationSelected.hourly) {
-          setMessage('Please select the pickup location from suggestions.', 'error');
+          setMessage(tr('messages.locationSelectHourly'), 'error');
           return false;
         }
       }
@@ -201,12 +386,12 @@
 
     if (step === 2) {
       if (!state.selectedVehicle) {
-        setMessage('Please select a vehicle to continue.', 'error');
+        setMessage(tr('messages.selectVehicle'), 'error');
         return false;
       }
       if (currentPassengers() > Number(state.selectedVehicle.capacity || 0)) {
         qs('#vehicle-warning').classList.remove('hidden');
-        setMessage('Passenger count is too high for selected vehicle.', 'error');
+        setMessage(tr('messages.capacityExceeded'), 'error');
         return false;
       }
       qs('#vehicle-warning').classList.add('hidden');
@@ -215,17 +400,17 @@
     if (step === 3) {
       const required = ['#first-name', '#last-name', '#email', '#phone'];
       if (required.some((id) => !qs(id).value.trim())) {
-        setMessage('Please complete your personal details.', 'error');
+        setMessage(tr('messages.requiredDetails'), 'error');
         return false;
       }
       if (!/^\S+@\S+\.\S+$/.test(qs('#email').value.trim())) {
-        setMessage('Please provide a valid email address.', 'error');
+        setMessage(tr('messages.invalidEmail'), 'error');
         return false;
       }
     }
 
     if (step === 4 && !qs('#terms').checked) {
-      setMessage('Please agree to terms and privacy policy.', 'error');
+      setMessage(tr('messages.termsRequired'), 'error');
       return false;
     }
 
@@ -239,15 +424,15 @@
       const features = Array.isArray(vehicle.features) ? vehicle.features.slice(0, 3).join(' • ') : '';
       return `
         <article class="vehicle-card ${selected ? 'selected' : ''}" data-vehicle-id="${vehicle.id}">
-          <div class="vehicle-media"><img src="${imageForCategory(vehicle.category)}" alt="${vehicle.name}" loading="lazy" /></div>
+          <div class="vehicle-media"><img src="${imageForCategory(vehicle.category)}" alt="${escapeHtml(vehicle.name)}" loading="lazy" /></div>
           <div class="vehicle-body">
             <div class="vehicle-row">
-              <h3 class="vehicle-name">${vehicle.name}</h3>
-              <span class="badge">${vehicle.category}</span>
+              <h3 class="vehicle-name">${escapeHtml(vehicle.name)}</h3>
+              <span class="badge">${escapeHtml(vehicle.category)}</span>
             </div>
-            <p class="vehicle-model">${vehicle.model}</p>
-            <p class="vehicle-model">Capacity: ${vehicle.capacity} passengers${features ? ` • ${features}` : ''}</p>
-            <p class="price">From ${money(vehicle.base_price)}</p>
+            <p class="vehicle-model">${escapeHtml(vehicle.model)}</p>
+            <p class="vehicle-model">${tr('fields.passengers')}: ${vehicle.capacity}${features ? ` • ${escapeHtml(features)}` : ''}</p>
+            <p class="price">${money(vehicle.base_price)}</p>
           </div>
         </article>
       `;
@@ -258,83 +443,212 @@
         const id = Number(card.dataset.vehicleId);
         state.selectedVehicle = state.vehicles.find((v) => v.id === id) || null;
         renderVehicleGrid();
+        refreshQuote({ silent: true });
       });
     });
   }
 
   async function loadVehicles() {
     try {
-      const res = await fetch('/api/vehicles');
+      const res = await fetch(`/api/vehicles?lang=${state.locale}`);
       const data = await res.json();
       state.vehicles = data.vehicles || [];
       renderVehicleGrid();
     } catch (_error) {
-      refs.vehicleGrid.innerHTML = '<p class="warn">Unable to load vehicle list.</p>';
+      refs.vehicleGrid.innerHTML = `<p class="warn">${escapeHtml(tr('messages.vehicleLoadFailed'))}</p>`;
     }
   }
 
-  function estimatePrice() {
-    if (!state.selectedVehicle) return 0;
-    const base = Number(state.selectedVehicle.base_price || 0);
-    if (state.serviceType === 'hourly') {
-      return base * Number(qs('#hourly-duration').value || 1);
+  function fallbackQuote() {
+    if (!state.selectedVehicle) {
+      return {
+        base_price: 0,
+        add_ons: collectAddOns(),
+        add_ons_price: 0,
+        discount_amount: 0,
+        final_price: 0,
+        subtotal_price: 0,
+        distance_km: 0
+      };
     }
-    return state.transferType === 'roundtrip' ? base * 1.9 : base;
+
+    const addOns = collectAddOns();
+    const basePrice = state.serviceType === 'hourly'
+      ? Number(state.selectedVehicle.base_price || 0) * Number(qs('#hourly-duration').value || 1)
+      : (state.transferType === 'roundtrip'
+        ? Number(state.selectedVehicle.base_price || 0) * 1.9
+        : Number(state.selectedVehicle.base_price || 0));
+
+    const addOnPrices = state.settings?.add_on_prices || { child_seat: 2.5, extra_luggage: 1.2, pet_friendly: 3.0 };
+    const addOnsPrice =
+      (addOns.child_seat ? Number(addOns.child_seat_count || 0) * Number(addOnPrices.child_seat || 0) : 0)
+      + (addOns.extra_luggage ? Number(addOns.extra_luggage_count || 0) * Number(addOnPrices.extra_luggage || 0) : 0)
+      + (addOns.pet_friendly ? Number(addOnPrices.pet_friendly || 0) : 0);
+
+    const subtotal = Number((basePrice + addOnsPrice).toFixed(3));
+
+    return {
+      base_price: Number(basePrice.toFixed(3)),
+      add_ons: addOns,
+      add_ons_price: Number(addOnsPrice.toFixed(3)),
+      discount_amount: 0,
+      final_price: subtotal,
+      subtotal_price: subtotal,
+      distance_km: estimateDistanceKm()
+    };
   }
 
-  function getDiscountAmount(base) {
-    if (!state.appliedPromo) return 0;
-    if (state.appliedPromo.discount_type === 'percent') {
-      return Number((base * (Number(state.appliedPromo.discount_value) / 100)).toFixed(3));
+  function buildQuotePayload() {
+    if (!state.selectedVehicle) return null;
+
+    const base = {
+      lang: state.locale,
+      service_type: state.serviceType,
+      transfer_type: state.transferType,
+      vehicle_id: state.selectedVehicle.id,
+      hourly_duration: state.serviceType === 'hourly' ? Number(qs('#hourly-duration').value || 0) : null,
+      passengers: currentPassengers(),
+      luggage: state.serviceType === 'trip' ? Number(qs('#luggage').value || 0) : 0,
+      add_ons: collectAddOns(),
+      distance_km: estimateDistanceKm()
+    };
+
+    if (state.appliedPromo?.code) {
+      base.promo_code = state.appliedPromo.code;
     }
-    return Number(Number(state.appliedPromo.discount_value || 0).toFixed(3));
+
+    return base;
   }
 
-  function finalPrice(base) {
-    return Number(Math.max(0, base - getDiscountAmount(base)).toFixed(3));
+  async function refreshQuote({ silent = false } = {}) {
+    if (!state.selectedVehicle) {
+      state.quote = fallbackQuote();
+      renderSummary();
+      renderRecommendations();
+      return;
+    }
+
+    const payload = buildQuotePayload();
+    if (!payload) return;
+
+    state.quoteBusy = true;
+    if (refs.quoteLoading) refs.quoteLoading.classList.remove('hidden');
+
+    try {
+      const res = await fetch(`/api/bookings/quote?lang=${state.locale}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Lang': state.locale
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        if (!silent) setPromoMessage(data.error || tr('messages.quoteFailed'), 'error');
+        state.quote = fallbackQuote();
+        renderSummary();
+        return;
+      }
+
+      state.quote = data.quote || fallbackQuote();
+      state.recommendations = data.recommendations || [];
+
+      if (data.promo) {
+        state.appliedPromo = data.promo;
+      } else if (state.appliedPromo?.code && data.promo_error) {
+        state.appliedPromo = null;
+        if (!silent) setPromoMessage(data.promo_error || tr('messages.promoInvalid'), 'error');
+      }
+
+      renderSummary();
+      renderRecommendations();
+    } catch (_error) {
+      if (!silent) setPromoMessage(tr('messages.quoteFailed'), 'error');
+      state.quote = fallbackQuote();
+      renderSummary();
+    } finally {
+      state.quoteBusy = false;
+      if (refs.quoteLoading) refs.quoteLoading.classList.add('hidden');
+    }
+  }
+
+  function renderRecommendations() {
+    const box = refs.recommendationsBox;
+    if (!box) return;
+
+    if (!state.recommendations.length) {
+      box.classList.add('hidden');
+      box.innerHTML = '';
+      return;
+    }
+
+    box.classList.remove('hidden');
+    const cards = state.recommendations.map((item) => {
+      return `
+        <article class="recommendation-item">
+          <h4>${escapeHtml(item.name)}</h4>
+          <p>${escapeHtml(item.model || '')}</p>
+          <p>${escapeHtml(item.reason || '')}</p>
+          <strong>${money(item.base_price)}</strong>
+        </article>
+      `;
+    }).join('');
+
+    box.innerHTML = `<h3>${escapeHtml(tr('recommendation.title'))}</h3><div class="recommendation-grid">${cards}</div>`;
   }
 
   function renderSummary() {
     const rows = [];
 
     if (state.serviceType === 'trip') {
-      rows.push(['Service', 'Transfer']);
-      rows.push(['Type', state.transferType === 'roundtrip' ? 'Round Trip' : 'One Way']);
-      rows.push(['Pickup', qs('#pickup-location').value]);
-      rows.push(['Dropoff', qs('#dropoff-location').value]);
-      rows.push(['Departure', `${qs('#departure-date').value} ${qs('#departure-time').value}`]);
+      rows.push([tr('summary.service'), tr('summary.transfer')]);
+      rows.push([tr('summary.type'), state.transferType === 'roundtrip' ? tr('summary.roundTrip') : tr('summary.oneWay')]);
+      rows.push([tr('summary.pickup'), qs('#pickup-location').value]);
+      rows.push([tr('summary.dropoff'), qs('#dropoff-location').value]);
+      rows.push([tr('summary.departure'), `${qs('#departure-date').value} ${qs('#departure-time').value}`.trim()]);
       if (state.transferType === 'roundtrip') {
-        rows.push(['Return', `${qs('#return-date').value} ${qs('#return-time').value}`]);
+        rows.push([tr('summary.return'), `${qs('#return-date').value} ${qs('#return-time').value}`.trim()]);
       }
-      rows.push(['Passengers', qs('#passengers').value]);
+      rows.push([tr('summary.passengers'), qs('#passengers').value]);
     } else {
-      rows.push(['Service', 'Hourly']);
-      rows.push(['Pickup', qs('#hourly-pickup').value]);
-      rows.push(['Start', `${qs('#hourly-date').value} ${qs('#hourly-time').value}`]);
-      rows.push(['Duration', `${qs('#hourly-duration').value} hours`]);
-      rows.push(['Passengers', qs('#hourly-passengers').value]);
+      rows.push([tr('summary.service'), tr('summary.hourly')]);
+      rows.push([tr('summary.pickup'), qs('#hourly-pickup').value]);
+      rows.push([tr('summary.start'), `${qs('#hourly-date').value} ${qs('#hourly-time').value}`.trim()]);
+      rows.push([tr('summary.duration'), `${qs('#hourly-duration').value || 0} h`]);
+      rows.push([tr('summary.passengers'), qs('#hourly-passengers').value]);
     }
 
     if (state.selectedVehicle) {
-      rows.push(['Vehicle', `${state.selectedVehicle.name} (${state.selectedVehicle.model})`]);
+      rows.push([tr('summary.vehicle'), `${state.selectedVehicle.name} (${state.selectedVehicle.model})`]);
     }
 
-    rows.push(['Passenger Name', `${qs('#first-name').value} ${qs('#last-name').value}`]);
-    rows.push(['Email', qs('#email').value]);
-    rows.push(['Phone', `${qs('#country-code').value} ${qs('#phone').value}`]);
+    rows.push([tr('summary.passengerName'), `${qs('#first-name').value} ${qs('#last-name').value}`.trim()]);
+    rows.push([tr('summary.email'), qs('#email').value]);
+    rows.push([tr('summary.phone'), `${qs('#country-code').value} ${qs('#phone').value}`.trim()]);
 
-    const base = estimatePrice();
-    const discount = getDiscountAmount(base);
-    const total = finalPrice(base);
-    rows.push(['Estimated Base', money(base)]);
-    rows.push(['Promo Discount', discount > 0 ? `- ${money(discount)}` : '—']);
+    const quote = state.quote || fallbackQuote();
+    const addOnNames = collectAddOnNames(quote.add_ons || collectAddOns());
 
-    const summaryHtml = rows.map(([k, v]) => `<div class="summary-item"><span>${k}</span><strong>${v || '—'}</strong></div>`).join('');
+    if (Number(quote.distance_km || 0) > 0) {
+      rows.push([tr('summary.distance'), `${Number(quote.distance_km).toFixed(2)} km`]);
+    }
+    rows.push([tr('summary.baseFare'), money(quote.base_price)]);
+    rows.push([tr('summary.addOns'), addOnNames.length ? addOnNames.join(' • ') : tr('summary.none')]);
+    rows.push([tr('summary.discount'), Number(quote.discount_amount || 0) > 0 ? `- ${money(quote.discount_amount)}` : '—']);
+    rows.push([tr('summary.total'), money(quote.final_price)]);
+
+    const summaryHtml = rows
+      .map(([k, v]) => `<div class="summary-item"><span>${escapeHtml(k)}</span><strong>${escapeHtml(v || '—')}</strong></div>`)
+      .join('');
+
     qs('#summary-box').innerHTML = summaryHtml;
-    qs('#price-preview').textContent = money(total);
+    qs('#price-preview').textContent = money(quote.final_price);
   }
 
   function bookingPayload() {
+    const quote = state.quote || fallbackQuote();
     const common = {
       vehicle_id: state.selectedVehicle.id,
       first_name: qs('#first-name').value.trim(),
@@ -344,7 +658,10 @@
       phone: qs('#phone').value.trim(),
       special_requests: qs('#special-requests').value.trim() || null,
       promo_code: state.appliedPromo?.code || null,
-      source: 'web'
+      source: 'web',
+      language_code: state.locale,
+      add_ons: collectAddOns(),
+      distance_km: quote.distance_km || estimateDistanceKm()
     };
 
     if (state.serviceType === 'hourly') {
@@ -392,7 +709,7 @@
 
   async function submitBooking() {
     if (state.settings?.maintenance_mode || state.settings?.booking_enabled === false) {
-      setMessage('Booking is currently unavailable. Please contact support.', 'error');
+      setMessage(tr('messages.bookingUnavailable'), 'error');
       return;
     }
 
@@ -400,28 +717,33 @@
 
     const submitBtn = qs('#submit-btn');
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Submitting...';
+    submitBtn.textContent = '...';
 
     try {
-      const res = await fetch('/api/bookings', {
+      await refreshQuote({ silent: true });
+
+      const res = await fetch(`/api/bookings?lang=${state.locale}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Lang': state.locale
+        },
         body: JSON.stringify(bookingPayload())
       });
       const data = await res.json();
 
       if (!res.ok) {
-        setMessage(data.error || 'Unable to submit booking.', 'error');
+        setMessage(data.error || tr('messages.submitFailed'), 'error');
         return;
       }
 
       qs('#booking-ref').textContent = data.booking.booking_ref;
       updateStep(5);
     } catch (_error) {
-      setMessage('Network error. Please try again.', 'error');
+      setMessage(tr('messages.networkError'), 'error');
     } finally {
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Confirm Booking';
+      submitBtn.textContent = tr('actions.confirmBooking');
     }
   }
 
@@ -429,43 +751,35 @@
     const input = qs('#promo-code');
     const code = input?.value.trim().toUpperCase();
     if (!code) {
-      setPromoMessage('Enter a promo code first.', 'error');
+      setPromoMessage(tr('messages.promoCodeFirst'), 'error');
       return;
     }
 
-    const base = estimatePrice();
-    if (!base) {
-      setPromoMessage('Select trip and vehicle details before applying promo.', 'error');
+    if (!state.selectedVehicle) {
+      setPromoMessage(tr('messages.promoBeforeTrip'), 'error');
       return;
     }
 
     const btn = qs('#apply-promo-btn');
     btn.disabled = true;
-    btn.textContent = 'Applying...';
+    btn.textContent = '...';
 
     try {
-      const res = await fetch('/api/promo/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, amount: base })
-      });
-      const data = await res.json();
+      state.appliedPromo = { code };
+      await refreshQuote({ silent: true });
 
-      if (!res.ok || !data.valid) {
+      if (state.appliedPromo?.code === code && Number(state.quote?.discount_amount || 0) > 0) {
+        setPromoMessage(tr('messages.promoApplied', { code }), 'ok');
+      } else {
         state.appliedPromo = null;
-        setPromoMessage(data.error || 'Promo code is not valid.', 'error');
-        renderSummary();
-        return;
+        setPromoMessage(tr('messages.promoInvalid'), 'error');
       }
-
-      state.appliedPromo = data.promo;
-      setPromoMessage(`Promo ${data.promo.code} applied successfully.`, 'ok');
-      renderSummary();
     } catch (_error) {
-      setPromoMessage('Could not validate promo right now. Please try again.', 'error');
+      setPromoMessage(tr('messages.promoInvalid'), 'error');
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Apply';
+      btn.textContent = tr('actions.apply');
+      renderSummary();
     }
   }
 
@@ -473,8 +787,8 @@
     state.appliedPromo = null;
     const input = qs('#promo-code');
     if (input) input.value = '';
-    setPromoMessage('Promo code removed.', 'neutral');
-    renderSummary();
+    setPromoMessage(tr('messages.promoRemoved'), 'neutral');
+    refreshQuote({ silent: true });
   }
 
   function debounce(fn, wait) {
@@ -498,19 +812,20 @@
       }
 
       try {
-        const res = await fetch(`/api/geo/search?q=${encodeURIComponent(q)}`);
+        const res = await fetch(`/api/geo/search?q=${encodeURIComponent(q)}&lang=${state.locale}`);
         const data = await res.json();
         const results = data.results || [];
 
-        list.innerHTML = results.map((r) => `<li data-lat="${r.lat}" data-lng="${r.lon}" data-name="${r.display_name}">${r.display_name}</li>`).join('');
+        list.innerHTML = results.map((r) => `<li data-lat="${r.lat}" data-lng="${r.lon}" data-name="${escapeHtml(r.display_name)}">${escapeHtml(r.display_name)}</li>`).join('');
         list.classList.toggle('show', results.length > 0);
 
         qsa('li', list).forEach((li) => {
           li.addEventListener('click', () => {
             input.value = li.dataset.name;
-            state.geo[stateKey] = { lat: li.dataset.lat, lng: li.dataset.lng };
+            state.geo[stateKey] = { lat: Number(li.dataset.lat), lng: Number(li.dataset.lng) };
             state.locationSelected[stateKey] = true;
             list.classList.remove('show');
+            refreshQuote({ silent: true });
           });
         });
       } catch (_error) {
@@ -522,8 +837,30 @@
     input.addEventListener('input', () => {
       state.locationSelected[stateKey] = false;
       state.geo[stateKey] = null;
+      refreshQuote({ silent: true });
     });
     input.addEventListener('blur', () => setTimeout(() => list.classList.remove('show'), 120));
+  }
+
+  function bindLiveRecalculation() {
+    const recalc = debounce(() => {
+      if (state.step >= 2) {
+        refreshQuote({ silent: true });
+      }
+    }, 220);
+
+    const selectors = [
+      '#passengers', '#luggage', '#departure-date', '#departure-time', '#return-date', '#return-time',
+      '#hourly-date', '#hourly-time', '#hourly-duration', '#hourly-passengers', '#addon-child-seat-count',
+      '#addon-extra-luggage-count', '#addon-child-seat', '#addon-extra-luggage', '#addon-pet-friendly'
+    ];
+
+    selectors.forEach((selector) => {
+      const el = qs(selector);
+      if (!el) return;
+      el.addEventListener('input', recalc);
+      el.addEventListener('change', recalc);
+    });
   }
 
   function bindActions() {
@@ -547,6 +884,13 @@
     qs('#submit-btn').addEventListener('click', submitBooking);
     qs('#apply-promo-btn').addEventListener('click', applyPromoCode);
     qs('#remove-promo-btn').addEventListener('click', removePromoCode);
+    qs('#lang-toggle').addEventListener('click', () => {
+      toggleLocale();
+      loadSettings();
+      refreshQuote({ silent: true });
+    });
+    qs('#theme-toggle').addEventListener('click', toggleTheme);
+    qs('#new-booking-btn').addEventListener('click', () => window.location.reload());
   }
 
   function initMinDates() {
@@ -557,16 +901,26 @@
     });
   }
 
-  function init() {
+  async function init() {
+    await loadTranslations();
+
+    const savedLocale = localStorage.getItem(LANG_KEY) || 'en';
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+    setLocale(savedLocale, false);
+    setTheme(savedTheme, false);
+
     bindActions();
+    bindLiveRecalculation();
     bindGeoAutocomplete('pickup-location', 'pickup-suggestions', 'pickup');
     bindGeoAutocomplete('dropoff-location', 'dropoff-suggestions', 'dropoff');
     bindGeoAutocomplete('hourly-pickup', 'hourly-suggestions', 'hourly');
     initMinDates();
-    loadVehicles();
-    loadSettings();
+
+    await Promise.all([loadVehicles(), loadSettings()]);
+
     const year = qs('#footer-year');
     if (year) year.textContent = String(new Date().getFullYear());
+    renderSummary();
   }
 
   init();

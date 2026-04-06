@@ -46,6 +46,7 @@ router.put('/vehicles/:id', authenticate, requireRole('admin'), bookingControlle
 router.delete('/vehicles/:id', authenticate, requireRole('admin'), bookingController.deleteVehicle);
 
 router.post('/bookings', bookingCreateLimiter, validateBookingPayload, bookingController.createBooking);
+router.post('/bookings/quote', bookingController.quoteBooking);
 router.get('/bookings', authenticate, bookingController.listBookings);
 router.get('/bookings/stats', authenticate, bookingController.bookingStats);
 router.get('/bookings/export/csv', authenticate, requireRole('operator'), bookingController.exportCsv);
@@ -53,6 +54,7 @@ router.get('/bookings/:id', authenticate, bookingController.getBooking);
 router.get('/bookings/:id/logs', authenticate, bookingController.getBookingLogs);
 router.patch('/bookings/:id/status', authenticate, bookingController.updateBookingStatus);
 router.patch('/bookings/:id', authenticate, bookingController.updateBooking);
+router.patch('/bookings/:id/assign', authenticate, requireRole('operator'), bookingController.assignChauffeur);
 router.delete('/bookings/:id', authenticate, requireRole('admin'), bookingController.deleteBooking);
 
 router.post('/promo/validate', bookingController.validatePromo);
@@ -61,6 +63,10 @@ router.post('/promo', authenticate, requireRole('admin'), bookingController.crea
 router.patch('/promo/:id/toggle', authenticate, requireRole('admin'), bookingController.togglePromo);
 
 router.get('/geo/search', bookingController.geoSearch);
+
+router.get('/chauffeurs', authenticate, requireRole('operator'), bookingController.listChauffeurs);
+router.post('/chauffeurs', authenticate, requireRole('admin'), bookingController.createChauffeur);
+router.patch('/chauffeurs/:id/toggle', authenticate, requireRole('admin'), bookingController.toggleChauffeur);
 
 router.get('/admin/users', authenticate, requireRole('admin'), authController.listUsers);
 router.post('/admin/users', authenticate, requireRole('admin'), authController.createUser);

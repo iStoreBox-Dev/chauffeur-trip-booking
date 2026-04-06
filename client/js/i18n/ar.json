@@ -1,0 +1,151 @@
+{
+  "nav": {
+    "book": "الحجز",
+    "fleet": "الأسطول",
+    "benefits": "المزايا",
+    "admin": "الإدارة"
+  },
+  "theme": {
+    "switchToLight": "فاتح",
+    "switchToDark": "داكن"
+  },
+  "steps": {
+    "trip": "الرحلة",
+    "vehicle": "المركبة",
+    "details": "البيانات",
+    "confirm": "التأكيد"
+  },
+  "sections": {
+    "tripDetails": "تفاصيل الرحلة",
+    "chooseVehicle": "اختر المركبة",
+    "vehicleHelp": "اختر من أسطولنا المميز.",
+    "contactDetails": "بيانات التواصل",
+    "confirmBooking": "تأكيد الحجز",
+    "bookingSubmitted": "تم إرسال الحجز"
+  },
+  "service": {
+    "transfer": "تنقّل",
+    "hourly": "بالساعة"
+  },
+  "trip": {
+    "oneWay": "ذهاب",
+    "roundTrip": "ذهاب وعودة",
+    "locationHint": "اختر المواقع من قائمة الاقتراحات لضمان دقة المسار."
+  },
+  "fields": {
+    "pickup": "موقع الانطلاق",
+    "dropoff": "موقع الوصول",
+    "departureDate": "تاريخ الانطلاق",
+    "departureTime": "وقت الانطلاق",
+    "returnDate": "تاريخ العودة",
+    "returnTime": "وقت العودة",
+    "passengers": "عدد الركاب",
+    "luggage": "الأمتعة",
+    "flightNumber": "رقم الرحلة",
+    "date": "التاريخ",
+    "startTime": "وقت البداية",
+    "duration": "المدة",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "email": "البريد الإلكتروني",
+    "countryCode": "مفتاح الدولة",
+    "phone": "الهاتف",
+    "specialRequests": "ملاحظات خاصة",
+    "promoCode": "رمز الخصم",
+    "terms": "أوافق على الشروط وسياسة الخصوصية"
+  },
+  "addons": {
+    "title": "إضافات اختيارية",
+    "childSeat": "مقعد طفل",
+    "childSeatCount": "عدد مقاعد الأطفال",
+    "extraLuggage": "خدمة أمتعة إضافية",
+    "extraLuggageCount": "عدد قطع الأمتعة الإضافية",
+    "petFriendly": "تهيئة مناسبة للحيوانات الأليفة",
+    "note": "يتم احتساب الإضافات مباشرة في عرض السعر الحي."
+  },
+  "actions": {
+    "continue": "متابعة",
+    "back": "رجوع",
+    "review": "مراجعة",
+    "apply": "تطبيق",
+    "remove": "إزالة",
+    "confirmBooking": "تأكيد الحجز",
+    "newBooking": "إنشاء حجز جديد"
+  },
+  "messages": {
+    "capacityWarning": "المركبة المحددة قد لا تناسب عدد الركاب.",
+    "quoteLoading": "جاري حساب السعر المحدث...",
+    "bookingReceived": "تم استلام طلبك وسنتواصل معك قريباً.",
+    "reference": "رقم المرجع",
+    "requiredTripFields": "يرجى إكمال جميع الحقول المطلوبة للرحلة.",
+    "locationSelectTrip": "يرجى اختيار نقطة الانطلاق والوصول من قائمة الاقتراحات.",
+    "roundTripRequired": "يرجى إضافة تاريخ ووقت العودة لرحلة الذهاب والعودة.",
+    "requiredHourlyFields": "يرجى إكمال جميع الحقول المطلوبة للحجز بالساعة.",
+    "locationSelectHourly": "يرجى اختيار موقع الانطلاق من الاقتراحات.",
+    "selectVehicle": "يرجى اختيار مركبة للمتابعة.",
+    "capacityExceeded": "عدد الركاب أكبر من سعة المركبة المختارة.",
+    "requiredDetails": "يرجى إكمال بياناتك الشخصية.",
+    "invalidEmail": "يرجى إدخال بريد إلكتروني صالح.",
+    "termsRequired": "يرجى الموافقة على الشروط وسياسة الخصوصية.",
+    "bookingUnavailable": "الحجز غير متاح حالياً. يرجى التواصل مع الدعم.",
+    "networkError": "حدث خطأ في الشبكة. يرجى المحاولة مرة أخرى.",
+    "promoCodeFirst": "أدخل رمز الخصم أولاً.",
+    "promoBeforeTrip": "اختر تفاصيل الرحلة والمركبة قبل تطبيق الخصم.",
+    "promoInvalid": "رمز الخصم غير صالح.",
+    "promoApplied": "تم تطبيق الرمز {code} بنجاح.",
+    "promoRemoved": "تمت إزالة رمز الخصم.",
+    "submitFailed": "تعذر إرسال الحجز.",
+    "vehicleLoadFailed": "تعذر تحميل قائمة المركبات.",
+    "quoteFailed": "تعذر حساب السعر حالياً.",
+    "maintenanceMode": "الخدمة في وضع الصيانة حالياً. يرجى المحاولة لاحقاً.",
+    "bookingDisabled": "تم إيقاف الحجز مؤقتاً. يرجى التواصل مع الدعم."
+  },
+  "summary": {
+    "service": "الخدمة",
+    "transfer": "تنقّل",
+    "hourly": "بالساعة",
+    "type": "النوع",
+    "oneWay": "ذهاب",
+    "roundTrip": "ذهاب وعودة",
+    "pickup": "الانطلاق",
+    "dropoff": "الوصول",
+    "departure": "الانطلاق",
+    "return": "العودة",
+    "start": "البداية",
+    "duration": "المدة",
+    "passengers": "الركاب",
+    "vehicle": "المركبة",
+    "passengerName": "اسم الراكب",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "distance": "المسافة التقديرية",
+    "baseFare": "السعر الأساسي",
+    "addOns": "الإضافات",
+    "discount": "خصم الرمز",
+    "total": "الإجمالي",
+    "none": "لا يوجد"
+  },
+  "recommendation": {
+    "title": "خيارات مقترحة"
+  },
+  "benefits": {
+    "dispatch": "خدمة 24/7",
+    "chauffeurs": "سائقون محترفون",
+    "business": "أعمال وترفيه",
+    "pricing": "أسعار واضحة بالدينار البحريني"
+  },
+  "footer": {
+    "rights": "جميع الحقوق محفوظة.",
+    "defaultContact": "تجارب تنقّل فاخرة."
+  },
+  "placeholders": {
+    "pickup": "مطار البحرين الدولي",
+    "dropoff": "ضاحية السيف، المنامة",
+    "hourlyPickup": "مجمع سيتي سنتر المنامة",
+    "flight": "GF 123",
+    "promo": "WELCOME10"
+  },
+  "common": {
+    "select": "اختر"
+  }
+}

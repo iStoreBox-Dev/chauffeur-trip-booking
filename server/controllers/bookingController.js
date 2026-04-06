@@ -1,19 +1,35 @@
 const pool = require('../../config/db');
 const Booking = require('../models/Booking');
 const Vehicle = require('../models/Vehicle');
-const { generateRef, calcPrice } = require('../utils/helpers');
+const Chauffeur = require('../models/Chauffeur');
+const {
+  generateRef,
+  calcBookingQuote,
+  normalizeAddOns,
+  scoreVehicleFit
+} = require('../utils/helpers');
 const { sendBookingConfirmation } = require('../utils/email');
 const { notifyWhatsapp } = require('../utils/whatsapp');
+const { t, normalizeLocale } = require('../utils/i18n');
+
+function msg(req, key, params) {
+  return t(req.locale, key, params);
+}
 
 function getRequestIp(req) {
   return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket.remoteAddress || null;
+}
+
+function toNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function serializeCsv(rows) {
   const header = [
     'booking_ref', 'service_type', 'first_name', 'last_name', 'email', 'country_code',
     'phone', 'pickup_location', 'dropoff_location', 'departure_date', 'departure_time',
-    'final_price', 'status', 'created_at'
+    'final_price', 'status', 'chauffeur_name', 'language_code', 'created_at'
   ];
 
   const escaped = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
@@ -26,59 +42,204 @@ function serializeCsv(rows) {
   return lines.join('\n');
 }
 
+async function findVehicle(vehicleId, includeInactive = false) {
+  const activeFilter = includeInactive ? '' : 'AND is_active = true';
+  const result = await pool.query(
+    `SELECT * FROM vehicles WHERE id = $1 ${activeFilter} LIMIT 1`,
+    [Number(vehicleId)]
+  );
+  return result.rows[0] || null;
+}
+
+function buildRecommendationReason(vehicle, criteria) {
+  const reasons = [];
+
+  if (Number(vehicle.capacity || 0) >= Number(criteria.passengers || 0)) {
+    reasons.push('Capacity fits passenger count');
+  }
+
+  if (criteria.add_ons?.pet_friendly && ['suv', 'van'].includes(vehicle.category)) {
+    reasons.push('Comfortable for pet-friendly trips');
+  }
+
+  if ((criteria.luggage || 0) >= 3 && ['suv', 'van'].includes(vehicle.category)) {
+    reasons.push('Better luggage capacity');
+  }
+
+  if (criteria.service_type === 'hourly' && vehicle.category === 'business') {
+    reasons.push('Optimized for executive hourly rides');
+  }
+
+  if (reasons.length === 0) {
+    reasons.push('Balanced comfort and price');
+  }
+
+  return reasons.join(' • ');
+}
+
+async function validatePromoCode({ code, amount, req }) {
+  if (!code) {
+    return { promo: null, error: null, status: 200 };
+  }
+
+  const result = await pool.query(
+    `SELECT * FROM promo_codes
+     WHERE code = UPPER($1) AND is_active = true
+     LIMIT 1`,
+    [code]
+  );
+
+  const promo = result.rows[0];
+  if (!promo) {
+    return {
+      promo: null,
+      error: msg(req, 'errors.promoNotFound'),
+      status: 404
+    };
+  }
+
+  const hasUsesLeft = promo.max_uses === null || promo.used_count < promo.max_uses;
+  const notExpired = !promo.expires_at || new Date(promo.expires_at) >= new Date();
+  const minAmountSatisfied = toNumber(amount, 0) >= toNumber(promo.min_amount, 0);
+
+  if (!hasUsesLeft || !notExpired || !minAmountSatisfied) {
+    return {
+      promo: null,
+      error: msg(req, 'errors.promoInvalid'),
+      status: 400
+    };
+  }
+
+  return {
+    promo,
+    error: null,
+    status: 200
+  };
+}
+
+async function calculateQuote(req, payload = req.body) {
+  const serviceType = payload.service_type;
+
+  if (!['trip', 'hourly'].includes(serviceType)) {
+    return {
+      error: msg(req, 'errors.invalidServiceType'),
+      status: 400
+    };
+  }
+
+  const vehicle = await findVehicle(payload.vehicle_id, false);
+
+  if (!vehicle) {
+    return {
+      error: msg(req, 'errors.invalidVehicle'),
+      status: 400
+    };
+  }
+
+  const normalizedAddOns = normalizeAddOns(payload.add_ons || {});
+
+  const baseQuote = calcBookingQuote({
+    serviceType,
+    vehicleBasePrice: vehicle.base_price,
+    hourlyDuration: payload.hourly_duration,
+    transferType: payload.transfer_type,
+    distanceKm: payload.distance_km,
+    addOns: normalizedAddOns,
+    promo: null
+  });
+
+  const promoCheck = await validatePromoCode({
+    code: payload.promo_code,
+    amount: baseQuote.subtotal_price,
+    req
+  });
+
+  const finalQuote = calcBookingQuote({
+    serviceType,
+    vehicleBasePrice: vehicle.base_price,
+    hourlyDuration: payload.hourly_duration,
+    transferType: payload.transfer_type,
+    distanceKm: payload.distance_km,
+    addOns: normalizedAddOns,
+    promo: promoCheck.promo
+  });
+
+  return {
+    status: 200,
+    vehicle,
+    promo: promoCheck.promo,
+    promoError: promoCheck.error,
+    promoStatus: promoCheck.status,
+    quote: finalQuote
+  };
+}
+
+async function quoteBooking(req, res) {
+  try {
+    const result = await calculateQuote(req);
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
+    }
+
+    const vehicles = await Vehicle.getActive();
+    const criteria = {
+      service_type: req.body.service_type,
+      passengers: toNumber(req.body.passengers, 1),
+      luggage: toNumber(req.body.luggage, 0),
+      add_ons: normalizeAddOns(req.body.add_ons || {})
+    };
+
+    const recommendations = vehicles
+      .map((vehicle) => ({
+        id: vehicle.id,
+        name: vehicle.name,
+        model: vehicle.model,
+        category: vehicle.category,
+        capacity: vehicle.capacity,
+        base_price: Number(vehicle.base_price),
+        score: scoreVehicleFit(vehicle, {
+          passengers: criteria.passengers,
+          luggage: criteria.luggage,
+          addOns: criteria.add_ons,
+          serviceType: criteria.service_type
+        }),
+        reason: buildRecommendationReason(vehicle, criteria)
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    return res.json({
+      quote: result.quote,
+      promo: result.promo
+        ? {
+            code: result.promo.code,
+            discount_type: result.promo.discount_type,
+            discount_value: Number(result.promo.discount_value)
+          }
+        : null,
+      promo_error: result.promoError || null,
+      recommendations
+    });
+  } catch (error) {
+    console.error('Quote failed:', error.message);
+    return res.status(500).json({ error: msg(req, 'errors.quoteFailed') });
+  }
+}
+
 async function createBooking(req, res) {
   try {
-    const vehicleId = Number(req.body.vehicle_id);
-    const vehicleList = await pool.query('SELECT * FROM vehicles WHERE id = $1 AND is_active = true', [vehicleId]);
-    const vehicle = vehicleList.rows[0];
-
-    if (!vehicle) {
-      return res.status(400).json({ error: 'Please select a valid vehicle.' });
+    const quoteResult = await calculateQuote(req);
+    if (quoteResult.error) {
+      return res.status(quoteResult.status).json({ error: quoteResult.error });
     }
 
-    let discountAmount = 0;
-    if (req.body.promo_code) {
-      const promoResult = await pool.query(
-        `SELECT * FROM promo_codes
-         WHERE code = UPPER($1) AND is_active = true
-         LIMIT 1`,
-        [req.body.promo_code]
-      );
-      const promo = promoResult.rows[0];
-
-      if (promo) {
-        const baseEstimate = calcPrice({
-          serviceType: req.body.service_type,
-          vehicleBasePrice: vehicle.base_price,
-          hourlyDuration: req.body.hourly_duration,
-          transferType: req.body.transfer_type,
-          distanceKm: req.body.distance_km
-        });
-
-        const minAmountSatisfied = Number(baseEstimate) >= Number(promo.min_amount || 0);
-        const hasUsesLeft = promo.max_uses === null || promo.used_count < promo.max_uses;
-        const notExpired = !promo.expires_at || new Date(promo.expires_at) >= new Date();
-
-        if (minAmountSatisfied && hasUsesLeft && notExpired) {
-          discountAmount = promo.discount_type === 'percent'
-            ? Number((baseEstimate * (Number(promo.discount_value) / 100)).toFixed(3))
-            : Number(promo.discount_value);
-
-          await pool.query(
-            'UPDATE promo_codes SET used_count = used_count + 1 WHERE id = $1',
-            [promo.id]
-          );
-        }
+    const chauffeurId = req.body.chauffeur_id ? Number(req.body.chauffeur_id) : null;
+    if (chauffeurId) {
+      const chauffeur = await Chauffeur.findById(chauffeurId);
+      if (!chauffeur || !chauffeur.is_active) {
+        return res.status(400).json({ error: msg(req, 'errors.chauffeurNotFound') });
       }
     }
-
-    const basePrice = calcPrice({
-      serviceType: req.body.service_type,
-      vehicleBasePrice: vehicle.base_price,
-      hourlyDuration: req.body.hourly_duration,
-      transferType: req.body.transfer_type,
-      distanceKm: req.body.distance_km
-    });
 
     const booking = await Booking.create({
       booking_ref: generateRef(),
@@ -98,13 +259,13 @@ async function createBooking(req, res) {
       passengers: Number(req.body.passengers),
       luggage: Number(req.body.luggage || 0),
       flight_number: req.body.flight_number || null,
-      vehicle_id: vehicle.id,
+      vehicle_id: quoteResult.vehicle.id,
       vehicle_snapshot: {
-        name: vehicle.name,
-        model: vehicle.model,
-        category: vehicle.category,
-        base_price: vehicle.base_price,
-        capacity: vehicle.capacity
+        name: quoteResult.vehicle.name,
+        model: quoteResult.vehicle.model,
+        category: quoteResult.vehicle.category,
+        base_price: quoteResult.vehicle.base_price,
+        capacity: quoteResult.vehicle.capacity
       },
       first_name: req.body.first_name,
       last_name: req.body.last_name,
@@ -112,15 +273,29 @@ async function createBooking(req, res) {
       country_code: req.body.country_code,
       phone: req.body.phone,
       special_requests: req.body.special_requests || null,
-      promo_code: req.body.promo_code || null,
-      base_price: basePrice,
-      discount_amount: discountAmount,
-      final_price: Number(Math.max(0, basePrice - discountAmount).toFixed(3)),
-      distance_km: req.body.distance_km || null,
+      add_ons: quoteResult.quote.add_ons,
+      add_ons_price: quoteResult.quote.add_ons_price,
+      promo_code: quoteResult.promo?.code || null,
+      base_price: quoteResult.quote.base_price,
+      discount_amount: quoteResult.quote.discount_amount,
+      final_price: quoteResult.quote.final_price,
+      distance_km: quoteResult.quote.distance_km || null,
+      language_code: normalizeLocale(req.body.language_code || req.locale),
+      chauffeur_id: chauffeurId,
+      payment_provider: req.body.payment_provider || null,
+      payment_status: req.body.payment_status || 'pending',
+      payment_reference: req.body.payment_reference || null,
       status: 'pending',
       ip_address: getRequestIp(req),
       source: req.body.source || 'web'
     });
+
+    if (quoteResult.promo) {
+      await pool.query(
+        'UPDATE promo_codes SET used_count = used_count + 1 WHERE id = $1',
+        [quoteResult.promo.id]
+      );
+    }
 
     await Booking.addLog({
       bookingId: booking.id,
@@ -137,10 +312,13 @@ async function createBooking(req, res) {
       final_price: booking.final_price
     }).catch(() => {});
 
-    return res.status(201).json({ booking });
+    return res.status(201).json({
+      message: msg(req, 'messages.bookingCreated'),
+      booking
+    });
   } catch (error) {
     console.error('Create booking failed:', error.message);
-    return res.status(500).json({ error: 'We could not submit your booking right now. Please try again.' });
+    return res.status(500).json({ error: msg(req, 'errors.createBookingFailed') });
   }
 }
 
@@ -150,7 +328,7 @@ async function listBookings(req, res) {
     return res.json(data);
   } catch (error) {
     console.error('List bookings failed:', error.message);
-    return res.status(500).json({ error: 'Unable to load bookings at the moment.' });
+    return res.status(500).json({ error: msg(req, 'errors.listBookingsFailed') });
   }
 }
 
@@ -158,13 +336,13 @@ async function getBooking(req, res) {
   try {
     const booking = await Booking.findById(Number(req.params.id));
     if (!booking) {
-      return res.status(404).json({ error: 'Booking not found.' });
+      return res.status(404).json({ error: msg(req, 'errors.bookingNotFound') });
     }
 
     return res.json({ booking });
   } catch (error) {
     console.error('Get booking failed:', error.message);
-    return res.status(500).json({ error: 'Unable to load booking details.' });
+    return res.status(500).json({ error: msg(req, 'errors.bookingDetailsFailed') });
   }
 }
 
@@ -174,7 +352,7 @@ async function getBookingLogs(req, res) {
     return res.json({ logs });
   } catch (error) {
     console.error('Get logs failed:', error.message);
-    return res.status(500).json({ error: 'Unable to load booking logs.' });
+    return res.status(500).json({ error: msg(req, 'errors.bookingLogsFailed') });
   }
 }
 
@@ -184,12 +362,12 @@ async function updateBookingStatus(req, res) {
     const status = req.body.status;
 
     if (!allowed.includes(status)) {
-      return res.status(400).json({ error: 'Invalid booking status.' });
+      return res.status(400).json({ error: msg(req, 'errors.invalidBookingStatus') });
     }
 
     const updated = await Booking.updateStatus(Number(req.params.id), status);
     if (!updated) {
-      return res.status(404).json({ error: 'Booking not found.' });
+      return res.status(404).json({ error: msg(req, 'errors.bookingNotFound') });
     }
 
     await Booking.addLog({
@@ -202,15 +380,20 @@ async function updateBookingStatus(req, res) {
     return res.json({ booking: updated });
   } catch (error) {
     console.error('Update status failed:', error.message);
-    return res.status(500).json({ error: 'Unable to update booking status.' });
+    return res.status(500).json({ error: msg(req, 'errors.updateBookingStatusFailed') });
   }
 }
 
 async function updateBooking(req, res) {
   try {
-    const updated = await Booking.updatePartial(Number(req.params.id), req.body);
+    const payload = { ...req.body };
+    if (payload.add_ons) {
+      payload.add_ons = normalizeAddOns(payload.add_ons);
+    }
+
+    const updated = await Booking.updatePartial(Number(req.params.id), payload);
     if (!updated) {
-      return res.status(404).json({ error: 'Booking not found.' });
+      return res.status(404).json({ error: msg(req, 'errors.bookingNotFound') });
     }
 
     await Booking.addLog({
@@ -223,7 +406,41 @@ async function updateBooking(req, res) {
     return res.json({ booking: updated });
   } catch (error) {
     console.error('Update booking failed:', error.message);
-    return res.status(500).json({ error: 'Unable to update booking right now.' });
+    return res.status(500).json({ error: msg(req, 'errors.updateBookingFailed') });
+  }
+}
+
+async function assignChauffeur(req, res) {
+  try {
+    const bookingId = Number(req.params.id);
+    const chauffeurId = req.body.chauffeur_id ? Number(req.body.chauffeur_id) : null;
+
+    if (chauffeurId) {
+      const chauffeur = await Chauffeur.findById(chauffeurId);
+      if (!chauffeur || !chauffeur.is_active) {
+        return res.status(404).json({ error: msg(req, 'errors.chauffeurNotFound') });
+      }
+    }
+
+    const updated = await Booking.updateChauffeur(bookingId, chauffeurId);
+    if (!updated) {
+      return res.status(404).json({ error: msg(req, 'errors.bookingNotFound') });
+    }
+
+    await Booking.addLog({
+      bookingId: updated.id,
+      userId: req.user.id,
+      action: 'chauffeur_assigned',
+      note: chauffeurId ? `Assigned chauffeur #${chauffeurId}` : 'Chauffeur unassigned'
+    });
+
+    return res.json({
+      message: msg(req, 'messages.chauffeurAssigned'),
+      booking: updated
+    });
+  } catch (error) {
+    console.error('Assign chauffeur failed:', error.message);
+    return res.status(500).json({ error: msg(req, 'errors.assignChauffeurFailed') });
   }
 }
 
@@ -231,27 +448,27 @@ async function deleteBooking(req, res) {
   try {
     const removed = await Booking.remove(Number(req.params.id));
     if (!removed) {
-      return res.status(404).json({ error: 'Booking not found.' });
+      return res.status(404).json({ error: msg(req, 'errors.bookingNotFound') });
     }
 
     return res.json({ success: true });
   } catch (error) {
     console.error('Delete booking failed:', error.message);
-    return res.status(500).json({ error: 'Unable to delete booking right now.' });
+    return res.status(500).json({ error: msg(req, 'errors.deleteBookingFailed') });
   }
 }
 
-async function bookingStats(_req, res) {
+async function bookingStats(req, res) {
   try {
     const stats = await Booking.stats();
     return res.json({ stats });
   } catch (error) {
     console.error('Stats failed:', error.message);
-    return res.status(500).json({ error: 'Unable to load dashboard stats.' });
+    return res.status(500).json({ error: msg(req, 'errors.statsFailed') });
   }
 }
 
-async function exportCsv(_req, res) {
+async function exportCsv(req, res) {
   try {
     const rows = await Booking.allForExport();
     const csv = serializeCsv(rows);
@@ -261,27 +478,27 @@ async function exportCsv(_req, res) {
     return res.send(csv);
   } catch (error) {
     console.error('CSV export failed:', error.message);
-    return res.status(500).json({ error: 'Unable to export CSV right now.' });
+    return res.status(500).json({ error: msg(req, 'errors.csvExportFailed') });
   }
 }
 
-async function listVehicles(_req, res) {
+async function listVehicles(req, res) {
   try {
     const vehicles = await Vehicle.getActive();
     return res.json({ vehicles });
   } catch (error) {
     console.error('List vehicles failed:', error.message);
-    return res.status(500).json({ error: 'Unable to load vehicle options.' });
+    return res.status(500).json({ error: msg(req, 'errors.listVehiclesFailed') });
   }
 }
 
-async function listAllVehicles(_req, res) {
+async function listAllVehicles(req, res) {
   try {
     const vehicles = await Vehicle.getAll();
     return res.json({ vehicles });
   } catch (error) {
     console.error('List all vehicles failed:', error.message);
-    return res.status(500).json({ error: 'Unable to load vehicles right now.' });
+    return res.status(500).json({ error: msg(req, 'errors.listAllVehiclesFailed') });
   }
 }
 
@@ -291,7 +508,7 @@ async function createVehicle(req, res) {
     return res.status(201).json({ vehicle });
   } catch (error) {
     console.error('Create vehicle failed:', error.message);
-    return res.status(500).json({ error: 'Unable to create vehicle.' });
+    return res.status(500).json({ error: msg(req, 'errors.createVehicleFailed') });
   }
 }
 
@@ -299,13 +516,13 @@ async function updateVehicle(req, res) {
   try {
     const vehicle = await Vehicle.update(Number(req.params.id), req.body);
     if (!vehicle) {
-      return res.status(404).json({ error: 'Vehicle not found.' });
+      return res.status(404).json({ error: msg(req, 'errors.invalidVehicle') });
     }
 
     return res.json({ vehicle });
   } catch (error) {
     console.error('Update vehicle failed:', error.message);
-    return res.status(500).json({ error: 'Unable to update vehicle.' });
+    return res.status(500).json({ error: msg(req, 'errors.updateVehicleFailed') });
   }
 }
 
@@ -313,13 +530,13 @@ async function deleteVehicle(req, res) {
   try {
     const removed = await Vehicle.remove(Number(req.params.id));
     if (!removed) {
-      return res.status(404).json({ error: 'Vehicle not found.' });
+      return res.status(404).json({ error: msg(req, 'errors.invalidVehicle') });
     }
 
     return res.json({ success: true });
   } catch (error) {
     console.error('Delete vehicle failed:', error.message);
-    return res.status(500).json({ error: 'Unable to delete vehicle.' });
+    return res.status(500).json({ error: msg(req, 'errors.deleteVehicleFailed') });
   }
 }
 
@@ -328,51 +545,38 @@ async function validatePromo(req, res) {
     const { code, amount } = req.body;
 
     if (!code) {
-      return res.status(400).json({ error: 'Promo code is required.' });
+      return res.status(400).json({ error: msg(req, 'errors.promoRequired') });
     }
 
-    const result = await pool.query(
-      `SELECT * FROM promo_codes
-       WHERE code = UPPER($1) AND is_active = true
-       LIMIT 1`,
-      [code]
-    );
+    const promoCheck = await validatePromoCode({ code, amount, req });
 
-    const promo = result.rows[0];
-    if (!promo) {
-      return res.status(404).json({ valid: false, error: 'Promo code not found.' });
-    }
-
-    const hasUsesLeft = promo.max_uses === null || promo.used_count < promo.max_uses;
-    const notExpired = !promo.expires_at || new Date(promo.expires_at) >= new Date();
-    const minAmountSatisfied = Number(amount || 0) >= Number(promo.min_amount || 0);
-
-    if (!hasUsesLeft || !notExpired || !minAmountSatisfied) {
-      return res.status(400).json({ valid: false, error: 'Promo code is not valid for this booking.' });
+    if (!promoCheck.promo) {
+      return res.status(promoCheck.status).json({ valid: false, error: promoCheck.error });
     }
 
     return res.json({
       valid: true,
+      message: msg(req, 'messages.promoApplied'),
       promo: {
-        id: promo.id,
-        code: promo.code,
-        discount_type: promo.discount_type,
-        discount_value: Number(promo.discount_value)
+        id: promoCheck.promo.id,
+        code: promoCheck.promo.code,
+        discount_type: promoCheck.promo.discount_type,
+        discount_value: Number(promoCheck.promo.discount_value)
       }
     });
   } catch (error) {
     console.error('Validate promo failed:', error.message);
-    return res.status(500).json({ error: 'Unable to validate promo code.' });
+    return res.status(500).json({ error: msg(req, 'errors.promoValidateFailed') });
   }
 }
 
-async function listPromos(_req, res) {
+async function listPromos(req, res) {
   try {
     const result = await pool.query('SELECT * FROM promo_codes ORDER BY id DESC');
     return res.json({ promos: result.rows });
   } catch (error) {
     console.error('List promo failed:', error.message);
-    return res.status(500).json({ error: 'Unable to load promo codes.' });
+    return res.status(500).json({ error: msg(req, 'errors.listPromoFailed') });
   }
 }
 
@@ -395,7 +599,7 @@ async function createPromo(req, res) {
     return res.status(201).json({ promo: result.rows[0] });
   } catch (error) {
     console.error('Create promo failed:', error.message);
-    return res.status(500).json({ error: 'Unable to create promo code.' });
+    return res.status(500).json({ error: msg(req, 'errors.createPromoFailed') });
   }
 }
 
@@ -410,13 +614,13 @@ async function togglePromo(req, res) {
     );
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Promo code not found.' });
+      return res.status(404).json({ error: msg(req, 'errors.promoNotFound') });
     }
 
     return res.json({ promo: result.rows[0] });
   } catch (error) {
     console.error('Toggle promo failed:', error.message);
-    return res.status(500).json({ error: 'Unable to update promo code.' });
+    return res.status(500).json({ error: msg(req, 'errors.togglePromoFailed') });
   }
 }
 
@@ -425,7 +629,7 @@ async function geoSearch(req, res) {
     const q = req.query.q;
 
     if (!q || String(q).trim().length < 2) {
-      return res.status(400).json({ error: 'Please enter at least 2 characters.' });
+      return res.status(400).json({ error: msg(req, 'errors.geoQueryShort') });
     }
 
     const url = new URL('https://nominatim.openstreetmap.org/search');
@@ -440,7 +644,7 @@ async function geoSearch(req, res) {
     });
 
     if (!response.ok) {
-      return res.status(502).json({ error: 'Location search service is unavailable.' });
+      return res.status(502).json({ error: msg(req, 'errors.geoUnavailable') });
     }
 
     const data = await response.json();
@@ -453,17 +657,68 @@ async function geoSearch(req, res) {
     return res.json({ results: items });
   } catch (error) {
     console.error('Geo search failed:', error.message);
-    return res.status(500).json({ error: 'Unable to search locations at the moment.' });
+    return res.status(500).json({ error: msg(req, 'errors.geoFailed') });
+  }
+}
+
+async function listChauffeurs(req, res) {
+  try {
+    const chauffeurs = await Chauffeur.getAll();
+    return res.json({ chauffeurs });
+  } catch (error) {
+    console.error('List chauffeurs failed:', error.message);
+    return res.status(500).json({ error: msg(req, 'errors.listChauffeursFailed') });
+  }
+}
+
+async function createChauffeur(req, res) {
+  try {
+    if (!req.body.full_name || !req.body.phone) {
+      return res.status(400).json({ error: msg(req, 'errors.contactRequired') });
+    }
+
+    const languages = Array.isArray(req.body.languages)
+      ? req.body.languages.map((item) => normalizeLocale(item))
+      : [normalizeLocale(req.body.language_code || req.locale)];
+
+    const chauffeur = await Chauffeur.create({
+      full_name: req.body.full_name,
+      phone: req.body.phone,
+      email: req.body.email || null,
+      languages,
+      notes: req.body.notes || null
+    });
+
+    return res.status(201).json({ chauffeur });
+  } catch (error) {
+    console.error('Create chauffeur failed:', error.message);
+    return res.status(500).json({ error: msg(req, 'errors.createChauffeurFailed') });
+  }
+}
+
+async function toggleChauffeur(req, res) {
+  try {
+    const chauffeur = await Chauffeur.toggle(Number(req.params.id));
+    if (!chauffeur) {
+      return res.status(404).json({ error: msg(req, 'errors.chauffeurNotFound') });
+    }
+
+    return res.json({ chauffeur });
+  } catch (error) {
+    console.error('Toggle chauffeur failed:', error.message);
+    return res.status(500).json({ error: msg(req, 'errors.toggleChauffeurFailed') });
   }
 }
 
 module.exports = {
+  quoteBooking,
   createBooking,
   listBookings,
   getBooking,
   getBookingLogs,
   updateBookingStatus,
   updateBooking,
+  assignChauffeur,
   deleteBooking,
   bookingStats,
   exportCsv,
@@ -476,5 +731,8 @@ module.exports = {
   listPromos,
   createPromo,
   togglePromo,
-  geoSearch
+  geoSearch,
+  listChauffeurs,
+  createChauffeur,
+  toggleChauffeur
 };

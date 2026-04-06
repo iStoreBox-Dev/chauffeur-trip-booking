@@ -1,0 +1,151 @@
+{
+  "nav": {
+    "book": "Book",
+    "fleet": "Fleet",
+    "benefits": "Benefits",
+    "admin": "Admin"
+  },
+  "theme": {
+    "switchToLight": "Light",
+    "switchToDark": "Dark"
+  },
+  "steps": {
+    "trip": "Trip",
+    "vehicle": "Vehicle",
+    "details": "Details",
+    "confirm": "Confirm"
+  },
+  "sections": {
+    "tripDetails": "Trip Details",
+    "chooseVehicle": "Choose Vehicle",
+    "vehicleHelp": "Select from our premium fleet.",
+    "contactDetails": "Contact Details",
+    "confirmBooking": "Confirm Booking",
+    "bookingSubmitted": "Booking Submitted"
+  },
+  "service": {
+    "transfer": "Transfer",
+    "hourly": "Hourly"
+  },
+  "trip": {
+    "oneWay": "One Way",
+    "roundTrip": "Round Trip",
+    "locationHint": "Select locations from the suggestion list to ensure accurate routing."
+  },
+  "fields": {
+    "pickup": "Pickup Location",
+    "dropoff": "Dropoff Location",
+    "departureDate": "Departure Date",
+    "departureTime": "Departure Time",
+    "returnDate": "Return Date",
+    "returnTime": "Return Time",
+    "passengers": "Passengers",
+    "luggage": "Luggage",
+    "flightNumber": "Flight Number",
+    "date": "Date",
+    "startTime": "Start Time",
+    "duration": "Duration",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "countryCode": "Country Code",
+    "phone": "Phone",
+    "specialRequests": "Special Requests",
+    "promoCode": "Promo Code",
+    "terms": "I agree to terms and privacy policy"
+  },
+  "addons": {
+    "title": "Optional Add-ons",
+    "childSeat": "Child seat",
+    "childSeatCount": "Child seats",
+    "extraLuggage": "Extra luggage handling",
+    "extraLuggageCount": "Extra luggage pieces",
+    "petFriendly": "Pet-friendly trip setup",
+    "note": "Add-ons are reflected instantly in your live quote."
+  },
+  "actions": {
+    "continue": "Continue",
+    "back": "Back",
+    "review": "Review",
+    "apply": "Apply",
+    "remove": "Remove",
+    "confirmBooking": "Confirm Booking",
+    "newBooking": "Create New Booking"
+  },
+  "messages": {
+    "capacityWarning": "Selected vehicle may not fit passenger count.",
+    "quoteLoading": "Calculating latest quote...",
+    "bookingReceived": "Your request has been received. We will contact you soon.",
+    "reference": "Reference",
+    "requiredTripFields": "Please complete all required trip fields.",
+    "locationSelectTrip": "Please select pickup and dropoff from the location suggestions.",
+    "roundTripRequired": "Please add return date and time for round trip.",
+    "requiredHourlyFields": "Please complete all required hourly fields.",
+    "locationSelectHourly": "Please select the pickup location from suggestions.",
+    "selectVehicle": "Please select a vehicle to continue.",
+    "capacityExceeded": "Passenger count is too high for selected vehicle.",
+    "requiredDetails": "Please complete your personal details.",
+    "invalidEmail": "Please provide a valid email address.",
+    "termsRequired": "Please agree to terms and privacy policy.",
+    "bookingUnavailable": "Booking is currently unavailable. Please contact support.",
+    "networkError": "Network error. Please try again.",
+    "promoCodeFirst": "Enter a promo code first.",
+    "promoBeforeTrip": "Select trip and vehicle details before applying promo.",
+    "promoInvalid": "Promo code is not valid.",
+    "promoApplied": "Promo {code} applied successfully.",
+    "promoRemoved": "Promo code removed.",
+    "submitFailed": "Unable to submit booking.",
+    "vehicleLoadFailed": "Unable to load vehicle list.",
+    "quoteFailed": "Unable to calculate quote right now.",
+    "maintenanceMode": "The service is currently in maintenance mode. Please try again shortly.",
+    "bookingDisabled": "Booking is temporarily disabled. Please contact support."
+  },
+  "summary": {
+    "service": "Service",
+    "transfer": "Transfer",
+    "hourly": "Hourly",
+    "type": "Type",
+    "oneWay": "One Way",
+    "roundTrip": "Round Trip",
+    "pickup": "Pickup",
+    "dropoff": "Dropoff",
+    "departure": "Departure",
+    "return": "Return",
+    "start": "Start",
+    "duration": "Duration",
+    "passengers": "Passengers",
+    "vehicle": "Vehicle",
+    "passengerName": "Passenger Name",
+    "email": "Email",
+    "phone": "Phone",
+    "distance": "Estimated Distance",
+    "baseFare": "Base Fare",
+    "addOns": "Add-ons",
+    "discount": "Promo Discount",
+    "total": "Total",
+    "none": "None"
+  },
+  "recommendation": {
+    "title": "Recommended alternatives"
+  },
+  "benefits": {
+    "dispatch": "24/7 Dispatch",
+    "chauffeurs": "Professional Chauffeurs",
+    "business": "Business & Leisure",
+    "pricing": "Transparent BHD Pricing"
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "defaultContact": "Premium chauffeur experiences."
+  },
+  "placeholders": {
+    "pickup": "Bahrain International Airport",
+    "dropoff": "Seef District, Manama",
+    "hourlyPickup": "Manama City Centre",
+    "flight": "GF 123",
+    "promo": "WELCOME10"
+  },
+  "common": {
+    "select": "Select"
+  }
+}

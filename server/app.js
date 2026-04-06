@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const path = require('path');
 
 const routes = require('./routes');
+const { attachLocale } = require('./middleware/locale');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -33,6 +34,7 @@ app.use(helmet({
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(attachLocale);
 
 app.use('/api', routes);
 

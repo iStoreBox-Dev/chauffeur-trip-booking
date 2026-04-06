@@ -11,8 +11,10 @@ class Booking {
         hourly_duration, passengers, luggage, flight_number,
         vehicle_id, vehicle_snapshot,
         first_name, last_name, email, country_code, phone,
-        special_requests, promo_code, base_price, discount_amount,
-        final_price, distance_km, status, ip_address, source
+        special_requests, add_ons, add_ons_price, promo_code,
+        base_price, discount_amount, final_price, distance_km,
+        language_code, chauffeur_id, payment_provider, payment_status,
+        payment_reference, status, ip_address, source
       ) VALUES (
         $1,$2,$3,
         $4,$5,$6,
@@ -22,7 +24,9 @@ class Booking {
         $18,$19,
         $20,$21,$22,$23,$24,
         $25,$26,$27,$28,
-        $29,$30,$31,$32,$33
+        $29,$30,$31,$32,
+        $33,$34,$35,$36,
+        $37,$38,$39,$40
       ) RETURNING *
     `;
 
@@ -52,11 +56,18 @@ class Booking {
       payload.country_code,
       payload.phone,
       payload.special_requests,
+      JSON.stringify(payload.add_ons || {}),
+      payload.add_ons_price,
       payload.promo_code,
       payload.base_price,
       payload.discount_amount,
       payload.final_price,
       payload.distance_km,
+      payload.language_code || 'en',
+      payload.chauffeur_id || null,
+      payload.payment_provider || null,
+      payload.payment_status || 'pending',
+      payload.payment_reference || null,
       payload.status || 'pending',
       payload.ip_address,
       payload.source || 'web'
@@ -67,7 +78,13 @@ class Booking {
   }
 
   static async findById(id) {
-    const result = await pool.query('SELECT * FROM bookings WHERE id = $1', [id]);
+    const result = await pool.query(
+      `SELECT b.*, c.full_name AS chauffeur_name, c.phone AS chauffeur_phone
+       FROM bookings b
+       LEFT JOIN chauffeurs c ON c.id = b.chauffeur_id
+       WHERE b.id = $1`,
+      [id]
+    );
     return result.rows[0];
   }
 
@@ -97,27 +114,27 @@ class Booking {
 
     if (filters.status) {
       values.push(filters.status);
-      where.push(`status = $${values.length}`);
+      where.push(`b.status = $${values.length}`);
     }
 
     if (filters.search) {
       values.push(`%${filters.search}%`);
       where.push(`(
-        booking_ref ILIKE $${values.length}
-        OR first_name ILIKE $${values.length}
-        OR last_name ILIKE $${values.length}
-        OR email ILIKE $${values.length}
+        b.booking_ref ILIKE $${values.length}
+        OR b.first_name ILIKE $${values.length}
+        OR b.last_name ILIKE $${values.length}
+        OR b.email ILIKE $${values.length}
       )`);
     }
 
     if (filters.date_from) {
       values.push(filters.date_from);
-      where.push(`departure_date >= $${values.length}`);
+      where.push(`b.departure_date >= $${values.length}`);
     }
 
     if (filters.date_to) {
       values.push(filters.date_to);
-      where.push(`departure_date <= $${values.length}`);
+      where.push(`b.departure_date <= $${values.length}`);
     }
 
     const page = Math.max(1, Number(filters.page) || 1);
@@ -132,16 +149,17 @@ class Booking {
     const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
 
     const dataQuery = `
-      SELECT *
-      FROM bookings
+      SELECT b.*, c.full_name AS chauffeur_name, c.phone AS chauffeur_phone
+      FROM bookings b
+      LEFT JOIN chauffeurs c ON c.id = b.chauffeur_id
       ${whereClause}
-      ORDER BY created_at DESC
+      ORDER BY b.created_at DESC
       LIMIT $${limitIdx} OFFSET $${offsetIdx}
     `;
 
     const countQuery = `
       SELECT COUNT(*) AS total
-      FROM bookings
+      FROM bookings b
       ${whereClause}
     `;
 
@@ -171,7 +189,8 @@ class Booking {
       'pickup_location', 'dropoff_location', 'departure_date', 'departure_time',
       'return_date', 'return_time', 'hourly_duration', 'passengers', 'luggage',
       'flight_number', 'first_name', 'last_name', 'email', 'country_code', 'phone',
-      'special_requests', 'status'
+      'special_requests', 'status', 'chauffeur_id', 'add_ons', 'add_ons_price',
+      'language_code', 'payment_provider', 'payment_status', 'payment_reference'
     ];
 
     const keys = Object.keys(fields).filter((key) => allowed.includes(key));
@@ -179,8 +198,10 @@ class Booking {
       return this.findById(id);
     }
 
-    const values = keys.map((key) => fields[key]);
-    const sets = keys.map((key, index) => `${key} = $${index + 1}`).join(', ');
+    const values = keys.map((key) => (key === 'add_ons' ? JSON.stringify(fields[key] || {}) : fields[key]));
+    const sets = keys
+      .map((key, index) => (key === 'add_ons' ? `${key} = $${index + 1}::jsonb` : `${key} = $${index + 1}`))
+      .join(', ');
     values.push(id);
 
     const query = `UPDATE bookings SET ${sets} WHERE id = $${values.length} RETURNING *`;
@@ -211,14 +232,28 @@ class Booking {
 
   static async allForExport() {
     const result = await pool.query(
-      `SELECT booking_ref, service_type, first_name, last_name, email,
-              country_code, phone, pickup_location, dropoff_location,
-              departure_date, departure_time, final_price, status, created_at
-       FROM bookings
-       ORDER BY created_at DESC`
+          `SELECT b.booking_ref, b.service_type, b.first_name, b.last_name, b.email,
+            b.country_code, b.phone, b.pickup_location, b.dropoff_location,
+            b.departure_date, b.departure_time, b.final_price, b.status,
+            c.full_name AS chauffeur_name, b.language_code, b.created_at
+       FROM bookings b
+       LEFT JOIN chauffeurs c ON c.id = b.chauffeur_id
+       ORDER BY b.created_at DESC`
     );
 
     return result.rows;
+  }
+
+  static async updateChauffeur(bookingId, chauffeurId) {
+    const result = await pool.query(
+      `UPDATE bookings
+       SET chauffeur_id = $1
+       WHERE id = $2
+       RETURNING *`,
+      [chauffeurId, bookingId]
+    );
+
+    return result.rows[0];
   }
 }
 
