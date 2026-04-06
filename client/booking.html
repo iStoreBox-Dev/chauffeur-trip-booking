@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Elite Chauffeur Booking</title>
   <meta name="description" content="Book premium chauffeur rides with a seamless luxury experience." />
+  <meta name="keywords" content="chauffeur,bahrain,airport transfer,executive ride" />
+  <meta name="robots" content="index,follow" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -13,26 +15,25 @@
 <body>
   <header class="site-header">
     <div class="header-inner">
-      <a href="/" class="brand">LUXE<span>RIDE</span></a>
+      <a href="/" class="brand" id="brand-name">LUXE<span>RIDE</span></a>
       <nav class="header-nav">
         <a href="#booking">Book</a>
         <a href="#fleet">Fleet</a>
-        <a href="#service">Service</a>
+        <a href="#service">Benefits</a>
         <a href="/admin">Admin</a>
       </nav>
     </div>
   </header>
 
-  <section class="hero">
-    <div class="hero-overlay"></div>
-    <div class="hero-content">
-      <p class="eyebrow">Luxury Chauffeur Services</p>
-      <h1>Move Through Bahrain in Quiet Luxury</h1>
-      <p>Airport transfers, executive travel, and hourly hire with premium comfort.</p>
-    </div>
-  </section>
-
   <main id="booking" class="booking-shell">
+    <section class="booking-intro">
+      <p class="eyebrow" id="intro-tagline">Luxury Chauffeur Services</p>
+      <h1 id="intro-title">Book Your Chauffeur in 4 Simple Steps</h1>
+      <p id="intro-subtitle">Fast booking, accurate routes, and premium comfort with transparent pricing.</p>
+    </section>
+
+    <section id="system-banner" class="warn hidden"></section>
+
     <section class="booking-card">
       <div class="stepper" aria-label="Booking steps">
         <div class="step active" data-step="1"><span>1</span>Trip</div>

@@ -13,8 +13,8 @@
 <body>
   <div class="admin-layout">
     <aside class="admin-side">
-      <h1>LUXERIDE <span>ADMIN</span></h1>
-      <p>Operations cockpit</p>
+      <h1 id="admin-brand-name">LUXERIDE <span>ADMIN</span></h1>
+      <p id="admin-brand-tagline">Operations cockpit</p>
       <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
       <button class="tab-btn" data-tab="bookings">Bookings</button>
       <button class="tab-btn" data-tab="vehicles">Vehicles</button>
@@ -153,9 +153,52 @@
         </section>
 
         <section class="tab-content" id="tab-settings">
-          <div class="note-card">
-            <h3>Environment Check</h3>
-            <p>Ensure these are configured in Heroku Config Vars: DATABASE_URL, JWT_SECRET, JWT_EXPIRES_IN, ADMIN_EMAIL, ADMIN_PASSWORD, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM, WHATSAPP_WEBHOOK_URL, CORS_ORIGIN, NODE_ENV, PORT.</p>
+          <div class="split">
+            <form id="settings-form" class="form-panel">
+              <h3>App Settings</h3>
+              <label>App Name<input name="app_name" required /></label>
+              <label>App Tagline<input name="app_tagline" /></label>
+              <label>Hero Title<input name="hero_title" /></label>
+              <label>Hero Subtitle<textarea name="hero_subtitle" rows="3"></textarea></label>
+              <label>Currency Code<input name="currency_code" maxlength="6" /></label>
+              <label>Primary Color<input name="primary_color" type="color" /></label>
+              <label>Secondary Color<input name="secondary_color" type="color" /></label>
+              <label>Support Email<input name="support_email" type="email" /></label>
+              <label>Support Phone<input name="support_phone" /></label>
+              <label>WhatsApp Number<input name="whatsapp_number" /></label>
+              <label>Maintenance Mode
+                <select name="maintenance_mode">
+                  <option value="false">false</option>
+                  <option value="true">true</option>
+                </select>
+              </label>
+              <label>Booking Enabled
+                <select name="booking_enabled">
+                  <option value="true">true</option>
+                  <option value="false">false</option>
+                </select>
+              </label>
+              <button type="submit">Save App Settings</button>
+              <p id="settings-message"></p>
+            </form>
+
+            <form id="seo-form" class="form-panel">
+              <h3>SEO Settings</h3>
+              <label>SEO Title<input name="seo_title" /></label>
+              <label>SEO Description<textarea name="seo_description" rows="3"></textarea></label>
+              <label>SEO Keywords<input name="seo_keywords" placeholder="comma,separated,keywords" /></label>
+              <label>Indexable
+                <select name="seo_indexable">
+                  <option value="true">true</option>
+                  <option value="false">false</option>
+                </select>
+              </label>
+              <label>Instagram<input name="instagram" /></label>
+              <label>X / Twitter<input name="x" /></label>
+              <label>Facebook<input name="facebook" /></label>
+              <label>LinkedIn<input name="linkedin" /></label>
+              <button type="submit">Save SEO & Social</button>
+            </form>
           </div>
         </section>
       </section>

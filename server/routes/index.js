@@ -2,6 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/authController');
 const bookingController = require('../controllers/bookingController');
+const settingsController = require('../controllers/settingsController');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { sanitizeBody, requireFields, validateBookingPayload } = require('../middleware/validate');
 
@@ -38,6 +39,7 @@ router.post('/auth/login', authLimiter, requireFields(['email', 'password']), au
 router.get('/auth/me', authenticate, authController.me);
 
 router.get('/vehicles', bookingController.listVehicles);
+router.get('/settings', settingsController.getPublicSettings);
 router.get('/vehicles/all', authenticate, requireRole('admin'), bookingController.listAllVehicles);
 router.post('/vehicles', authenticate, requireRole('admin'), bookingController.createVehicle);
 router.put('/vehicles/:id', authenticate, requireRole('admin'), bookingController.updateVehicle);
@@ -63,5 +65,7 @@ router.get('/geo/search', bookingController.geoSearch);
 router.get('/admin/users', authenticate, requireRole('admin'), authController.listUsers);
 router.post('/admin/users', authenticate, requireRole('admin'), authController.createUser);
 router.patch('/admin/users/:id/toggle', authenticate, requireRole('admin'), authController.toggleUser);
+router.get('/admin/settings', authenticate, requireRole('admin'), settingsController.getAdminSettings);
+router.put('/admin/settings', authenticate, requireRole('admin'), settingsController.updateAdminSettings);
 
 module.exports = router;

@@ -9,7 +9,8 @@
     stats: null,
     vehicles: [],
     promos: [],
-    users: []
+    users: [],
+    settings: null
   };
 
   const TOKEN_KEY = 'chauffeur_admin_token';
@@ -30,8 +31,54 @@
     el.style.color = isError ? 'var(--err)' : 'var(--ok)';
   }
 
+  function setSettingsMessage(msg, isError) {
+    const el = qs('#settings-message');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = isError ? 'var(--err)' : 'var(--ok)';
+  }
+
   function money(v) {
-    return `BHD ${Number(v || 0).toFixed(3)}`;
+    const currency = state.settings?.currency_code || 'BHD';
+    return `${currency} ${Number(v || 0).toFixed(3)}`;
+  }
+
+  function toRgbTuple(hex) {
+    if (!hex || typeof hex !== 'string') return null;
+    const safe = hex.trim().replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(safe)) return null;
+    const r = parseInt(safe.slice(0, 2), 16);
+    const g = parseInt(safe.slice(2, 4), 16);
+    const b = parseInt(safe.slice(4, 6), 16);
+    return `${r}, ${g}, ${b}`;
+  }
+
+  function applyAdminTheme(settings) {
+    const root = document.documentElement;
+
+    if (settings.primary_color) {
+      root.style.setProperty('--accent', settings.primary_color);
+      const rgb = toRgbTuple(settings.primary_color);
+      if (rgb) root.style.setProperty('--accent-rgb', rgb);
+    }
+    if (settings.secondary_color) {
+      root.style.setProperty('--accent-2', settings.secondary_color);
+      const rgb = toRgbTuple(settings.secondary_color);
+      if (rgb) root.style.setProperty('--accent-2-rgb', rgb);
+    }
+
+    const appName = settings.app_name || 'LUXERIDE';
+    document.title = `${appName} Admin Control Center`;
+
+    const brandName = qs('#admin-brand-name');
+    if (brandName) {
+      brandName.innerHTML = `${appName} <span>ADMIN</span>`;
+    }
+
+    const brandTagline = qs('#admin-brand-tagline');
+    if (brandTagline) {
+      brandTagline.textContent = settings.app_tagline || 'Operations cockpit';
+    }
   }
 
   function activateTab(tab) {
@@ -267,8 +314,107 @@
     renderUsers();
   }
 
+  function fillSettingsForms(settings) {
+    const appForm = qs('#settings-form');
+    const seoForm = qs('#seo-form');
+    if (!appForm || !seoForm) return;
+
+    appForm.app_name.value = settings.app_name || '';
+    appForm.app_tagline.value = settings.app_tagline || '';
+    appForm.hero_title.value = settings.hero_title || '';
+    appForm.hero_subtitle.value = settings.hero_subtitle || '';
+    appForm.currency_code.value = settings.currency_code || 'BHD';
+    appForm.primary_color.value = settings.primary_color || '#ffd27d';
+    appForm.secondary_color.value = settings.secondary_color || '#0d1622';
+    appForm.support_email.value = settings.support_email || '';
+    appForm.support_phone.value = settings.support_phone || '';
+    appForm.whatsapp_number.value = settings.whatsapp_number || '';
+    appForm.maintenance_mode.value = String(Boolean(settings.maintenance_mode));
+    appForm.booking_enabled.value = String(Boolean(settings.booking_enabled));
+
+    seoForm.seo_title.value = settings.seo_title || '';
+    seoForm.seo_description.value = settings.seo_description || '';
+    seoForm.seo_keywords.value = settings.seo_keywords || '';
+    seoForm.seo_indexable.value = String(Boolean(settings.seo_indexable));
+    seoForm.instagram.value = settings.social_links?.instagram || '';
+    seoForm.x.value = settings.social_links?.x || '';
+    seoForm.facebook.value = settings.social_links?.facebook || '';
+    seoForm.linkedin.value = settings.social_links?.linkedin || '';
+  }
+
+  async function loadSettings() {
+    const data = await request('/api/admin/settings', { headers: authHeaders() });
+    state.settings = data.settings || null;
+    if (state.settings) {
+      fillSettingsForms(state.settings);
+      applyAdminTheme(state.settings);
+      renderDashboard();
+      renderBookings();
+      renderVehicles();
+      renderPromos();
+    }
+  }
+
+  function settingsPayloadFromAppForm(form) {
+    return {
+      app_name: form.app_name.value.trim(),
+      app_tagline: form.app_tagline.value.trim(),
+      hero_title: form.hero_title.value.trim(),
+      hero_subtitle: form.hero_subtitle.value.trim(),
+      currency_code: form.currency_code.value.trim() || 'BHD',
+      primary_color: form.primary_color.value,
+      secondary_color: form.secondary_color.value,
+      support_email: form.support_email.value.trim(),
+      support_phone: form.support_phone.value.trim(),
+      whatsapp_number: form.whatsapp_number.value.trim(),
+      maintenance_mode: form.maintenance_mode.value === 'true',
+      booking_enabled: form.booking_enabled.value === 'true'
+    };
+  }
+
+  async function saveAppSettings(event) {
+    event.preventDefault();
+    const payload = settingsPayloadFromAppForm(event.currentTarget);
+
+    await request('/api/admin/settings', {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+
+    setSettingsMessage('App settings saved.', false);
+    await loadSettings();
+  }
+
+  async function saveSeoSettings(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    const payload = {
+      seo_title: form.seo_title.value.trim(),
+      seo_description: form.seo_description.value.trim(),
+      seo_keywords: form.seo_keywords.value.trim(),
+      seo_indexable: form.seo_indexable.value === 'true',
+      social_links: {
+        instagram: form.instagram.value.trim(),
+        x: form.x.value.trim(),
+        facebook: form.facebook.value.trim(),
+        linkedin: form.linkedin.value.trim()
+      }
+    };
+
+    await request('/api/admin/settings', {
+      method: 'PUT',
+      headers: authHeaders(),
+      body: JSON.stringify(payload)
+    });
+
+    setSettingsMessage('SEO settings saved.', false);
+    await loadSettings();
+  }
+
   async function refreshAll() {
-    await Promise.all([loadStats(), loadBookings(), loadVehicles(), loadPromos(), loadUsers()]);
+    await Promise.all([loadStats(), loadBookings(), loadVehicles(), loadPromos(), loadUsers(), loadSettings()]);
   }
 
   async function updateBookingStatus(id, status) {
@@ -392,6 +538,8 @@
     qs('#vehicle-form').addEventListener('submit', createVehicle);
     qs('#promo-form').addEventListener('submit', createPromo);
     qs('#user-form').addEventListener('submit', createUser);
+    qs('#settings-form').addEventListener('submit', saveAppSettings);
+    qs('#seo-form').addEventListener('submit', saveSeoSettings);
   }
 
   bindEvents();

@@ -16,7 +16,9 @@
       pickup: null,
       dropoff: null,
       hourly: null
-    }
+    },
+    settings: null,
+    currencyCode: 'BHD'
   };
 
   const refs = {
@@ -33,7 +35,80 @@
   }
 
   function money(value) {
-    return `BHD ${Number(value || 0).toFixed(3)}`;
+    return `${state.currencyCode} ${Number(value || 0).toFixed(3)}`;
+  }
+
+  function toRgbTuple(hex) {
+    if (!hex || typeof hex !== 'string') return null;
+    const safe = hex.trim().replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(safe)) return null;
+    const r = parseInt(safe.slice(0, 2), 16);
+    const g = parseInt(safe.slice(2, 4), 16);
+    const b = parseInt(safe.slice(4, 6), 16);
+    return `${r}, ${g}, ${b}`;
+  }
+
+  function applySettings(settings) {
+    state.settings = settings;
+    state.currencyCode = settings.currency_code || 'BHD';
+
+    const root = document.documentElement;
+    if (settings.primary_color) {
+      root.style.setProperty('--accent', settings.primary_color);
+      const rgb = toRgbTuple(settings.primary_color);
+      if (rgb) root.style.setProperty('--accent-rgb', rgb);
+    }
+    if (settings.secondary_color) {
+      root.style.setProperty('--accent-2', settings.secondary_color);
+      const rgb = toRgbTuple(settings.secondary_color);
+      if (rgb) root.style.setProperty('--accent-2-rgb', rgb);
+    }
+
+    document.title = settings.seo_title || `${settings.app_name || 'Booking'} | Chauffeur`;
+    const metaDescription = qs('meta[name="description"]');
+    const metaKeywords = qs('meta[name="keywords"]');
+    const metaRobots = qs('meta[name="robots"]');
+    if (metaDescription) metaDescription.setAttribute('content', settings.seo_description || '');
+    if (metaKeywords) metaKeywords.setAttribute('content', settings.seo_keywords || '');
+    if (metaRobots) metaRobots.setAttribute('content', settings.seo_indexable ? 'index,follow' : 'noindex,nofollow');
+
+    const brand = qs('#brand-name');
+    if (brand && settings.app_name) {
+      brand.textContent = settings.app_name;
+    }
+
+    const introTagline = qs('#intro-tagline');
+    const introTitle = qs('#intro-title');
+    const introSubtitle = qs('#intro-subtitle');
+    if (introTagline) introTagline.textContent = settings.app_tagline || 'Luxury Chauffeur Services';
+    if (introTitle) introTitle.textContent = settings.hero_title || 'Book Your Chauffeur in 4 Simple Steps';
+    if (introSubtitle) introSubtitle.textContent = settings.hero_subtitle || 'Fast booking, accurate routes, and premium comfort with transparent pricing.';
+
+    const banner = qs('#system-banner');
+    if (banner) {
+      if (settings.maintenance_mode) {
+        banner.textContent = 'The service is currently in maintenance mode. Please try again shortly.';
+        banner.classList.remove('hidden');
+      } else if (!settings.booking_enabled) {
+        banner.textContent = 'Booking is temporarily disabled. Please contact support.';
+        banner.classList.remove('hidden');
+      } else {
+        banner.textContent = '';
+        banner.classList.add('hidden');
+      }
+    }
+  }
+
+  async function loadSettings() {
+    try {
+      const res = await fetch('/api/settings');
+      const data = await res.json();
+      if (res.ok && data.settings) {
+        applySettings(data.settings);
+      }
+    } catch (_error) {
+      // Keep defaults when settings API is unavailable.
+    }
   }
 
   function imageForCategory(category) {
@@ -282,6 +357,11 @@
   }
 
   async function submitBooking() {
+    if (state.settings?.maintenance_mode || state.settings?.booking_enabled === false) {
+      setMessage('Booking is currently unavailable. Please contact support.', 'error');
+      return;
+    }
+
     if (!validateStep(4)) return;
 
     const submitBtn = qs('#submit-btn');
@@ -396,6 +476,7 @@
     bindGeoAutocomplete('hourly-pickup', 'hourly-suggestions', 'hourly');
     initMinDates();
     loadVehicles();
+    loadSettings();
   }
 
   init();
