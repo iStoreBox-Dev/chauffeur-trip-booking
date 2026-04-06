@@ -10,9 +10,9 @@
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/admin.css" />
 </head>
-<body>
-  <div class="admin-layout">
-    <aside class="admin-side">
+<body class="admin-auth-locked">
+  <div class="admin-layout" id="admin-layout">
+    <aside class="admin-side" id="admin-side">
       <h1 id="admin-brand-name">LUXERIDE <span>ADMIN</span></h1>
       <p id="admin-brand-tagline">Operations cockpit</p>
       <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
@@ -202,6 +202,13 @@
           </div>
         </section>
       </section>
+
+      <footer class="app-footer">
+        <div class="footer-inner">
+          <p>© <span id="admin-footer-year"></span> <span id="admin-footer-brand">LUXERIDE</span>. Control Center.</p>
+          <p>Secure operations portal</p>
+        </div>
+      </footer>
     </main>
   </div>
 

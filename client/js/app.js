@@ -18,12 +18,14 @@
       hourly: null
     },
     settings: null,
-    currencyCode: 'BHD'
+    currencyCode: 'BHD',
+    appliedPromo: null
   };
 
   const refs = {
     message: document.getElementById('form-message'),
-    vehicleGrid: document.getElementById('vehicle-grid')
+    vehicleGrid: document.getElementById('vehicle-grid'),
+    promoMessage: document.getElementById('promo-message')
   };
 
   function qs(selector, ctx = document) { return ctx.querySelector(selector); }
@@ -32,6 +34,12 @@
   function setMessage(text, type) {
     refs.message.textContent = text || '';
     refs.message.style.color = type === 'error' ? 'var(--err)' : type === 'ok' ? 'var(--ok)' : 'var(--muted)';
+  }
+
+  function setPromoMessage(text, type) {
+    if (!refs.promoMessage) return;
+    refs.promoMessage.textContent = text || '';
+    refs.promoMessage.style.color = type === 'error' ? 'var(--err)' : type === 'ok' ? 'var(--ok)' : 'var(--muted)';
   }
 
   function money(value) {
@@ -83,6 +91,14 @@
     if (introTagline) introTagline.textContent = settings.app_tagline || 'Luxury Chauffeur Services';
     if (introTitle) introTitle.textContent = settings.hero_title || 'Book Your Chauffeur in 4 Simple Steps';
     if (introSubtitle) introSubtitle.textContent = settings.hero_subtitle || 'Fast booking, accurate routes, and premium comfort with transparent pricing.';
+
+    const footerBrand = qs('#footer-brand');
+    const footerContact = qs('#footer-contact');
+    if (footerBrand && settings.app_name) footerBrand.textContent = settings.app_name;
+    if (footerContact) {
+      const contactBits = [settings.support_phone, settings.support_email].filter(Boolean);
+      footerContact.textContent = contactBits.length ? `Contact: ${contactBits.join(' • ')}` : 'Premium chauffeur experiences.';
+    }
 
     const banner = qs('#system-banner');
     if (banner) {
@@ -266,6 +282,18 @@
     return state.transferType === 'roundtrip' ? base * 1.9 : base;
   }
 
+  function getDiscountAmount(base) {
+    if (!state.appliedPromo) return 0;
+    if (state.appliedPromo.discount_type === 'percent') {
+      return Number((base * (Number(state.appliedPromo.discount_value) / 100)).toFixed(3));
+    }
+    return Number(Number(state.appliedPromo.discount_value || 0).toFixed(3));
+  }
+
+  function finalPrice(base) {
+    return Number(Math.max(0, base - getDiscountAmount(base)).toFixed(3));
+  }
+
   function renderSummary() {
     const rows = [];
 
@@ -295,9 +323,15 @@
     rows.push(['Email', qs('#email').value]);
     rows.push(['Phone', `${qs('#country-code').value} ${qs('#phone').value}`]);
 
+    const base = estimatePrice();
+    const discount = getDiscountAmount(base);
+    const total = finalPrice(base);
+    rows.push(['Estimated Base', money(base)]);
+    rows.push(['Promo Discount', discount > 0 ? `- ${money(discount)}` : '—']);
+
     const summaryHtml = rows.map(([k, v]) => `<div class="summary-item"><span>${k}</span><strong>${v || '—'}</strong></div>`).join('');
     qs('#summary-box').innerHTML = summaryHtml;
-    qs('#price-preview').textContent = money(estimatePrice());
+    qs('#price-preview').textContent = money(total);
   }
 
   function bookingPayload() {
@@ -309,7 +343,7 @@
       country_code: qs('#country-code').value,
       phone: qs('#phone').value.trim(),
       special_requests: qs('#special-requests').value.trim() || null,
-      promo_code: null,
+      promo_code: state.appliedPromo?.code || null,
       source: 'web'
     };
 
@@ -391,6 +425,58 @@
     }
   }
 
+  async function applyPromoCode() {
+    const input = qs('#promo-code');
+    const code = input?.value.trim().toUpperCase();
+    if (!code) {
+      setPromoMessage('Enter a promo code first.', 'error');
+      return;
+    }
+
+    const base = estimatePrice();
+    if (!base) {
+      setPromoMessage('Select trip and vehicle details before applying promo.', 'error');
+      return;
+    }
+
+    const btn = qs('#apply-promo-btn');
+    btn.disabled = true;
+    btn.textContent = 'Applying...';
+
+    try {
+      const res = await fetch('/api/promo/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, amount: base })
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.valid) {
+        state.appliedPromo = null;
+        setPromoMessage(data.error || 'Promo code is not valid.', 'error');
+        renderSummary();
+        return;
+      }
+
+      state.appliedPromo = data.promo;
+      setPromoMessage(`Promo ${data.promo.code} applied successfully.`, 'ok');
+      renderSummary();
+    } catch (_error) {
+      setPromoMessage('Could not validate promo right now. Please try again.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Apply';
+    }
+  }
+
+  function removePromoCode() {
+    state.appliedPromo = null;
+    const input = qs('#promo-code');
+    if (input) input.value = '';
+    setPromoMessage('Promo code removed.', 'neutral');
+    renderSummary();
+  }
+
   function debounce(fn, wait) {
     let timeout;
     return (...args) => {
@@ -459,6 +545,8 @@
     });
 
     qs('#submit-btn').addEventListener('click', submitBooking);
+    qs('#apply-promo-btn').addEventListener('click', applyPromoCode);
+    qs('#remove-promo-btn').addEventListener('click', removePromoCode);
   }
 
   function initMinDates() {
@@ -477,6 +565,8 @@
     initMinDates();
     loadVehicles();
     loadSettings();
+    const year = qs('#footer-year');
+    if (year) year.textContent = String(new Date().getFullYear());
   }
 
   init();

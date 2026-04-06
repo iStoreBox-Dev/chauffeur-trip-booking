@@ -18,6 +18,14 @@
   function qs(s, ctx = document) { return ctx.querySelector(s); }
   function qsa(s, ctx = document) { return Array.from(ctx.querySelectorAll(s)); }
 
+  function setAuthView(isAuthenticated) {
+    document.body.classList.toggle('admin-auth-locked', !isAuthenticated);
+    const loginCard = qs('#login-card');
+    const appShell = qs('#app-shell');
+    if (loginCard) loginCard.hidden = isAuthenticated;
+    if (appShell) appShell.hidden = !isAuthenticated;
+  }
+
   function authHeaders() {
     return {
       Authorization: `Bearer ${state.token}`,
@@ -79,6 +87,9 @@
     if (brandTagline) {
       brandTagline.textContent = settings.app_tagline || 'Operations cockpit';
     }
+
+    const footerBrand = qs('#admin-footer-brand');
+    if (footerBrand) footerBrand.textContent = appName;
   }
 
   function activateTab(tab) {
@@ -112,8 +123,7 @@
       state.user = data.user;
       localStorage.setItem(TOKEN_KEY, state.token);
       setLoginMessage('Login successful.', false);
-      qs('#login-card').hidden = true;
-      qs('#app-shell').hidden = false;
+      setAuthView(true);
       qs('#whoami').textContent = `${state.user.full_name} (${state.user.role})`;
       await refreshAll();
     } catch (error) {
@@ -125,6 +135,7 @@
     state.token = '';
     state.user = null;
     localStorage.removeItem(TOKEN_KEY);
+    setAuthView(false);
     location.reload();
   }
 
@@ -136,14 +147,14 @@
       state.token = saved;
       const data = await request('/api/auth/me', { headers: authHeaders() });
       state.user = data.user;
-      qs('#login-card').hidden = true;
-      qs('#app-shell').hidden = false;
+      setAuthView(true);
       qs('#whoami').textContent = `${state.user.full_name} (${state.user.role})`;
       await refreshAll();
     } catch (_error) {
       localStorage.removeItem(TOKEN_KEY);
       state.token = '';
       state.user = null;
+      setAuthView(false);
     }
   }
 
@@ -543,5 +554,8 @@
   }
 
   bindEvents();
+  setAuthView(false);
+  const footerYear = qs('#admin-footer-year');
+  if (footerYear) footerYear.textContent = String(new Date().getFullYear());
   restoreSession();
 })();

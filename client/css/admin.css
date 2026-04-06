@@ -7,6 +7,25 @@
     radial-gradient(760px 500px at 110% -5%, rgba(var(--accent-2-rgb), 0.12), transparent 60%);
 }
 
+.admin-auth-locked .admin-layout {
+  grid-template-columns: 1fr;
+}
+
+.admin-auth-locked .admin-side {
+  display: none;
+}
+
+.admin-auth-locked .admin-main {
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+}
+
+.admin-auth-locked .app-footer {
+  width: min(680px, 100%);
+}
+
 .admin-side {
   border-right: 1px solid #cfe0f2;
   background: rgba(255, 255, 255, 0.82);

@@ -152,6 +152,16 @@
       <section class="form-step hidden" id="step-4">
         <h2>Confirm Booking</h2>
         <div class="summary" id="summary-box"></div>
+        <div class="promo-row">
+          <label class="field promo-field">Promo Code
+            <input id="promo-code" type="text" placeholder="WELCOME10" />
+          </label>
+          <div class="promo-actions">
+            <button class="btn" id="apply-promo-btn" type="button">Apply</button>
+            <button class="btn" id="remove-promo-btn" type="button">Remove</button>
+          </div>
+        </div>
+        <p id="promo-message" class="subtext"></p>
         <div class="confirm-row">
           <label><input id="terms" type="checkbox" /> I agree to terms and privacy policy</label>
           <strong id="price-preview">BHD 0.000</strong>
@@ -180,6 +190,13 @@
     <div>Business & Leisure</div>
     <div>Transparent BHD Pricing</div>
   </section>
+
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <p>© <span id="footer-year"></span> <span id="footer-brand">LUXERIDE</span>. All rights reserved.</p>
+      <p id="footer-contact">Premium chauffeur experiences.</p>
+    </div>
+  </footer>
 
   <script src="/js/app.js" defer></script>
 </body>
