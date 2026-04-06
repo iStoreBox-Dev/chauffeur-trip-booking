@@ -3,108 +3,181 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chauffeur Booking</title>
+  <title>Elite Chauffeur Booking</title>
+  <meta name="description" content="Book premium chauffeur rides with a seamless luxury experience." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
-  <main class="wrap">
-    <h1>Book Your Chauffeur</h1>
-    <p class="sub">Premium transfers and hourly rides across Bahrain and GCC.</p>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="/" class="brand">LUXE<span>RIDE</span></a>
+      <nav class="header-nav">
+        <a href="#booking">Book</a>
+        <a href="#fleet">Fleet</a>
+        <a href="#service">Service</a>
+        <a href="/admin">Admin</a>
+      </nav>
+    </div>
+  </header>
 
-    <form id="booking-form" class="card">
-      <div class="grid">
-        <label>Service Type
-          <select name="service_type" required>
-            <option value="trip">Trip</option>
-            <option value="hourly">Hourly</option>
-          </select>
-        </label>
+  <section class="hero">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <p class="eyebrow">Luxury Chauffeur Services</p>
+      <h1>Move Through Bahrain in Quiet Luxury</h1>
+      <p>Airport transfers, executive travel, and hourly hire with premium comfort.</p>
+    </div>
+  </section>
 
-        <label>Transfer Type
-          <select name="transfer_type">
-            <option value="oneway">One Way</option>
-            <option value="roundtrip">Round Trip</option>
-          </select>
-        </label>
-
-        <label>Pickup Location
-          <input type="text" id="pickup" name="pickup_location" required />
-        </label>
-
-        <label>Dropoff Location
-          <input type="text" id="dropoff" name="dropoff_location" />
-        </label>
-
-        <label>Departure Date
-          <input type="date" name="departure_date" required />
-        </label>
-
-        <label>Departure Time
-          <input type="time" name="departure_time" required />
-        </label>
-
-        <label>Hourly Duration
-          <input type="number" name="hourly_duration" min="2" max="12" />
-        </label>
-
-        <label>Passengers
-          <input type="number" name="passengers" min="1" max="8" required />
-        </label>
-
-        <label>Luggage
-          <input type="number" name="luggage" min="0" max="8" value="0" />
-        </label>
-
-        <label>Vehicle
-          <select id="vehicle-select" name="vehicle_id" required></select>
-        </label>
-
-        <label>Promo Code
-          <input type="text" name="promo_code" />
-        </label>
-
-        <label>First Name
-          <input type="text" name="first_name" required />
-        </label>
-
-        <label>Last Name
-          <input type="text" name="last_name" required />
-        </label>
-
-        <label>Email
-          <input type="email" name="email" required />
-        </label>
-
-        <label>Country Code
-          <select name="country_code" required>
-            <option value="+973">+973</option>
-            <option value="+966">+966</option>
-            <option value="+971">+971</option>
-            <option value="+974">+974</option>
-            <option value="+965">+965</option>
-            <option value="+968">+968</option>
-          </select>
-        </label>
-
-        <label>Phone
-          <input type="text" name="phone" required />
-        </label>
-
-        <label class="full">Special Requests
-          <textarea name="special_requests" rows="3"></textarea>
-        </label>
+  <main id="booking" class="booking-shell">
+    <section class="booking-card">
+      <div class="stepper" aria-label="Booking steps">
+        <div class="step active" data-step="1"><span>1</span>Trip</div>
+        <div class="line"></div>
+        <div class="step" data-step="2"><span>2</span>Vehicle</div>
+        <div class="line"></div>
+        <div class="step" data-step="3"><span>3</span>Details</div>
+        <div class="line"></div>
+        <div class="step" data-step="4"><span>4</span>Confirm</div>
       </div>
 
-      <button type="submit">Submit Booking</button>
-      <p id="result"></p>
-    </form>
+      <section class="form-step" id="step-1">
+        <h2>Trip Details</h2>
+        <div class="service-tabs">
+          <button class="service-btn active" data-service="trip" type="button">Transfer</button>
+          <button class="service-btn" data-service="hourly" type="button">Hourly</button>
+        </div>
 
-    <section class="card">
-      <h2>Location Autocomplete</h2>
-      <p class="hint">Start typing pickup or dropoff and select suggested OSM location.</p>
-      <ul id="geo-results"></ul>
+        <div id="trip-panel" class="service-panel active">
+          <div class="toggle-row">
+            <label><input type="radio" name="transferType" value="oneway" checked /> One Way</label>
+            <label><input type="radio" name="transferType" value="roundtrip" /> Round Trip</label>
+          </div>
+
+          <div class="grid-2">
+            <label class="field full">Pickup Location
+              <input id="pickup-location" type="text" placeholder="Bahrain International Airport" required />
+              <ul class="geo-list" id="pickup-suggestions"></ul>
+            </label>
+            <label class="field full">Dropoff Location
+              <input id="dropoff-location" type="text" placeholder="Seef District, Manama" required />
+              <ul class="geo-list" id="dropoff-suggestions"></ul>
+            </label>
+            <label class="field">Departure Date<input id="departure-date" type="date" required /></label>
+            <label class="field">Departure Time<input id="departure-time" type="time" required /></label>
+            <label class="field return-only hidden">Return Date<input id="return-date" type="date" /></label>
+            <label class="field return-only hidden">Return Time<input id="return-time" type="time" /></label>
+            <label class="field">Passengers
+              <select id="passengers" required>
+                <option value="">Select</option>
+                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+                <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+              </select>
+            </label>
+            <label class="field">Luggage
+              <select id="luggage">
+                <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4+</option>
+              </select>
+            </label>
+            <label class="field full">Flight Number<input id="flight-number" type="text" placeholder="GF 123" /></label>
+          </div>
+        </div>
+
+        <div id="hourly-panel" class="service-panel">
+          <div class="grid-2">
+            <label class="field full">Pickup Location
+              <input id="hourly-pickup" type="text" placeholder="Manama City Centre" />
+              <ul class="geo-list" id="hourly-suggestions"></ul>
+            </label>
+            <label class="field">Date<input id="hourly-date" type="date" /></label>
+            <label class="field">Start Time<input id="hourly-time" type="time" /></label>
+            <label class="field">Duration
+              <select id="hourly-duration">
+                <option value="">Select</option>
+                <option value="2">2 Hours</option><option value="3">3 Hours</option><option value="4">4 Hours</option>
+                <option value="5">5 Hours</option><option value="6">6 Hours</option><option value="8">8 Hours</option>
+                <option value="10">10 Hours</option><option value="12">12 Hours</option>
+              </select>
+            </label>
+            <label class="field">Passengers
+              <select id="hourly-passengers">
+                <option value="">Select</option>
+                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+                <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="actions right"><button class="btn gold" type="button" data-next="2">Continue</button></div>
+      </section>
+
+      <section class="form-step hidden" id="step-2">
+        <h2 id="fleet">Choose Vehicle</h2>
+        <p class="subtext">Select from our premium fleet.</p>
+        <div id="vehicle-grid" class="vehicle-grid"></div>
+        <p id="vehicle-warning" class="warn hidden">Selected vehicle may not fit passenger count.</p>
+        <div class="actions">
+          <button class="btn" type="button" data-prev="1">Back</button>
+          <button class="btn gold" type="button" data-next="3">Continue</button>
+        </div>
+      </section>
+
+      <section class="form-step hidden" id="step-3">
+        <h2>Contact Details</h2>
+        <div class="grid-2">
+          <label class="field">First Name<input id="first-name" type="text" required /></label>
+          <label class="field">Last Name<input id="last-name" type="text" required /></label>
+          <label class="field full">Email<input id="email" type="email" required /></label>
+          <label class="field">Country Code
+            <select id="country-code">
+              <option value="+973">+973</option><option value="+966">+966</option><option value="+971">+971</option>
+              <option value="+974">+974</option><option value="+965">+965</option><option value="+968">+968</option>
+            </select>
+          </label>
+          <label class="field">Phone<input id="phone" type="tel" required /></label>
+          <label class="field full">Special Requests<textarea id="special-requests" rows="3"></textarea></label>
+        </div>
+        <div class="actions">
+          <button class="btn" type="button" data-prev="2">Back</button>
+          <button class="btn gold" type="button" data-next="4">Review</button>
+        </div>
+      </section>
+
+      <section class="form-step hidden" id="step-4">
+        <h2>Confirm Booking</h2>
+        <div class="summary" id="summary-box"></div>
+        <div class="confirm-row">
+          <label><input id="terms" type="checkbox" /> I agree to terms and privacy policy</label>
+          <strong id="price-preview">BHD 0.000</strong>
+        </div>
+        <div class="actions">
+          <button class="btn" type="button" data-prev="3">Back</button>
+          <button class="btn gold" id="submit-btn" type="button">Confirm Booking</button>
+        </div>
+        <p id="form-message"></p>
+      </section>
+
+      <section class="form-step hidden" id="step-5">
+        <div class="success">
+          <h2>Booking Submitted</h2>
+          <p>Your request has been received. We will contact you soon.</p>
+          <p>Reference: <strong id="booking-ref"></strong></p>
+          <button class="btn gold" onclick="window.location.reload()">Create New Booking</button>
+        </div>
+      </section>
     </section>
   </main>
+
+  <section id="service" class="service-strip">
+    <div>24/7 Dispatch</div>
+    <div>Professional Chauffeurs</div>
+    <div>Business & Leisure</div>
+    <div>Transparent BHD Pricing</div>
+  </section>
 
   <script src="/js/app.js" defer></script>
 </body>

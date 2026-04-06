@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Economy Sedan">
+  <defs>
+    <linearGradient id="g1" x1="0" x2="1">
+      <stop offset="0" stop-color="#d6c08a"/>
+      <stop offset="1" stop-color="#8c7137"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="#121218"/>
+  <rect x="0" y="255" width="640" height="105" fill="#0f0f13"/>
+  <path d="M95 236h446l24-40-72-68H250l-80 24-75 84z" fill="#23232d" stroke="url(#g1)" stroke-width="4"/>
+  <path d="M215 140h92v58h-136l44-47zM324 140h138l52 58H324z" fill="#1b1f2b"/>
+  <circle cx="190" cy="244" r="46" fill="#101014" stroke="#dbc27d" stroke-width="6"/>
+  <circle cx="465" cy="244" r="46" fill="#101014" stroke="#dbc27d" stroke-width="6"/>
+  <circle cx="190" cy="244" r="18" fill="#444454"/>
+  <circle cx="465" cy="244" r="18" fill="#444454"/>
+</svg>

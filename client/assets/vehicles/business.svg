@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Business Class Sedan">
+  <defs><linearGradient id="g2" x1="0" x2="1"><stop offset="0" stop-color="#f3d591"/><stop offset="1" stop-color="#ab8137"/></linearGradient></defs>
+  <rect width="640" height="360" fill="#0f1115"/>
+  <rect x="0" y="258" width="640" height="102" fill="#0b0d11"/>
+  <path d="M76 238h486l35-45-95-78H248l-98 30-74 93z" fill="#1f2632" stroke="url(#g2)" stroke-width="4"/>
+  <path d="M214 128h116v60H162l52-60zM346 128h145l57 60H346z" fill="#151f2f"/>
+  <circle cx="198" cy="248" r="48" fill="#0f1013" stroke="#e4c574" stroke-width="6"/>
+  <circle cx="478" cy="248" r="48" fill="#0f1013" stroke="#e4c574" stroke-width="6"/>
+  <circle cx="198" cy="248" r="18" fill="#525264"/>
+  <circle cx="478" cy="248" r="18" fill="#525264"/>
+</svg>

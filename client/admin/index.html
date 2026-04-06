@@ -3,49 +3,160 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Portal</title>
+  <title>LUXERIDE Admin Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/admin.css" />
 </head>
 <body>
-  <main class="wrap admin-wrap">
-    <section class="card">
-      <h1>Admin Login</h1>
-      <form id="login-form" class="grid">
-        <label>Email
-          <input name="email" type="email" required />
-        </label>
-        <label>Password
-          <input name="password" type="password" required />
-        </label>
-        <button type="submit">Login</button>
-      </form>
-      <p id="login-result"></p>
-    </section>
+  <div class="admin-layout">
+    <aside class="admin-side">
+      <h1>LUXERIDE <span>ADMIN</span></h1>
+      <p>Operations cockpit</p>
+      <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+      <button class="tab-btn" data-tab="bookings">Bookings</button>
+      <button class="tab-btn" data-tab="vehicles">Vehicles</button>
+      <button class="tab-btn" data-tab="promos">Promos</button>
+      <button class="tab-btn" data-tab="users">Users</button>
+      <button class="tab-btn" data-tab="settings">Settings</button>
+    </aside>
 
-    <section class="card" id="dashboard" hidden>
-      <h2>Bookings Dashboard</h2>
-      <div class="toolbar">
-        <button id="load-bookings">Refresh Bookings</button>
-        <button id="load-stats">Refresh Stats</button>
-      </div>
-      <pre id="stats-box"></pre>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Ref</th>
-              <th>Name</th>
-              <th>Service</th>
-              <th>Price</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="bookings-body"></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
+    <main class="admin-main">
+      <section class="login-card" id="login-card">
+        <h2>Secure Login</h2>
+        <form id="login-form" class="form-grid">
+          <label>Email<input name="email" type="email" required /></label>
+          <label>Password<input name="password" type="password" required /></label>
+          <button type="submit">Login</button>
+        </form>
+        <p id="login-message"></p>
+      </section>
+
+      <section id="app-shell" hidden>
+        <header class="topbar">
+          <div>
+            <h2 id="tab-title">Dashboard</h2>
+            <p id="whoami">Loading user...</p>
+          </div>
+          <div class="top-actions">
+            <button id="btn-export">Export CSV</button>
+            <button id="btn-refresh">Refresh</button>
+            <button id="btn-logout" class="danger">Logout</button>
+          </div>
+        </header>
+
+        <section class="tab-content active" id="tab-dashboard">
+          <div class="kpi-grid">
+            <article><h3>Total Bookings</h3><strong id="kpi-total">0</strong></article>
+            <article><h3>Pending</h3><strong id="kpi-pending">0</strong></article>
+            <article><h3>Confirmed</h3><strong id="kpi-confirmed">0</strong></article>
+            <article><h3>Today</h3><strong id="kpi-today">0</strong></article>
+            <article><h3>Revenue</h3><strong id="kpi-revenue">BHD 0.000</strong></article>
+          </div>
+          <div class="chart-box">
+            <h3>Status Mix</h3>
+            <div id="status-mix"></div>
+          </div>
+        </section>
+
+        <section class="tab-content" id="tab-bookings">
+          <div class="filters">
+            <input id="search-bookings" placeholder="Search ref/name/email" />
+            <select id="status-filter">
+              <option value="">All statuses</option>
+              <option value="pending">pending</option>
+              <option value="confirmed">confirmed</option>
+              <option value="completed">completed</option>
+              <option value="cancelled">cancelled</option>
+              <option value="rejected">rejected</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ref</th><th>Name</th><th>Service</th><th>Pickup</th><th>Date</th><th>Price</th><th>Status</th><th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="bookings-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="tab-content" id="tab-vehicles">
+          <div class="split">
+            <form id="vehicle-form" class="form-panel">
+              <h3>Create Vehicle</h3>
+              <label>Name<input name="name" required /></label>
+              <label>Model<input name="model" required /></label>
+              <label>Category
+                <select name="category" required>
+                  <option value="economy">economy</option>
+                  <option value="business">business</option>
+                  <option value="suv">suv</option>
+                  <option value="van">van</option>
+                </select>
+              </label>
+              <label>Capacity<input name="capacity" type="number" min="1" max="12" required /></label>
+              <label>Base Price (BHD)<input name="base_price" type="number" step="0.001" required /></label>
+              <label>Features (comma separated)<input name="features" /></label>
+              <button type="submit">Add Vehicle</button>
+            </form>
+            <div class="list-panel" id="vehicle-list"></div>
+          </div>
+        </section>
+
+        <section class="tab-content" id="tab-promos">
+          <div class="split">
+            <form id="promo-form" class="form-panel">
+              <h3>Create Promo</h3>
+              <label>Code<input name="code" required /></label>
+              <label>Type
+                <select name="discount_type">
+                  <option value="percent">percent</option>
+                  <option value="fixed">fixed</option>
+                </select>
+              </label>
+              <label>Value<input name="discount_value" type="number" step="0.001" required /></label>
+              <label>Max Uses<input name="max_uses" type="number" min="1" /></label>
+              <label>Expires At<input name="expires_at" type="datetime-local" /></label>
+              <label>Min Amount<input name="min_amount" type="number" step="0.001" value="0" /></label>
+              <button type="submit">Add Promo</button>
+            </form>
+            <div class="list-panel" id="promo-list"></div>
+          </div>
+        </section>
+
+        <section class="tab-content" id="tab-users">
+          <div class="split">
+            <form id="user-form" class="form-panel">
+              <h3>Create User</h3>
+              <label>Full Name<input name="full_name" required /></label>
+              <label>Email<input name="email" type="email" required /></label>
+              <label>Password<input name="password" type="password" required /></label>
+              <label>Role
+                <select name="role">
+                  <option value="operator">operator</option>
+                  <option value="admin">admin</option>
+                </select>
+              </label>
+              <button type="submit">Add User</button>
+            </form>
+            <div class="list-panel" id="user-list"></div>
+          </div>
+        </section>
+
+        <section class="tab-content" id="tab-settings">
+          <div class="note-card">
+            <h3>Environment Check</h3>
+            <p>Ensure these are configured in Heroku Config Vars: DATABASE_URL, JWT_SECRET, JWT_EXPIRES_IN, ADMIN_EMAIL, ADMIN_PASSWORD, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM, WHATSAPP_WEBHOOK_URL, CORS_ORIGIN, NODE_ENV, PORT.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
 
   <script src="/js/admin.js" defer></script>
 </body>

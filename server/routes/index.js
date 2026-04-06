@@ -38,6 +38,7 @@ router.post('/auth/login', authLimiter, requireFields(['email', 'password']), au
 router.get('/auth/me', authenticate, authController.me);
 
 router.get('/vehicles', bookingController.listVehicles);
+router.get('/vehicles/all', authenticate, requireRole('admin'), bookingController.listAllVehicles);
 router.post('/vehicles', authenticate, requireRole('admin'), bookingController.createVehicle);
 router.put('/vehicles/:id', authenticate, requireRole('admin'), bookingController.updateVehicle);
 router.delete('/vehicles/:id', authenticate, requireRole('admin'), bookingController.deleteVehicle);

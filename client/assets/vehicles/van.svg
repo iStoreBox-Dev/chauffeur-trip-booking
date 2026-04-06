@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Business Van">
+  <defs><linearGradient id="g4" x1="0" x2="1"><stop offset="0" stop-color="#f2d690"/><stop offset="1" stop-color="#9f7632"/></linearGradient></defs>
+  <rect width="640" height="360" fill="#101216"/>
+  <rect x="0" y="262" width="640" height="98" fill="#0a0c10"/>
+  <path d="M72 238h442v-96H174l-102 96z" fill="#242c3a" stroke="url(#g4)" stroke-width="4"/>
+  <path d="M514 238h71V196l-26-38h-45z" fill="#242c3a" stroke="url(#g4)" stroke-width="4"/>
+  <rect x="190" y="156" width="80" height="45" fill="#17202f"/>
+  <rect x="280" y="156" width="80" height="45" fill="#17202f"/>
+  <rect x="370" y="156" width="80" height="45" fill="#17202f"/>
+  <circle cx="190" cy="248" r="47" fill="#0f1012" stroke="#dfbd71" stroke-width="6"/>
+  <circle cx="530" cy="248" r="47" fill="#0f1012" stroke="#dfbd71" stroke-width="6"/>
+  <circle cx="190" cy="248" r="18" fill="#525267"/>
+  <circle cx="530" cy="248" r="18" fill="#525267"/>
+</svg>

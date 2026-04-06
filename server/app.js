@@ -38,8 +38,8 @@ app.use('/api', routes);
 
 app.use('/css', express.static(path.join(__dirname, '../client/css')));
 app.use('/js', express.static(path.join(__dirname, '../client/js')));
+app.use('/assets', express.static(path.join(__dirname, '../client/assets')));
 app.use('/admin', express.static(path.join(__dirname, '../client/admin')));
-app.use('/public', express.static(path.join(__dirname, '../public')));
 
 app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, '../client/booking.html'));

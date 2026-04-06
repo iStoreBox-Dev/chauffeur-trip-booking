@@ -1,90 +1,384 @@
-async function loadVehicles() {
-  const select = document.getElementById('vehicle-select');
-  select.innerHTML = '<option value="">Loading vehicles...</option>';
+(function () {
+  'use strict';
 
-  try {
-    const res = await fetch('/api/vehicles');
-    const data = await res.json();
-    const vehicles = data.vehicles || [];
-
-    if (vehicles.length === 0) {
-      select.innerHTML = '<option value="">No active vehicles</option>';
-      return;
+  const state = {
+    step: 1,
+    serviceType: 'trip',
+    transferType: 'oneway',
+    selectedVehicle: null,
+    vehicles: [],
+    geo: {
+      pickup: null,
+      dropoff: null,
+      hourly: null
     }
+  };
 
-    select.innerHTML = vehicles
-      .map((v) => `<option value="${v.id}">${v.name} (${v.model}) - BHD ${Number(v.base_price).toFixed(3)}</option>`)
-      .join('');
-  } catch (_error) {
-    select.innerHTML = '<option value="">Failed to load vehicles</option>';
+  const refs = {
+    message: document.getElementById('form-message'),
+    vehicleGrid: document.getElementById('vehicle-grid')
+  };
+
+  function qs(selector, ctx = document) { return ctx.querySelector(selector); }
+  function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
+
+  function setMessage(text, type) {
+    refs.message.textContent = text || '';
+    refs.message.style.color = type === 'error' ? 'var(--err)' : type === 'ok' ? 'var(--ok)' : 'var(--muted)';
   }
-}
 
-function bindGeoAutocomplete(inputId) {
-  const input = document.getElementById(inputId);
-  const list = document.getElementById('geo-results');
-  let timer;
+  function money(value) {
+    return `BHD ${Number(value || 0).toFixed(3)}`;
+  }
 
-  input.addEventListener('input', () => {
-    clearTimeout(timer);
-    const q = input.value.trim();
+  function imageForCategory(category) {
+    if (category === 'business') return '/assets/vehicles/business.svg';
+    if (category === 'suv') return '/assets/vehicles/suv.svg';
+    if (category === 'van') return '/assets/vehicles/van.svg';
+    return '/assets/vehicles/economy.svg';
+  }
 
-    if (q.length < 2) {
-      list.innerHTML = '';
-      return;
+  function updateStep(step) {
+    state.step = step;
+    qsa('.form-step').forEach((el) => el.classList.add('hidden'));
+    qs(`#step-${step}`).classList.remove('hidden');
+
+    qsa('.step').forEach((el) => {
+      const s = Number(el.dataset.step);
+      el.classList.toggle('active', s === step);
+    });
+
+    if (step === 4) {
+      renderSummary();
+    }
+  }
+
+  function setServiceType(type) {
+    state.serviceType = type;
+    qsa('.service-btn').forEach((btn) => btn.classList.toggle('active', btn.dataset.service === type));
+    qs('#trip-panel').classList.toggle('active', type === 'trip');
+    qs('#hourly-panel').classList.toggle('active', type === 'hourly');
+  }
+
+  function setTransferType(type) {
+    state.transferType = type;
+    qsa('.return-only').forEach((el) => el.classList.toggle('hidden', type !== 'roundtrip'));
+  }
+
+  function currentPassengers() {
+    if (state.serviceType === 'hourly') {
+      return Number(qs('#hourly-passengers').value || 0);
+    }
+    return Number(qs('#passengers').value || 0);
+  }
+
+  function validateStep(step) {
+    if (step === 1) {
+      if (state.serviceType === 'trip') {
+        const required = ['#pickup-location', '#dropoff-location', '#departure-date', '#departure-time', '#passengers'];
+        if (required.some((id) => !qs(id).value.trim())) {
+          setMessage('Please complete all required trip fields.', 'error');
+          return false;
+        }
+        if (state.transferType === 'roundtrip') {
+          if (!qs('#return-date').value || !qs('#return-time').value) {
+            setMessage('Please add return date and time for round trip.', 'error');
+            return false;
+          }
+        }
+      } else {
+        const required = ['#hourly-pickup', '#hourly-date', '#hourly-time', '#hourly-duration', '#hourly-passengers'];
+        if (required.some((id) => !qs(id).value.trim())) {
+          setMessage('Please complete all required hourly fields.', 'error');
+          return false;
+        }
+      }
     }
 
-    timer = setTimeout(async () => {
+    if (step === 2) {
+      if (!state.selectedVehicle) {
+        setMessage('Please select a vehicle to continue.', 'error');
+        return false;
+      }
+      if (currentPassengers() > Number(state.selectedVehicle.capacity || 0)) {
+        qs('#vehicle-warning').classList.remove('hidden');
+        setMessage('Passenger count is too high for selected vehicle.', 'error');
+        return false;
+      }
+      qs('#vehicle-warning').classList.add('hidden');
+    }
+
+    if (step === 3) {
+      const required = ['#first-name', '#last-name', '#email', '#phone'];
+      if (required.some((id) => !qs(id).value.trim())) {
+        setMessage('Please complete your personal details.', 'error');
+        return false;
+      }
+      if (!/^\S+@\S+\.\S+$/.test(qs('#email').value.trim())) {
+        setMessage('Please provide a valid email address.', 'error');
+        return false;
+      }
+    }
+
+    if (step === 4 && !qs('#terms').checked) {
+      setMessage('Please agree to terms and privacy policy.', 'error');
+      return false;
+    }
+
+    setMessage('', 'neutral');
+    return true;
+  }
+
+  function renderVehicleGrid() {
+    refs.vehicleGrid.innerHTML = state.vehicles.map((vehicle) => {
+      const selected = state.selectedVehicle && state.selectedVehicle.id === vehicle.id;
+      const features = Array.isArray(vehicle.features) ? vehicle.features.slice(0, 3).join(' • ') : '';
+      return `
+        <article class="vehicle-card ${selected ? 'selected' : ''}" data-vehicle-id="${vehicle.id}">
+          <div class="vehicle-media"><img src="${imageForCategory(vehicle.category)}" alt="${vehicle.name}" loading="lazy" /></div>
+          <div class="vehicle-body">
+            <div class="vehicle-row">
+              <h3 class="vehicle-name">${vehicle.name}</h3>
+              <span class="badge">${vehicle.category}</span>
+            </div>
+            <p class="vehicle-model">${vehicle.model}</p>
+            <p class="vehicle-model">Capacity: ${vehicle.capacity} passengers${features ? ` • ${features}` : ''}</p>
+            <p class="price">From ${money(vehicle.base_price)}</p>
+          </div>
+        </article>
+      `;
+    }).join('');
+
+    qsa('.vehicle-card').forEach((card) => {
+      card.addEventListener('click', () => {
+        const id = Number(card.dataset.vehicleId);
+        state.selectedVehicle = state.vehicles.find((v) => v.id === id) || null;
+        renderVehicleGrid();
+      });
+    });
+  }
+
+  async function loadVehicles() {
+    try {
+      const res = await fetch('/api/vehicles');
+      const data = await res.json();
+      state.vehicles = data.vehicles || [];
+      renderVehicleGrid();
+    } catch (_error) {
+      refs.vehicleGrid.innerHTML = '<p class="warn">Unable to load vehicle list.</p>';
+    }
+  }
+
+  function estimatePrice() {
+    if (!state.selectedVehicle) return 0;
+    const base = Number(state.selectedVehicle.base_price || 0);
+    if (state.serviceType === 'hourly') {
+      return base * Number(qs('#hourly-duration').value || 1);
+    }
+    return state.transferType === 'roundtrip' ? base * 1.9 : base;
+  }
+
+  function renderSummary() {
+    const rows = [];
+
+    if (state.serviceType === 'trip') {
+      rows.push(['Service', 'Transfer']);
+      rows.push(['Type', state.transferType === 'roundtrip' ? 'Round Trip' : 'One Way']);
+      rows.push(['Pickup', qs('#pickup-location').value]);
+      rows.push(['Dropoff', qs('#dropoff-location').value]);
+      rows.push(['Departure', `${qs('#departure-date').value} ${qs('#departure-time').value}`]);
+      if (state.transferType === 'roundtrip') {
+        rows.push(['Return', `${qs('#return-date').value} ${qs('#return-time').value}`]);
+      }
+      rows.push(['Passengers', qs('#passengers').value]);
+    } else {
+      rows.push(['Service', 'Hourly']);
+      rows.push(['Pickup', qs('#hourly-pickup').value]);
+      rows.push(['Start', `${qs('#hourly-date').value} ${qs('#hourly-time').value}`]);
+      rows.push(['Duration', `${qs('#hourly-duration').value} hours`]);
+      rows.push(['Passengers', qs('#hourly-passengers').value]);
+    }
+
+    if (state.selectedVehicle) {
+      rows.push(['Vehicle', `${state.selectedVehicle.name} (${state.selectedVehicle.model})`]);
+    }
+
+    rows.push(['Passenger Name', `${qs('#first-name').value} ${qs('#last-name').value}`]);
+    rows.push(['Email', qs('#email').value]);
+    rows.push(['Phone', `${qs('#country-code').value} ${qs('#phone').value}`]);
+
+    const summaryHtml = rows.map(([k, v]) => `<div class="summary-item"><span>${k}</span><strong>${v || '—'}</strong></div>`).join('');
+    qs('#summary-box').innerHTML = summaryHtml;
+    qs('#price-preview').textContent = money(estimatePrice());
+  }
+
+  function bookingPayload() {
+    const common = {
+      vehicle_id: state.selectedVehicle.id,
+      first_name: qs('#first-name').value.trim(),
+      last_name: qs('#last-name').value.trim(),
+      email: qs('#email').value.trim(),
+      country_code: qs('#country-code').value,
+      phone: qs('#phone').value.trim(),
+      special_requests: qs('#special-requests').value.trim() || null,
+      promo_code: null,
+      source: 'web'
+    };
+
+    if (state.serviceType === 'hourly') {
+      return {
+        ...common,
+        service_type: 'hourly',
+        transfer_type: 'oneway',
+        pickup_location: qs('#hourly-pickup').value.trim(),
+        dropoff_location: null,
+        departure_date: qs('#hourly-date').value,
+        departure_time: qs('#hourly-time').value,
+        return_date: null,
+        return_time: null,
+        hourly_duration: Number(qs('#hourly-duration').value),
+        passengers: Number(qs('#hourly-passengers').value),
+        luggage: 0,
+        flight_number: null,
+        pickup_lat: state.geo.hourly?.lat || null,
+        pickup_lng: state.geo.hourly?.lng || null,
+        dropoff_lat: null,
+        dropoff_lng: null
+      };
+    }
+
+    return {
+      ...common,
+      service_type: 'trip',
+      transfer_type: state.transferType,
+      pickup_location: qs('#pickup-location').value.trim(),
+      dropoff_location: qs('#dropoff-location').value.trim(),
+      departure_date: qs('#departure-date').value,
+      departure_time: qs('#departure-time').value,
+      return_date: qs('#return-date').value || null,
+      return_time: qs('#return-time').value || null,
+      hourly_duration: null,
+      passengers: Number(qs('#passengers').value),
+      luggage: Number(qs('#luggage').value || 0),
+      flight_number: qs('#flight-number').value.trim() || null,
+      pickup_lat: state.geo.pickup?.lat || null,
+      pickup_lng: state.geo.pickup?.lng || null,
+      dropoff_lat: state.geo.dropoff?.lat || null,
+      dropoff_lng: state.geo.dropoff?.lng || null
+    };
+  }
+
+  async function submitBooking() {
+    if (!validateStep(4)) return;
+
+    const submitBtn = qs('#submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+
+    try {
+      const res = await fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingPayload())
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessage(data.error || 'Unable to submit booking.', 'error');
+        return;
+      }
+
+      qs('#booking-ref').textContent = data.booking.booking_ref;
+      updateStep(5);
+    } catch (_error) {
+      setMessage('Network error. Please try again.', 'error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Confirm Booking';
+    }
+  }
+
+  function debounce(fn, wait) {
+    let timeout;
+    return (...args) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => fn(...args), wait);
+    };
+  }
+
+  function bindGeoAutocomplete(inputId, listId, stateKey) {
+    const input = qs(`#${inputId}`);
+    const list = qs(`#${listId}`);
+
+    const search = debounce(async () => {
+      const q = input.value.trim();
+      if (q.length < 2) {
+        list.classList.remove('show');
+        list.innerHTML = '';
+        return;
+      }
+
       try {
         const res = await fetch(`/api/geo/search?q=${encodeURIComponent(q)}`);
         const data = await res.json();
         const results = data.results || [];
 
-        list.innerHTML = results
-          .map((item) => `<li>${item.display_name}</li>`)
-          .join('');
+        list.innerHTML = results.map((r) => `<li data-lat="${r.lat}" data-lng="${r.lon}" data-name="${r.display_name}">${r.display_name}</li>`).join('');
+        list.classList.toggle('show', results.length > 0);
+
+        qsa('li', list).forEach((li) => {
+          li.addEventListener('click', () => {
+            input.value = li.dataset.name;
+            state.geo[stateKey] = { lat: li.dataset.lat, lng: li.dataset.lng };
+            list.classList.remove('show');
+          });
+        });
       } catch (_error) {
-        list.innerHTML = '<li>Location search unavailable.</li>';
+        list.classList.remove('show');
       }
-    }, 350);
-  });
-}
+    }, 300);
 
-async function submitBooking(event) {
-  event.preventDefault();
+    input.addEventListener('input', search);
+    input.addEventListener('blur', () => setTimeout(() => list.classList.remove('show'), 120));
+  }
 
-  const form = event.currentTarget;
-  const result = document.getElementById('result');
-  const formData = new FormData(form);
-  const payload = Object.fromEntries(formData.entries());
-
-  payload.passengers = Number(payload.passengers || 0);
-  payload.luggage = Number(payload.luggage || 0);
-  payload.hourly_duration = payload.hourly_duration ? Number(payload.hourly_duration) : null;
-
-  try {
-    const res = await fetch('/api/bookings', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+  function bindActions() {
+    qsa('.service-btn').forEach((btn) => btn.addEventListener('click', () => setServiceType(btn.dataset.service)));
+    qsa('input[name="transferType"]').forEach((radio) => {
+      radio.addEventListener('change', () => setTransferType(radio.value));
     });
 
-    const data = await res.json();
+    qsa('[data-next]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (validateStep(state.step)) {
+          updateStep(Number(btn.dataset.next));
+        }
+      });
+    });
 
-    if (!res.ok) {
-      result.textContent = data.error || 'Could not submit booking.';
-      return;
-    }
+    qsa('[data-prev]').forEach((btn) => {
+      btn.addEventListener('click', () => updateStep(Number(btn.dataset.prev)));
+    });
 
-    result.textContent = `Booking submitted successfully. Ref: ${data.booking.booking_ref}`;
-    form.reset();
-    loadVehicles();
-  } catch (_error) {
-    result.textContent = 'Network error. Please try again.';
+    qs('#submit-btn').addEventListener('click', submitBooking);
   }
-}
 
-document.getElementById('booking-form').addEventListener('submit', submitBooking);
-bindGeoAutocomplete('pickup');
-bindGeoAutocomplete('dropoff');
-loadVehicles();
+  function initMinDates() {
+    const min = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    ['#departure-date', '#return-date', '#hourly-date'].forEach((id) => {
+      const el = qs(id);
+      if (el) el.min = min;
+    });
+  }
+
+  function init() {
+    bindActions();
+    bindGeoAutocomplete('pickup-location', 'pickup-suggestions', 'pickup');
+    bindGeoAutocomplete('dropoff-location', 'dropoff-suggestions', 'dropoff');
+    bindGeoAutocomplete('hourly-pickup', 'hourly-suggestions', 'hourly');
+    initMinDates();
+    loadVehicles();
+  }
+
+  init();
+})();

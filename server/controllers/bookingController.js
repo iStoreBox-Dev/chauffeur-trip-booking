@@ -275,6 +275,16 @@ async function listVehicles(_req, res) {
   }
 }
 
+async function listAllVehicles(_req, res) {
+  try {
+    const vehicles = await Vehicle.getAll();
+    return res.json({ vehicles });
+  } catch (error) {
+    console.error('List all vehicles failed:', error.message);
+    return res.status(500).json({ error: 'Unable to load vehicles right now.' });
+  }
+}
+
 async function createVehicle(req, res) {
   try {
     const vehicle = await Vehicle.create(req.body);
@@ -458,6 +468,7 @@ module.exports = {
   bookingStats,
   exportCsv,
   listVehicles,
+  listAllVehicles,
   createVehicle,
   updateVehicle,
   deleteVehicle,

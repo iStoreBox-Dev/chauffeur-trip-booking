@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-label="Luxury SUV">
+  <defs><linearGradient id="g3" x1="0" x2="1"><stop offset="0" stop-color="#f0ce82"/><stop offset="1" stop-color="#9d7b3a"/></linearGradient></defs>
+  <rect width="640" height="360" fill="#121218"/>
+  <rect x="0" y="256" width="640" height="104" fill="#0d0f12"/>
+  <path d="M68 236h515l28-48-84-72H228l-94 26-66 94z" fill="#2a313d" stroke="url(#g3)" stroke-width="4"/>
+  <path d="M202 130h132v56H158l44-56zM350 130h168l67 56H350z" fill="#1d2532"/>
+  <circle cx="190" cy="246" r="50" fill="#0f1013" stroke="#e7c778" stroke-width="6"/>
+  <circle cx="484" cy="246" r="50" fill="#0f1013" stroke="#e7c778" stroke-width="6"/>
+  <circle cx="190" cy="246" r="19" fill="#535365"/>
+  <circle cx="484" cy="246" r="19" fill="#535365"/>
+</svg>
