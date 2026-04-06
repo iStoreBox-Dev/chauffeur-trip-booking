@@ -12,6 +12,8 @@
     users: []
   };
 
+  const TOKEN_KEY = 'chauffeur_admin_token';
+
   function qs(s, ctx = document) { return ctx.querySelector(s); }
   function qsa(s, ctx = document) { return Array.from(ctx.querySelectorAll(s)); }
 
@@ -61,6 +63,7 @@
       });
       state.token = data.token;
       state.user = data.user;
+      localStorage.setItem(TOKEN_KEY, state.token);
       setLoginMessage('Login successful.', false);
       qs('#login-card').hidden = true;
       qs('#app-shell').hidden = false;
@@ -74,7 +77,27 @@
   function logout() {
     state.token = '';
     state.user = null;
+    localStorage.removeItem(TOKEN_KEY);
     location.reload();
+  }
+
+  async function restoreSession() {
+    const saved = localStorage.getItem(TOKEN_KEY);
+    if (!saved) return;
+
+    try {
+      state.token = saved;
+      const data = await request('/api/auth/me', { headers: authHeaders() });
+      state.user = data.user;
+      qs('#login-card').hidden = true;
+      qs('#app-shell').hidden = false;
+      qs('#whoami').textContent = `${state.user.full_name} (${state.user.role})`;
+      await refreshAll();
+    } catch (_error) {
+      localStorage.removeItem(TOKEN_KEY);
+      state.token = '';
+      state.user = null;
+    }
   }
 
   function renderDashboard() {
@@ -114,6 +137,7 @@
         <td>${money(b.final_price)}</td>
         <td><span class="pill">${b.status}</span></td>
         <td>
+          <button data-act="view" data-id="${b.id}">View</button>
           <button data-act="status" data-id="${b.id}" data-status="confirmed">Confirm</button>
           <button data-act="status" data-id="${b.id}" data-status="completed">Complete</button>
           <button data-act="status" data-id="${b.id}" data-status="rejected">Reject</button>
@@ -124,6 +148,50 @@
     qsa('button[data-act="status"]', body).forEach((btn) => {
       btn.addEventListener('click', () => updateBookingStatus(btn.dataset.id, btn.dataset.status));
     });
+    qsa('button[data-act="view"]', body).forEach((btn) => {
+      btn.addEventListener('click', () => showBookingDetails(btn.dataset.id));
+    });
+  }
+
+  function formatDateTime(dateValue, timeValue) {
+    if (!dateValue) return '—';
+    return `${dateValue}${timeValue ? ` ${timeValue}` : ''}`;
+  }
+
+  async function showBookingDetails(id) {
+    const data = await request(`/api/bookings/${id}`, { headers: authHeaders() });
+    const b = data.booking;
+    const fields = [
+      ['Reference', b.booking_ref],
+      ['Service', b.service_type],
+      ['Transfer Type', b.transfer_type],
+      ['Status', b.status],
+      ['Customer', `${b.first_name} ${b.last_name}`],
+      ['Email', b.email],
+      ['Phone', `${b.country_code || ''} ${b.phone || ''}`.trim()],
+      ['Pickup', b.pickup_location],
+      ['Dropoff', b.dropoff_location],
+      ['Departure', formatDateTime(b.departure_date, b.departure_time)],
+      ['Return', formatDateTime(b.return_date, b.return_time)],
+      ['Passengers', b.passengers],
+      ['Luggage', b.luggage],
+      ['Flight', b.flight_number],
+      ['Vehicle', b.vehicle_snapshot ? `${b.vehicle_snapshot.name} (${b.vehicle_snapshot.model})` : '—'],
+      ['Special Requests', b.special_requests],
+      ['Base Price', money(b.base_price)],
+      ['Discount', money(b.discount_amount)],
+      ['Final Price', money(b.final_price)],
+      ['Created At', b.created_at]
+    ];
+
+    const detailBody = qs('#booking-detail-body');
+    detailBody.innerHTML = fields.map(([label, value]) => `
+      <div class="detail-item">
+        <span>${label}</span>
+        <strong>${value || '—'}</strong>
+      </div>
+    `).join('');
+    qs('#booking-detail').hidden = false;
   }
 
   function renderVehicles() {
@@ -327,4 +395,5 @@
   }
 
   bindEvents();
+  restoreSession();
 })();

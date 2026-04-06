@@ -56,6 +56,38 @@ async function seed() {
       );
     }
 
+    const defaultSettings = {
+      app_name: 'LUXERIDE',
+      app_tagline: 'Premium Chauffeur Booking',
+      hero_title: 'Move Through Bahrain in Quiet Luxury',
+      hero_subtitle: 'Airport transfers, executive travel, and hourly hire with premium comfort.',
+      seo_title: 'LUXERIDE | Premium Chauffeur Booking',
+      seo_description: 'Book premium chauffeur rides with transparent pricing and elegant service in Bahrain.',
+      seo_keywords: 'chauffeur,bahrain,airport transfer,executive ride,private driver',
+      support_email: 'booking@example.com',
+      support_phone: '+973 0000 0000',
+      whatsapp_number: '',
+      currency_code: 'BHD',
+      primary_color: '#d6b16f',
+      secondary_color: '#0e1a26',
+      maintenance_mode: false,
+      booking_enabled: true,
+      social_links: {
+        instagram: '',
+        x: '',
+        facebook: '',
+        linkedin: ''
+      },
+      seo_indexable: true
+    };
+
+    await client.query(
+      `INSERT INTO app_settings (key, value, updated_at)
+       VALUES ('app', $1::jsonb, NOW())
+       ON CONFLICT (key) DO NOTHING`,
+      [JSON.stringify(defaultSettings)]
+    );
+
     await client.query('COMMIT');
     console.log('Seed completed successfully.');
   } catch (error) {

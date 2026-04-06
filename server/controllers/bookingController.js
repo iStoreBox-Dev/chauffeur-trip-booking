@@ -431,7 +431,7 @@ async function geoSearch(req, res) {
     const url = new URL('https://nominatim.openstreetmap.org/search');
     url.searchParams.set('q', q);
     url.searchParams.set('format', 'jsonv2');
-    url.searchParams.set('limit', '7');
+    url.searchParams.set('limit', '15');
 
     const response = await fetch(url, {
       headers: {

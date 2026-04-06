@@ -7,6 +7,11 @@
     transferType: 'oneway',
     selectedVehicle: null,
     vehicles: [],
+    locationSelected: {
+      pickup: false,
+      dropoff: false,
+      hourly: false
+    },
     geo: {
       pickup: null,
       dropoff: null,
@@ -80,6 +85,10 @@
           setMessage('Please complete all required trip fields.', 'error');
           return false;
         }
+        if (!state.locationSelected.pickup || !state.locationSelected.dropoff) {
+          setMessage('Please select pickup and dropoff from the location suggestions.', 'error');
+          return false;
+        }
         if (state.transferType === 'roundtrip') {
           if (!qs('#return-date').value || !qs('#return-time').value) {
             setMessage('Please add return date and time for round trip.', 'error');
@@ -90,6 +99,10 @@
         const required = ['#hourly-pickup', '#hourly-date', '#hourly-time', '#hourly-duration', '#hourly-passengers'];
         if (required.some((id) => !qs(id).value.trim())) {
           setMessage('Please complete all required hourly fields.', 'error');
+          return false;
+        }
+        if (!state.locationSelected.hourly) {
+          setMessage('Please select the pickup location from suggestions.', 'error');
           return false;
         }
       }
@@ -330,6 +343,7 @@
           li.addEventListener('click', () => {
             input.value = li.dataset.name;
             state.geo[stateKey] = { lat: li.dataset.lat, lng: li.dataset.lng };
+            state.locationSelected[stateKey] = true;
             list.classList.remove('show');
           });
         });
@@ -339,6 +353,10 @@
     }, 300);
 
     input.addEventListener('input', search);
+    input.addEventListener('input', () => {
+      state.locationSelected[stateKey] = false;
+      state.geo[stateKey] = null;
+    });
     input.addEventListener('blur', () => setTimeout(() => list.classList.remove('show'), 120));
   }
 
