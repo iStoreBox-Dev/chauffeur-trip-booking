@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trip Booking — Premium Chauffeur Service</title>
+  <meta name="description" content="Book a premium chauffeur service. Airport transfers, city rides, and hourly bookings." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- HEADER -->
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <a href="/" class="logo" aria-label="Trip Booking — Home">
+        <svg width="38" height="38" viewBox="0 0 38 38" fill="none" aria-hidden="true">
+          <rect x="1" y="1" width="36" height="36" rx="8" stroke="#c9a84c" stroke-width="1.5"/>
+          <path d="M9 26 L14 14 L19 22 L24 16 L29 26" stroke="#c9a84c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <circle cx="19" cy="11" r="2.5" fill="#c9a84c"/>
+        </svg>
+        <span class="logo-text">CHAUFFEUR<em>.APP</em></span>
+      </a>
+      <nav class="header-nav" aria-label="Main navigation">
+        <a href="#booking">Book Now</a>
+        <a href="#services">Services</a>
+        <a href="#fleet">Fleet</a>
+        <a href="admin.html" target="_blank">Admin</a>
+      </nav>
+      <div class="header-actions">
+        <a href="tel:+97300000000" class="btn-phone" aria-label="Call us">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          +973 0000-0000
+        </a>
+        <button class="btn-menu" aria-label="Open menu" data-menu-toggle>
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-bg" aria-hidden="true">
+      <div class="hero-grid"></div>
+      <div class="hero-glow"></div>
+    </div>
+    <div class="hero-content">
+      <p class="hero-eyebrow">Premium Chauffeur Service</p>
+      <h1 id="hero-title" class="hero-title">Book Your<br/><em>Elite Ride</em></h1>
+      <p class="hero-sub">Airport transfers, city rides, and hourly chauffeur bookings — available 24/7.</p>
+    </div>
+  </section>
+
+  <!-- BOOKING FORM CARD -->
+  <main id="booking" class="booking-section" aria-label="Booking form">
+    <div class="booking-card" role="region" aria-label="Trip booking form">
+      <!-- Step Progress -->
+      <div class="step-progress" role="navigation" aria-label="Form steps">
+        <div class="step-track">
+          <div class="step-item active" data-step="1" aria-current="step">
+            <div class="step-circle"><span>1</span></div>
+            <span class="step-label">Trip Details</span>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item" data-step="2">
+            <div class="step-circle"><span>2</span></div>
+            <span class="step-label">Choose Vehicle</span>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item" data-step="3">
+            <div class="step-circle"><span>3</span></div>
+            <span class="step-label">Your Details</span>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item" data-step="4">
+            <div class="step-circle"><span>4</span></div>
+            <span class="step-label">Confirm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 1: TRIP DETAILS -->
+      <div class="form-step" id="step-1" aria-labelledby="step1-title">
+        <h2 id="step1-title" class="step-title">Trip Details</h2>
+
+        <!-- Service Type Tabs -->
+        <div class="service-tabs" role="tablist" aria-label="Service type">
+          <button class="tab-btn active" role="tab" aria-selected="true" aria-controls="tab-trip" id="tab-trip-btn" data-tab="trip">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
+            Trip
+          </button>
+          <button class="tab-btn" role="tab" aria-selected="false" aria-controls="tab-hourly" id="tab-hourly-btn" data-tab="hourly">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Hourly
+          </button>
+        </div>
+
+        <!-- TRIP Tab -->
+        <div id="tab-trip" role="tabpanel" aria-labelledby="tab-trip-btn" class="tab-panel active">
+          <div class="transfer-toggle" role="group" aria-label="Transfer type">
+            <label class="radio-pill active">
+              <input type="radio" name="transferType" value="oneway" checked />
+              <span>One Way</span>
+            </label>
+            <label class="radio-pill">
+              <input type="radio" name="transferType" value="roundtrip" />
+              <span>Round Trip</span>
+            </label>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group full">
+              <label for="pickup-location" class="form-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.4 7.05 11.5 7.75 12.1a.5.5 0 0 0 .5 0C12.95 21.5 20 15.4 20 10a8 8 0 0 0-8-8z"/></svg>
+                Pick Up Location <span class="required">*</span>
+              </label>
+              <input type="text" id="pickup-location" name="pickupLocation" class="form-input" placeholder="e.g. Bahrain International Airport" list="bahrain-locations" autocomplete="off" required />
+              <datalist id="bahrain-locations">
+                <option value="Bahrain International Airport (BAH)" />
+                <option value="Manama City Centre" />
+                <option value="Seef District, Manama" />
+                <option value="Riffa, Bahrain" />
+                <option value="Adliya, Manama" />
+                <option value="Juffair, Manama" />
+                <option value="Muharraq, Bahrain" />
+                <option value="Budaiya, Bahrain" />
+                <option value="Hamala, Bahrain" />
+                <option value="Zallaq, Bahrain" />
+                <option value="King Fahd Causeway (Saudi Border)" />
+                <option value="Riyadh, Saudi Arabia" />
+                <option value="Dammam, Saudi Arabia" />
+                <option value="Dubai Airport (DXB)" />
+                <option value="Doha, Qatar" />
+              </datalist>
+            </div>
+
+            <div class="form-group full" id="dropoff-group">
+              <label for="dropoff-location" class="form-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Drop Off Location <span class="required">*</span>
+              </label>
+              <input type="text" id="dropoff-location" name="dropoffLocation" class="form-input" placeholder="e.g. Seef District, Manama" list="bahrain-locations" autocomplete="off" required />
+            </div>
+
+            <div class="form-group">
+              <label for="departure-date" class="form-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Departure Date <span class="required">*</span>
+              </label>
+              <input type="date" id="departure-date" name="departureDate" class="form-input" required />
+            </div>
+
+            <div class="form-group">
+              <label for="departure-time" class="form-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Departure Time <span class="required">*</span>
+              </label>
+              <input type="time" id="departure-time" name="departureTime" class="form-input" required />
+            </div>
+
+            <div class="form-group return-field hidden">
+              <label for="return-date" class="form-label">Return Date</label>
+              <input type="date" id="return-date" name="returnDate" class="form-input" />
+            </div>
+            <div class="form-group return-field hidden">
+              <label for="return-time" class="form-label">Return Time</label>
+              <input type="time" id="return-time" name="returnTime" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label for="passengers" class="form-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Passengers <span class="required">*</span>
+              </label>
+              <select id="passengers" name="passengers" class="form-input" required>
+                <option value="">Select passengers</option>
+                <option value="1">1 Passenger</option>
+                <option value="2">2 Passengers</option>
+                <option value="3">3 Passengers</option>
+                <option value="4">4 Passengers</option>
+                <option value="5">5 Passengers</option>
+                <option value="6">6 Passengers</option>
+                <option value="7">7 Passengers</option>
+                <option value="8">8 Passengers</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="luggage" class="form-label">Luggage</label>
+              <select id="luggage" name="luggage" class="form-input">
+                <option value="0">No luggage</option>
+                <option value="1">1 piece</option>
+                <option value="2">2 pieces</option>
+                <option value="3">3 pieces</option>
+                <option value="4">4+ pieces</option>
+              </select>
+            </div>
+
+            <div class="form-group full">
+              <label for="flight-number" class="form-label">Flight Number <span class="optional">(optional)</span></label>
+              <input type="text" id="flight-number" name="flightNumber" class="form-input" placeholder="e.g. GF 123" autocomplete="off" />
+            </div>
+          </div>
+        </div>
+
+        <!-- HOURLY Tab -->
+        <div id="tab-hourly" role="tabpanel" aria-labelledby="tab-hourly-btn" class="tab-panel" hidden>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label for="hourly-pickup" class="form-label">Pick Up Location <span class="required">*</span></label>
+              <input type="text" id="hourly-pickup" name="hourlyPickup" class="form-input" placeholder="e.g. Manama City Centre" list="bahrain-locations" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="hourly-date" class="form-label">Date <span class="required">*</span></label>
+              <input type="date" id="hourly-date" name="hourlyDate" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="hourly-time" class="form-label">Start Time <span class="required">*</span></label>
+              <input type="time" id="hourly-time" name="hourlyTime" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label for="hourly-duration" class="form-label">Duration <span class="required">*</span></label>
+              <select id="hourly-duration" name="hourlyDuration" class="form-input">
+                <option value="">Select duration</option>
+                <option value="2">2 Hours</option>
+                <option value="3">3 Hours</option>
+                <option value="4">4 Hours</option>
+                <option value="5">5 Hours</option>
+                <option value="6">6 Hours</option>
+                <option value="8">8 Hours (Full Day)</option>
+                <option value="10">10 Hours</option>
+                <option value="12">12 Hours</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="hourly-passengers" class="form-label">Passengers <span class="required">*</span></label>
+              <select id="hourly-passengers" name="hourlyPassengers" class="form-input">
+                <option value="">Select passengers</option>
+                <option value="1">1 Passenger</option>
+                <option value="2">2 Passengers</option>
+                <option value="3">3 Passengers</option>
+                <option value="4">4 Passengers</option>
+                <option value="5">5 Passengers</option>
+                <option value="6">6 Passengers</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-primary btn-next" data-next="2">
+            Continue to Vehicle
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 2: VEHICLE SELECTION -->
+      <div class="form-step hidden" id="step-2" aria-labelledby="step2-title">
+        <h2 id="step2-title" class="step-title">Choose Your Vehicle</h2>
+        <p class="step-subtitle">All vehicles include a professional driver, water, and complimentary Wi-Fi.</p>
+        <div class="vehicle-grid" role="radiogroup" aria-label="Vehicle selection">
+          <label class="vehicle-card" data-capacity="4">
+            <input type="radio" name="vehicle" value="economy" data-price="15" data-name="Economy Sedan" data-capacity="4" />
+            <div class="vehicle-header"><span class="vehicle-badge">Economy</span><span class="vehicle-capacity">Up to 4 pax</span></div>
+            <div class="vehicle-icon"><svg viewBox="0 0 80 40" fill="none"><path d="M8 28H72M12 28V22L20 14H50L62 22V28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="22" cy="30" r="4" stroke="currentColor" stroke-width="2"/><circle cx="58" cy="30" r="4" stroke="currentColor" stroke-width="2"/></svg></div>
+            <div class="vehicle-info">
+              <h3 class="vehicle-name">Economy Sedan</h3>
+              <p class="vehicle-model">Toyota Camry / Nissan Altima</p>
+              <ul class="vehicle-features"><li>4 passengers</li><li>2 suitcases</li><li>A/C · Water</li></ul>
+            </div>
+            <div class="vehicle-price"><span class="price-from">from</span><span class="price-amount">BHD 15</span></div>
+            <div class="vehicle-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </label>
+
+          <label class="vehicle-card" data-capacity="4">
+            <input type="radio" name="vehicle" value="business" data-price="25" data-name="Business Class" data-capacity="4" />
+            <div class="vehicle-header"><span class="vehicle-badge badge-gold">Business</span><span class="vehicle-capacity">Up to 4 pax</span></div>
+            <div class="vehicle-icon"><svg viewBox="0 0 80 40" fill="none"><path d="M6 28H74M10 28V20L18 12H52L66 20V28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="21" cy="30" r="4.5" stroke="currentColor" stroke-width="2"/><circle cx="59" cy="30" r="4.5" stroke="currentColor" stroke-width="2"/></svg></div>
+            <div class="vehicle-info">
+              <h3 class="vehicle-name">Business Class</h3>
+              <p class="vehicle-model">Mercedes E-Class / BMW 5 Series</p>
+              <ul class="vehicle-features"><li>4 passengers</li><li>3 suitcases</li><li>Wi-Fi · Leather</li></ul>
+            </div>
+            <div class="vehicle-price"><span class="price-from">from</span><span class="price-amount">BHD 25</span></div>
+            <div class="vehicle-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </label>
+
+          <label class="vehicle-card" data-capacity="6">
+            <input type="radio" name="vehicle" value="suv" data-price="30" data-name="Business SUV" data-capacity="6" />
+            <div class="vehicle-header"><span class="vehicle-badge badge-silver">SUV</span><span class="vehicle-capacity">Up to 6 pax</span></div>
+            <div class="vehicle-icon"><svg viewBox="0 0 80 40" fill="none"><path d="M5 28H75M8 28V18L16 10H58L70 18V28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="20" cy="30" r="5" stroke="currentColor" stroke-width="2"/><circle cx="60" cy="30" r="5" stroke="currentColor" stroke-width="2"/></svg></div>
+            <div class="vehicle-info">
+              <h3 class="vehicle-name">Business SUV</h3>
+              <p class="vehicle-model">Mercedes GLS / Land Cruiser</p>
+              <ul class="vehicle-features"><li>6 passengers</li><li>4 suitcases</li><li>Wi-Fi · Premium</li></ul>
+            </div>
+            <div class="vehicle-price"><span class="price-from">from</span><span class="price-amount">BHD 30</span></div>
+            <div class="vehicle-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </label>
+
+          <label class="vehicle-card" data-capacity="7">
+            <input type="radio" name="vehicle" value="van" data-price="35" data-name="Business Van" data-capacity="7" />
+            <div class="vehicle-header"><span class="vehicle-badge badge-dark">Van</span><span class="vehicle-capacity">Up to 7 pax</span></div>
+            <div class="vehicle-icon"><svg viewBox="0 0 80 40" fill="none"><rect x="6" y="10" width="56" height="18" rx="3" stroke="currentColor" stroke-width="2"/><path d="M62 16H72L74 20V28H62V16Z" stroke="currentColor" stroke-width="1.5"/><circle cx="20" cy="30" r="4" stroke="currentColor" stroke-width="2"/><circle cx="62" cy="30" r="4" stroke="currentColor" stroke-width="2"/></svg></div>
+            <div class="vehicle-info">
+              <h3 class="vehicle-name">Business Van</h3>
+              <p class="vehicle-model">Mercedes V-Class / Viano</p>
+              <ul class="vehicle-features"><li>7 passengers</li><li>6 suitcases</li><li>Wi-Fi · Facing seats</li></ul>
+            </div>
+            <div class="vehicle-price"><span class="price-from">from</span><span class="price-amount">BHD 35</span></div>
+            <div class="vehicle-check" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          </label>
+        </div>
+
+        <div id="vehicle-warning" class="alert-box hidden" role="alert">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>This vehicle may not accommodate your selected passengers. Please choose a larger vehicle.</span>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary btn-back" data-prev="1">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
+          <button type="button" class="btn-primary btn-next" data-next="3">Continue to Details <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+
+      <!-- STEP 3: PERSONAL DETAILS -->
+      <div class="form-step hidden" id="step-3" aria-labelledby="step3-title">
+        <h2 id="step3-title" class="step-title">Your Details</h2>
+        <div class="form-grid">
+          <div class="form-group"><label for="first-name" class="form-label">First Name <span class="required">*</span></label><input type="text" id="first-name" name="firstName" class="form-input" placeholder="Ahmed" required /></div>
+          <div class="form-group"><label for="last-name" class="form-label">Last Name <span class="required">*</span></label><input type="text" id="last-name" name="lastName" class="form-input" placeholder="Al-Mansoori" required /></div>
+          <div class="form-group full"><label for="email" class="form-label">Email Address <span class="required">*</span></label><input type="email" id="email" name="email" class="form-input" placeholder="ahmed@example.com" required /></div>
+          <div class="form-group">
+            <label for="country-code" class="form-label">Country Code <span class="required">*</span></label>
+            <select id="country-code" name="countryCode" class="form-input">
+              <option value="+973">🇧🇭 +973 (Bahrain)</option>
+              <option value="+966">🇸🇦 +966 (Saudi Arabia)</option>
+              <option value="+971">🇦🇪 +971 (UAE)</option>
+              <option value="+974">🇶🇦 +974 (Qatar)</option>
+              <option value="+965">🇰🇼 +965 (Kuwait)</option>
+              <option value="+968">🇴🇲 +968 (Oman)</option>
+              <option value="+44">🇬🇧 +44 (UK)</option>
+              <option value="+1">🇺🇸 +1 (USA)</option>
+              <option value="+91">🇮🇳 +91 (India)</option>
+            </select>
+          </div>
+          <div class="form-group"><label for="phone" class="form-label">Phone Number <span class="required">*</span></label><input type="tel" id="phone" name="phone" class="form-input" placeholder="3300 0000" required /></div>
+          <div class="form-group full"><label for="special-requests" class="form-label">Special Requests <span class="optional">(optional)</span></label><textarea id="special-requests" name="specialRequests" class="form-input" rows="3" placeholder="Child seat, wheelchair access, specific preferences..."></textarea></div>
+        </div>
+        <div class="payment-note" role="note">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div><strong>Secure Booking</strong><span>No payment required now. You’ll be contacted to confirm pricing and payment before the trip.</span></div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary btn-back" data-prev="2"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+          <button type="button" class="btn-primary btn-next" data-next="4">Review Booking <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+
+      <!-- STEP 4: CONFIRMATION -->
+      <div class="form-step hidden" id="step-4" aria-labelledby="step4-title">
+        <h2 id="step4-title" class="step-title">Review &amp; Confirm</h2>
+        <div class="summary-card" role="region" aria-label="Booking summary">
+          <div class="summary-section">
+            <h3 class="summary-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg> Trip Details <button class="edit-link" data-goto="1">Edit</button></h3>
+            <div class="summary-grid" id="summary-trip"></div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-section">
+            <h3 class="summary-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg> Vehicle <button class="edit-link" data-goto="2">Edit</button></h3>
+            <div class="summary-grid" id="summary-vehicle"></div>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-section">
+            <h3 class="summary-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Contact <button class="edit-link" data-goto="3">Edit</button></h3>
+            <div class="summary-grid" id="summary-contact"></div>
+          </div>
+        </div>
+        <div class="price-estimate" role="region" aria-label="Price estimate">
+          <span class="price-label">Estimated Price</span>
+          <span class="price-value" id="price-display">BHD —</span>
+          <span class="price-note">Final price confirmed by our team</span>
+        </div>
+        <div class="terms-check">
+          <label class="checkbox-label">
+            <input type="checkbox" id="terms-agree" name="termsAgree" required />
+            <span class="checkmark" aria-hidden="true"></span>
+            I agree to the <a href="#" target="_blank">Terms &amp; Conditions</a> and <a href="#" target="_blank">Privacy Policy</a>
+          </label>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary btn-back" data-prev="3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+          <button type="button" class="btn-primary btn-submit" id="submit-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Confirm Booking</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: SUCCESS -->
+      <div class="form-step hidden" id="step-5" role="region" aria-labelledby="success-title">
+        <div class="success-state">
+          <div class="success-icon" aria-hidden="true"><svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" stroke="#c9a84c" stroke-width="2"/><polyline points="20 32 28 40 44 24" stroke="#c9a84c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h2 id="success-title" class="success-title">Booking Confirmed!</h2>
+          <p class="success-message">Your booking request has been received. Our team will contact you shortly to confirm the trip details and pricing.</p>
+          <div class="success-id">Booking ID: <strong id="booking-id-display"></strong></div>
+          <div class="success-actions">
+            <button type="button" class="btn-secondary" onclick="window.print()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print Receipt</button>
+            <button type="button" class="btn-primary" onclick="location.reload()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Booking</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <section id="services" class="services-strip" aria-labelledby="services-title">
+    <div class="services-inner">
+      <h2 id="services-title" class="section-title">Our Services</h2>
+      <div class="services-row">
+        <div class="service-item"><svg class="service-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>Airport Transfers</span></div>
+        <div class="service-item"><svg class="service-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Hourly Hire</span></div>
+        <div class="service-item"><svg class="service-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>City to City</span></div>
+        <div class="service-item"><svg class="service-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Corporate</span></div>
+        <div class="service-item"><svg class="service-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg><span>Events</span></div>
+        <div class="service-item"><svg class="service-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><span>Tours</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-inner">
+      <p>© 2026 Chauffeur Booking App</p>
+      <p><a href="tel:+97300000000">+973 0000-0000</a> · <a href="mailto:info@example.com">info@example.com</a></p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
