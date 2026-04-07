@@ -33,8 +33,8 @@
 
   <main class="contact-shell">
     <section class="contact-card">
-      <h1 data-i18n="contact.title">Contact Us</h1>
-      <p class="subtext" data-i18n="contact.subtitle">Questions, partnerships or special requests — we’re here to help.</p>
+      <h1 data-i18n="contact.title"><%= typeof t === 'function' ? t('contact.title') : 'Contact Us' %></h1>
+        <p class="subtext" data-i18n="contact.subtitle"><%= typeof t === 'function' ? t('contact.subtitle') : 'Questions, partnerships or special requests — we’re here to help.' %></p>
 
       <form id="contact-form" class="grid-2">
         <label class="field"><span data-i18n="fields.firstName">First Name</span><input id="contact-first" type="text" required /></label>
@@ -51,10 +51,10 @@
           </select>
         </label>
         <label class="field"><span data-i18n="fields.phone">Phone</span><input id="contact-phone" type="tel" required /></label>
-        <label class="field full"><span data-i18n="contact.message">Message</span><textarea id="contact-message-text" rows="6" required></textarea></label>
+        <label class="field full"><span data-i18n="contact.message"><%= typeof t === 'function' ? t('contact.message') : 'Message' %></span><textarea id="contact-message-text" rows="6" required></textarea></label>
 
         <div class="actions">
-          <button class="btn gold" type="submit" id="contact-submit">Send Message</button>
+          <button class="btn gold" type="submit" id="contact-submit" data-i18n="contact.send"><%= typeof t === 'function' ? t('contact.send') : 'Send Message' %></button>
         </div>
         <p id="contact-message" class="subtext"></p>
       </form>

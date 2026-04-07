@@ -50,15 +50,24 @@
       <p data-i18n="intro.description">Experience premium chauffeur services with transparent pricing, professional drivers, and exclusive vehicles designed for your comfort.</p>
     </section>
 
+    <div id="maintenance-overlay" class="maintenance-overlay hidden" aria-hidden="true">
+      <div class="maintenance-card">
+        <h2 data-i18n="messages.maintenanceTitle">Maintenance</h2>
+        <p class="maintenance-message"></p>
+        <p class="maintenance-contact"></p>
+        <div class="maintenance-actions"><button id="maintenance-refresh" class="btn">Reload</button></div>
+      </div>
+    </div>
+
     <section class="booking-card">
       <div class="stepper" aria-label="Booking steps">
-        <div class="step active" data-step="1"><span>1</span><span data-i18n="steps.trip">Trip</span></div>
+        <div class="step active" data-step="1"><span class="step-pill">1</span><span class="step-label" data-i18n="steps.trip">Trip</span></div>
         <div class="line"></div>
-        <div class="step" data-step="2"><span>2</span><span data-i18n="steps.vehicle">Vehicle</span></div>
+        <div class="step" data-step="2"><span class="step-pill">2</span><span class="step-label" data-i18n="steps.vehicle">Vehicle</span></div>
         <div class="line"></div>
-        <div class="step" data-step="3"><span>3</span><span data-i18n="steps.details">Details</span></div>
+        <div class="step" data-step="3"><span class="step-pill">3</span><span class="step-label" data-i18n="steps.details">Details</span></div>
         <div class="line"></div>
-        <div class="step" data-step="4"><span>4</span><span data-i18n="steps.confirm">Confirm</span></div>
+        <div class="step" data-step="4"><span class="step-pill">4</span><span class="step-label" data-i18n="steps.confirm">Confirm</span></div>
       </div>
 
       <section class="form-step" id="step-1">
