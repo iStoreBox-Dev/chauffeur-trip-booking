@@ -1,42 +1,5 @@
 const pool = require('../../config/db');
-
-const DEFAULT_SETTINGS = {
-  app_name: 'LUXERIDE',
-  app_tagline: 'Premium Chauffeur Booking',
-  hero_title: 'Move Through Bahrain in Quiet Luxury',
-  hero_subtitle: 'Airport transfers, executive travel, and hourly hire with premium comfort.',
-  seo_title: 'LUXERIDE | Premium Chauffeur Booking',
-  seo_description: 'Book premium chauffeur rides with transparent pricing and elegant service in Bahrain.',
-  seo_keywords: 'chauffeur,bahrain,airport transfer,executive ride,private driver',
-  support_email: 'booking@example.com',
-  support_phone: '+973 0000 0000',
-  whatsapp_number: '',
-  currency_code: 'BHD',
-  primary_color: '#ffd27d',
-  secondary_color: '#0d1622',
-  maintenance_mode: false,
-  booking_enabled: true,
-  default_language: 'en',
-  supported_languages: ['en', 'ar'],
-  default_theme: 'dark',
-  add_on_prices: {
-    child_seat: 2.5,
-    extra_luggage: 1.2,
-    pet_friendly: 3.0
-  },
-  social_links: {
-    instagram: '',
-    x: '',
-    facebook: '',
-    linkedin: ''
-  },
-  // UI toggles
-  enhance_journey_enabled: true,
-  enhance_journey_text: 'Enhance Your Journey',
-  addons_enabled: true,
-  addons_title: 'Enhance Your Journey',
-  seo_indexable: true
-};
+const { loadMergedSettings, normalizeSettings } = require('../utils/settings');
 
 function sanitizePublic(settings) {
   return {
@@ -66,25 +29,6 @@ function sanitizePublic(settings) {
     social_links: settings.social_links,
     seo_indexable: settings.seo_indexable
   };
-}
-
-async function loadMergedSettings() {
-  try {
-    const result = await pool.query('SELECT value FROM app_settings WHERE key = $1 LIMIT 1', ['app']);
-    const current = result.rows[0]?.value || {};
-    return {
-      ...DEFAULT_SETTINGS,
-      ...current,
-      social_links: {
-        ...DEFAULT_SETTINGS.social_links,
-        ...(current.social_links || {})
-      }
-    };
-  } catch (dbError) {
-    // Database not available or not initialized, return defaults
-    console.warn('Database query failed, using default settings:', dbError.message);
-    return DEFAULT_SETTINGS;
-  }
 }
 
 async function getPublicSettings(_req, res) {
@@ -129,14 +73,14 @@ async function updateAdminSettings(req, res) {
     const incoming = typeof req.body === 'object' && req.body ? req.body : {};
     const current = await loadMergedSettings();
 
-    const merged = {
+    const merged = normalizeSettings({
       ...current,
       ...incoming,
       social_links: {
         ...current.social_links,
         ...(incoming.social_links || {})
       }
-    };
+    });
 
     await pool.query(
       `INSERT INTO app_settings (key, value, updated_at)

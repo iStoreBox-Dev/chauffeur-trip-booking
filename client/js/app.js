@@ -326,6 +326,16 @@
   }
 
   function applySettings(settings) {
+    const toBool = (value, fallback = false) => {
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'string') {
+        const v = value.trim().toLowerCase();
+        if (v === 'true') return true;
+        if (v === 'false') return false;
+      }
+      return fallback;
+    };
+
     state.settings = settings;
     state.currencyCode = settings.currency_code || 'BHD';
 
@@ -368,9 +378,13 @@
       footerContact.textContent = contactBits.length ? `Contact: ${contactBits.join(' • ')}` : tr('footer.defaultContact');
     }
 
+    const enhanceEnabled = toBool(settings.enhance_journey_enabled, true);
+    const maintenanceMode = toBool(settings.maintenance_mode, false);
+    const bookingEnabled = toBool(settings.booking_enabled, true);
+
     const enhanceEl = qs('#enhance-cta');
     if (enhanceEl) {
-      if (settings.enhance_journey_enabled) {
+      if (enhanceEnabled) {
         enhanceEl.classList.remove('hidden');
         enhanceEl.textContent = settings.enhance_journey_text || 'Enhance Your Journey';
       } else {
@@ -380,16 +394,32 @@
 
     const banner = qs('#system-banner');
     if (banner) {
-      if (settings.maintenance_mode) {
+      if (maintenanceMode) {
         banner.textContent = tr('messages.maintenanceMode');
         banner.classList.remove('hidden');
-      } else if (!settings.booking_enabled) {
+      } else if (!bookingEnabled) {
         banner.textContent = tr('messages.bookingDisabled');
         banner.classList.remove('hidden');
       } else {
         banner.textContent = '';
         banner.classList.add('hidden');
       }
+    }
+
+    const shouldBlockBooking = maintenanceMode || !bookingEnabled;
+    const overlay = qs('#maintenance-overlay');
+    if (overlay) {
+      overlay.classList.toggle('hidden', !shouldBlockBooking);
+      overlay.setAttribute('aria-hidden', shouldBlockBooking ? 'false' : 'true');
+    }
+
+    const bookingCard = qs('.booking-card');
+    if (bookingCard) {
+      bookingCard.querySelectorAll('input, select, textarea, button').forEach((el) => {
+        if (el.id !== 'maintenance-refresh') {
+          el.disabled = shouldBlockBooking;
+        }
+      });
     }
   }
 

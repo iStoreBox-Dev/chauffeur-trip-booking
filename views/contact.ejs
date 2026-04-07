@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><%= (typeof t === 'function' ? t('contact.title') : 'Contact Us') %></title>
+  <title><%= pageTitle || ((typeof t === 'function' ? t('contact.title') : 'Contact Us') + ' | LUXERIDE') %></title>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
@@ -31,10 +31,16 @@
     </div>
   </header>
 
-  <main class="contact-shell">
-    <section class="contact-card">
+  <main class="booking-shell contact-shell">
+    <section class="booking-intro">
+      <p class="eyebrow">LUXERIDE</p>
       <h1 data-i18n="contact.title"><%= typeof t === 'function' ? t('contact.title') : 'Contact Us' %></h1>
-        <p class="subtext" data-i18n="contact.subtitle"><%= typeof t === 'function' ? t('contact.subtitle') : 'Questions, partnerships or special requests — we’re here to help.' %></p>
+      <p data-i18n="contact.subtitle"><%= typeof t === 'function' ? t('contact.subtitle') : 'Questions, partnerships or special requests — we’re here to help.' %></p>
+    </section>
+
+    <section class="booking-card contact-card">
+      <h1 data-i18n="contact.title"><%= typeof t === 'function' ? t('contact.title') : 'Contact Us' %></h1>
+      <p class="subtext" data-i18n="contact.subtitle"><%= typeof t === 'function' ? t('contact.subtitle') : 'Questions, partnerships or special requests — we’re here to help.' %></p>
 
       <form id="contact-form" class="grid-2">
         <label class="field"><span data-i18n="fields.firstName">First Name</span><input id="contact-first" type="text" required /></label>
@@ -56,9 +62,8 @@
         <div class="actions">
           <button class="btn gold" type="submit" id="contact-submit" data-i18n="contact.send"><%= typeof t === 'function' ? t('contact.send') : 'Send Message' %></button>
         </div>
-        <p id="contact-message" class="subtext"></p>
+        <p id="contact-message" class="subtext" role="status" aria-live="polite"></p>
       </form>
-
     </section>
   </main>
 
@@ -92,7 +97,7 @@
           });
 
           if (res.ok) {
-            messageEl.style.color = 'var(--ok)';
+            messageEl.style.color = 'var(--success)';
             messageEl.textContent = 'Message sent — we will get back to you soon.';
             form.reset();
             return;

@@ -8,6 +8,7 @@ const path = require('path');
 const routes = require('./routes');
 const { attachLocale } = require('./middleware/locale');
 const { t: translate } = require('./utils/i18n');
+const { loadMergedSettings } = require('./utils/settings');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -53,27 +54,49 @@ app.use('/api', routes);
 app.use('/css', express.static(path.join(__dirname, '../client/css')));
 app.use('/js', express.static(path.join(__dirname, '../client/js')));
 app.use('/assets', express.static(path.join(__dirname, '../client/assets')));
-app.use('/admin', express.static(path.join(__dirname, '../client/admin')));
 
 // Views (EJS) support
 app.set('views', path.join(__dirname, '../views'));
 app.set('view engine', 'ejs');
 
-app.get('/', (req, res) => {
-  return res.render('booking', { t: (k, p) => translate(req.locale, k, p), locale: req.locale });
+app.get('/', async (req, res) => {
+  const settings = await loadMergedSettings();
+  return res.render('booking', {
+    t: (k, p) => translate(req.locale, k, p),
+    locale: req.locale,
+    pageTitle: settings.seo_title || `${settings.app_name || 'LUXERIDE'} | Premium Luxury Chauffeur Booking`
+  });
 });
 
-app.get('/booking', (req, res) => {
-  return res.render('booking', { t: (k, p) => translate(req.locale, k, p), locale: req.locale });
+app.get('/booking', async (req, res) => {
+  const settings = await loadMergedSettings();
+  return res.render('booking', {
+    t: (k, p) => translate(req.locale, k, p),
+    locale: req.locale,
+    pageTitle: settings.seo_title || `${settings.app_name || 'LUXERIDE'} | Premium Luxury Chauffeur Booking`
+  });
 });
 
-app.get('/contact', (req, res) => {
-  return res.render('contact', { t: (k, p) => translate(req.locale, k, p), locale: req.locale });
+app.get('/contact', async (req, res) => {
+  const settings = await loadMergedSettings();
+  return res.render('contact', {
+    t: (k, p) => translate(req.locale, k, p),
+    locale: req.locale,
+    pageTitle: `${translate(req.locale, 'contact.title') || 'Contact'} | ${settings.app_name || 'LUXERIDE'}`
+  });
 });
 
-app.get('/admin', (_req, res) => {
-  res.sendFile(path.join(__dirname, '../client/admin/index.html'));
+app.get('/admin', async (req, res) => {
+  const settings = await loadMergedSettings();
+  return res.render('admin', {
+    locale: req.locale,
+    pageTitle: `${settings.app_name || 'LUXERIDE'} Admin Control Center`
+  });
 });
+
+app.get('/admin/', (req, res) => res.redirect(301, '/admin'));
+app.get('/booking.html', (req, res) => res.redirect(301, '/booking'));
+app.get('/admin/index.html', (req, res) => res.redirect(301, '/admin'));
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Endpoint not found.' });

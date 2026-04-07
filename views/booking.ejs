@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="<%= locale %>" data-theme="dark" dir="<%= locale === 'ar' ? 'rtl' : 'ltr' %>">
+<html lang="<%= locale || 'en' %>" data-theme="dark" dir="<%= locale === 'ar' ? 'rtl' : 'ltr' %>">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><%= (typeof t === 'function' ? t('intro.title') : 'LUXERIDE') %></title>
+  <title><%= pageTitle || 'LUXERIDE | Premium Luxury Chauffeur Booking' %></title>
   <meta name="description" content="Experience luxury travel with LUXERIDE. Premium chauffeur services with transparent pricing, professional drivers, and exclusive vehicles." />
   <meta name="keywords" content="luxury chauffeur,premium transportation,airport transfer,executive ride,bahrain" />
   <meta name="robots" content="index,follow" />
@@ -20,9 +20,9 @@
     <div class="header-inner">
       <a href="/" class="brand" id="brand-name">LUXE<span>RIDE</span></a>
       <nav class="header-nav">
-        <a href="#booking"><%= t('nav.book') %></a>
-        <a href="#track-booking"><%= t('nav.track') %></a>
-        <a href="/contact"><%= t('nav.contact') %></a>
+        <a href="#booking" data-i18n="nav.book">Book</a>
+        <a href="#track-booking" data-i18n="nav.track">Track My Booking</a>
+        <a href="/contact" data-i18n="nav.contact">Contact Us</a>
       </nav>
       <div class="header-tools">
         <select class="chip-btn" id="currency-toggle" type="button">
@@ -61,13 +61,13 @@
 
     <section class="booking-card">
       <div class="stepper" aria-label="Booking steps">
-        <div class="step active" data-step="1"><span class="step-pill">1</span><span class="step-label" data-i18n="steps.trip">Trip</span></div>
+        <div class="step active" data-step="1"><span>1</span><span data-i18n="steps.trip">Trip</span></div>
         <div class="line"></div>
-        <div class="step" data-step="2"><span class="step-pill">2</span><span class="step-label" data-i18n="steps.vehicle">Vehicle</span></div>
+        <div class="step" data-step="2"><span>2</span><span data-i18n="steps.vehicle">Vehicle</span></div>
         <div class="line"></div>
-        <div class="step" data-step="3"><span class="step-pill">3</span><span class="step-label" data-i18n="steps.details">Details</span></div>
+        <div class="step" data-step="3"><span>3</span><span data-i18n="steps.details">Details</span></div>
         <div class="line"></div>
-        <div class="step" data-step="4"><span class="step-pill">4</span><span class="step-label" data-i18n="steps.confirm">Confirm</span></div>
+        <div class="step" data-step="4"><span>4</span><span data-i18n="steps.confirm">Confirm</span></div>
       </div>
 
       <section class="form-step" id="step-1">

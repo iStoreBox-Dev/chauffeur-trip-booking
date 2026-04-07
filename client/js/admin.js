@@ -491,6 +491,18 @@
     seo.x.value = settings.social_links?.x || '';
     seo.facebook.value = settings.social_links?.facebook || '';
     seo.linkedin.value = settings.social_links?.linkedin || '';
+
+    const adminBrand = qs('#admin-brand-name');
+    const adminFooterBrand = qs('#admin-footer-brand');
+    if (settings.app_name && adminBrand) {
+      adminBrand.innerHTML = `${settings.app_name} <span>ADMIN</span>`;
+    }
+    if (settings.app_name && adminFooterBrand) {
+      adminFooterBrand.textContent = settings.app_name;
+    }
+    if (settings.app_name) {
+      document.title = `${settings.app_name} Admin Control Center`;
+    }
   }
 
   async function loadStats() {
@@ -620,6 +632,7 @@
   async function saveAppSettings(event) {
     event.preventDefault();
     const form = event.currentTarget;
+    const msg = qs('#settings-message');
     const payload = {
       app_name: form.app_name.value.trim(),
       app_tagline: form.app_tagline.value.trim(),
@@ -636,13 +649,26 @@
       maintenance_mode: form.maintenance_mode.value === 'true',
       booking_enabled: form.booking_enabled.value === 'true'
     };
-    await request('/api/admin/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(payload) });
-    await loadSettings();
+    try {
+      await request('/api/admin/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(payload) });
+      await loadSettings();
+      if (msg) {
+        msg.textContent = 'Settings saved successfully.';
+        msg.style.color = 'var(--admin-success)';
+      }
+    } catch (error) {
+      if (msg) {
+        msg.textContent = error.message || 'Failed to save settings.';
+        msg.style.color = 'var(--admin-danger)';
+      }
+      alert(error.message || 'Failed to save settings.');
+    }
   }
 
   async function saveSeoSettings(event) {
     event.preventDefault();
     const form = event.currentTarget;
+    const msg = qs('#settings-message');
     const payload = {
       seo_title: form.seo_title.value.trim(),
       seo_description: form.seo_description.value.trim(),
@@ -655,8 +681,20 @@
         linkedin: form.linkedin.value.trim()
       }
     };
-    await request('/api/admin/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(payload) });
-    await loadSettings();
+    try {
+      await request('/api/admin/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(payload) });
+      await loadSettings();
+      if (msg) {
+        msg.textContent = 'SEO and social settings saved successfully.';
+        msg.style.color = 'var(--admin-success)';
+      }
+    } catch (error) {
+      if (msg) {
+        msg.textContent = error.message || 'Failed to save SEO settings.';
+        msg.style.color = 'var(--admin-danger)';
+      }
+      alert(error.message || 'Failed to save SEO settings.');
+    }
   }
 
   function bindEvents() {
