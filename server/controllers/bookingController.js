@@ -75,10 +75,15 @@ async function validatePromoCode({ code, amount, req }) {
   if (USE_MOCK_DB) {
     const promo = mockDb.getPromoByCode(code);
     if (!promo) return { promo: null, error: msg(req, 'errors.promoNotFound'), status: 404 };
-    const ok = (promo.max_uses === null || promo.used_count < promo.max_uses)
-      && (!promo.expires_at || new Date(promo.expires_at) >= new Date())
-      && toNumber(amount, 0) >= toNumber(promo.min_amount, 0);
-    return ok ? { promo, error: null, status: 200 } : { promo: null, error: msg(req, 'errors.promoInvalid'), status: 400 };
+    const hasUsesLeft = promo.max_uses === null || promo.used_count < promo.max_uses;
+    const notExpired = !promo.expires_at || new Date(promo.expires_at) >= new Date();
+    const minAmountSatisfied = toNumber(amount, 0) >= toNumber(promo.min_amount, 0);
+
+    if (!hasUsesLeft) return { promo: null, error: 'Promo usage limit reached', status: 400 };
+    if (!notExpired) return { promo: null, error: 'Promo code expired', status: 400 };
+    if (!minAmountSatisfied) return { promo: null, error: `Minimum amount ${promo.min_amount} required to apply this promo`, status: 400 };
+
+    return { promo, error: null, status: 200 };
   }
 
   const result = await pool.query(
@@ -86,10 +91,15 @@ async function validatePromoCode({ code, amount, req }) {
   );
   const promo = result.rows[0];
   if (!promo) return { promo: null, error: msg(req, 'errors.promoNotFound'), status: 404 };
-  const ok = (promo.max_uses === null || promo.used_count < promo.max_uses)
-    && (!promo.expires_at || new Date(promo.expires_at) >= new Date())
-    && toNumber(amount, 0) >= toNumber(promo.min_amount, 0);
-  return ok ? { promo, error: null, status: 200 } : { promo: null, error: msg(req, 'errors.promoInvalid'), status: 400 };
+  const hasUsesLeft = promo.max_uses === null || promo.used_count < promo.max_uses;
+  const notExpired = !promo.expires_at || new Date(promo.expires_at) >= new Date();
+  const minAmountSatisfied = toNumber(amount, 0) >= toNumber(promo.min_amount, 0);
+
+  if (!hasUsesLeft) return { promo: null, error: 'Promo usage limit reached', status: 400 };
+  if (!notExpired) return { promo: null, error: 'Promo code expired', status: 400 };
+  if (!minAmountSatisfied) return { promo: null, error: `Minimum amount ${promo.min_amount} required to apply this promo`, status: 400 };
+
+  return { promo, error: null, status: 200 };
 }
 
 async function calculateQuote(req, payload = req.body) {

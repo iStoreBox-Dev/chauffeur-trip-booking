@@ -277,20 +277,37 @@
     const b = detail.booking;
     state.selectedBooking = b;
     state.bookingLogs = logs.logs || [];
+    // Header: include booking ref and status badge
+    const head = qs('#booking-detail .detail-head');
+    if (head) {
+      const h3 = head.querySelector('h3');
+      if (h3) h3.textContent = `Booking ${b.booking_ref}`;
+      // remove old badge if present
+      const oldBadge = head.querySelector('.booking-status-badge');
+      if (oldBadge) oldBadge.remove();
+      const badgeCls = STATUS_COLORS[b.status] || 'status-pending';
+      h3.insertAdjacentHTML('afterend', `<span class="pill ${badgeCls} booking-status-badge" style="margin-left:8px">${b.status}</span>`);
+    }
+
+    // Pickup/dropoff with Google Maps links when coordinates are present
+    const pickupHtml = `${b.pickup_location || '-'}${b.pickup_lat && b.pickup_lng ? `<div><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.pickup_lat + ',' + b.pickup_lng)}" target="_blank" rel="noopener" class="map-link">Open in Google Maps</a></div>` : ''}`;
+    const dropoffHtml = `${b.dropoff_location || '-'}${b.dropoff_lat && b.dropoff_lng ? `<div><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.dropoff_lat + ',' + b.dropoff_lng)}" target="_blank" rel="noopener" class="map-link">Open in Google Maps</a></div>` : ''}`;
 
     const customer = group('Customer', [
       detailItem('Name', `${b.first_name} ${b.last_name}`),
       detailItem('Email', b.email),
       detailItem('Phone', `${b.country_code || ''} ${b.phone || ''}`.trim())
     ].join(''));
+
     const trip = group('Trip', [
       detailItem('Reference', b.booking_ref),
       detailItem('Service', b.service_type),
-      detailItem('Pickup', b.pickup_location),
-      detailItem('Dropoff', b.dropoff_location),
+      detailItem('Pickup', pickupHtml),
+      detailItem('Dropoff', dropoffHtml),
       detailItem('Departure', `${b.departure_date || ''} ${b.departure_time || ''}`.trim()),
       detailItem('Status', statusBadge(b.status))
     ].join(''));
+
     const pricing = group('Pricing', [
       detailItem('Base', money(b.base_price)),
       detailItem('Discount', money(b.discount_amount)),
@@ -562,14 +579,24 @@
 
   async function createPromo(event) {
     event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-    data.discount_value = Number(data.discount_value);
-    data.max_uses = data.max_uses ? Number(data.max_uses) : null;
-    data.min_amount = Number(data.min_amount || 0);
-    data.expires_at = data.expires_at ? new Date(data.expires_at).toISOString() : null;
-    await request('/api/promo', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
-    event.currentTarget.reset();
-    await loadPromos();
+    const form = event.currentTarget;
+    const msgEl = qs('#promo-form-message');
+    if (msgEl) { msgEl.textContent = ''; msgEl.style.color = 'var(--admin-muted)'; }
+    try {
+      const data = Object.fromEntries(new FormData(form).entries());
+      data.discount_value = Number(data.discount_value);
+      data.max_uses = data.max_uses ? Number(data.max_uses) : null;
+      data.min_amount = Number(data.min_amount || 0);
+      data.expires_at = data.expires_at ? new Date(data.expires_at).toISOString() : null;
+      const created = await request('/api/promo', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
+      if (msgEl) { msgEl.textContent = 'Promo created.'; msgEl.style.color = 'var(--admin-success)'; }
+      form.reset();
+      await loadPromos();
+      setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 3500);
+    } catch (err) {
+      if (msgEl) { msgEl.textContent = err.message || 'Unable to create promo.'; msgEl.style.color = 'var(--admin-danger)'; }
+      else alert(err.message || 'Unable to create promo.');
+    }
   }
 
   async function togglePromo(id) {
