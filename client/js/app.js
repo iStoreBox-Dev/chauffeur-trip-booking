@@ -145,6 +145,80 @@
     }
   }
 
+  /**
+   * Comprehensive API Fetch Wrapper with Error Handling
+   */
+  async function fetchApi(endpoint, options = {}) {
+    const { method = 'GET', body = null, silent = false, timeout = 30000 } = options;
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeout);
+      
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Lang': state.locale,
+        ...options.headers
+      };
+      
+      const fetchOptions = {
+        method,
+        headers,
+        signal: controller.signal
+      };
+      
+      if (body) {
+        fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
+      }
+      
+      const response = await fetch(endpoint, fetchOptions);
+      clearTimeout(timeoutId);
+      
+      const data = await response.json().catch(() => ({}));
+      
+      if (!response.ok) {
+        const errorMsg = data.error || `HTTP ${response.status}: ${response.statusText}`;
+        
+        // Handle specific status codes
+        if (response.status === 401) {
+          if (!silent) showError('Session expired. Please try logging in again.', tr('alerts.error'));
+          return { error: errorMsg, status: response.status };
+        } else if (response.status === 403) {
+          if (!silent) showError('You do not have permission for this action.', tr('alerts.error'));
+          return { error: errorMsg, status: response.status };
+        } else if (response.status === 404) {
+          if (!silent) showWarning('Resource not found.', tr('alerts.warning'));
+          return { error: errorMsg, status: response.status };
+        } else if (response.status === 429) {
+          if (!silent) showWarning('Too many requests. Please wait before trying again.', tr('alerts.warning'));
+          return { error: errorMsg, status: response.status };
+        } else if (response.status >= 500) {
+          if (!silent) showError(tr('errors.serverError'), tr('alerts.error'));
+          return { error: errorMsg, status: response.status };
+        } else {
+          if (!silent) showError(errorMsg, tr('alerts.error'));
+          return { error: errorMsg, status: response.status };
+        }
+      }
+      
+      return { success: true, data, status: response.status };
+    } catch (error) {
+      console.error('[Fetch Error]', error);
+      
+      if (error.name === 'AbortError') {
+        if (!silent) showError('Request timeout. Please check your connection and try again.', tr('alerts.error'));
+        return { error: 'Request timeout', status: 0 };
+      } else if (error instanceof TypeError) {
+        if (!silent) showError(tr('errors.networkError'), tr('alerts.error'));
+        return { error: 'Network error', status: 0 };
+      } else {
+        if (!silent) showError(error.message || tr('errors.serverError'), tr('alerts.error'));
+        return { error: error.message, status: 0 };
+      }
+    }
+  }
+
+
   function getValueByPath(obj, dottedPath) {
     return String(dottedPath || '')
       .split('.')
@@ -308,38 +382,41 @@
   }
 
   async function loadSettings() {
-    try {
-      const res = await fetch(`/api/settings?lang=${state.locale}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (res.ok && data.settings) {
-        applySettings(data.settings);
-      }
-    } catch (error) {
-      console.error('Load settings failed:', error);
+    const result = await fetchApi(`/api/settings?lang=${state.locale}`, { silent: true });
+    if (result.success && result.data.settings) {
+      applySettings(result.data.settings);
+    } else if (!result.success && result.error) {
+      console.error('Load settings failed:', result.error);
       showWarning(tr('errors.failedLoadSettings'), tr('alerts.warning'));
     }
   }
 
   async function loadTranslations() {
     try {
-      const [enRes, arRes] = await Promise.all([
-        fetch('/js/i18n/en.json'),
-        fetch('/js/i18n/ar.json')
-      ]);
+      const enResult = await fetchApi('/js/i18n/en.json', { silent: true });
+      const arResult = await fetchApi('/js/i18n/ar.json', { silent: true });
 
-      if (!enRes.ok || !arRes.ok) {
-        throw new Error('Failed to load translation files');
+      if (enResult.success && enResult.data) {
+        state.translations.en = enResult.data;
+      } else {
+        state.translations.en = {};
       }
 
-      const [enData, arData] = await Promise.all([enRes.json(), arRes.json()]);
-      state.translations.en = enData || {};
-      state.translations.ar = arData || {};
+      if (arResult.success && arResult.data) {
+        state.translations.ar = arResult.data;
+      } else {
+        state.translations.ar = {};
+      }
+
+      if (!enResult.success || !arResult.success) {
+        console.error('Translation load failed - using defaults');
+        showWarning(tr('errors.failedLoadTranslations') || 'Could not load translations', tr('alerts.warning'));
+      }
     } catch (error) {
       console.error('Load translations failed:', error);
-      showWarning(tr('errors.failedLoadTranslations') || 'Could not load translations', tr('alerts.warning'));
       state.translations.en = {};
       state.translations.ar = {};
+      showWarning(tr('errors.failedLoadTranslations') || 'Could not load translations', tr('alerts.warning'));
     }
   }
 
@@ -565,17 +642,15 @@
   }
 
   async function loadVehicles() {
-    try {
-      const res = await fetch(`/api/vehicles?lang=${state.locale}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      state.vehicles = data.vehicles || [];
+    const result = await fetchApi(`/api/vehicles?lang=${state.locale}`);
+    if (result.success && result.data.vehicles) {
+      state.vehicles = result.data.vehicles || [];
       if (!state.vehicles.length) {
         showWarning(tr('messages.noVehiclesAvailable') || 'No vehicles available', tr('alerts.warning'));
       }
       renderVehicleGrid();
-    } catch (error) {
-      console.error('Load vehicles failed:', error);
+    } else {
+      console.error('Load vehicles failed:', result.error);
       showError(tr('messages.vehicleLoadFailed') || 'Could not load vehicles. Please refresh the page.', tr('alerts.error'));
       refs.vehicleGrid.innerHTML = `<p class="warn">${escapeHtml(tr('messages.vehicleLoadFailed') || 'Failed to load vehicles')}</p>`;
     }

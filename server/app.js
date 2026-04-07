@@ -21,17 +21,22 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-      imgSrc: ["'self'", 'data:'],
-      connectSrc: ["'self'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      connectSrc: ["'self'", 'https://nominatim.openstreetmap.org'],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       frameAncestors: ["'none'"]
     }
   },
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false,
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
 }));
 
-app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()) : ['*'];\napp.use(cors({\n  origin: allowedOrigins,\n  credentials: true,\n  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],\n  allowedHeaders: ['Content-Type', 'Authorization', 'X-Lang', 'X-Forwarded-For']\n}));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(attachLocale);
@@ -59,14 +64,30 @@ app.use((_req, res) => {
   res.status(404).json({ error: 'Endpoint not found.' });
 });
 
-app.use((error, _req, res, _next) => {
-  console.error('Unhandled application error:', error.message);
-  res.status(500).json({ error: 'Something went wrong. Please try again later.' });
+app.use((error, req, res, _next) => {
+  console.error('Unhandled application error:', {
+    message: error.message,
+    status: error.status || 500,
+    method: req.method,
+    path: req.path,
+    url: req.originalUrl,
+    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+  });
+  res.status(error.status || 500).json({
+    error: 'Something went wrong. Please try again later.',
+    status: error.status || 500,
+    message: process.env.NODE_ENV === 'development' ? error.message : undefined
+  });
 });
 
 if (require.main === module) {
   app.listen(PORT, () => {
+    console.log(`\n${'='.repeat(60)}`);
     console.log(`Chauffeur booking API listening on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Use Mock DB: ${process.env.USE_MOCK_DB === 'true' ? 'YES' : 'NO'}`);
+    console.log(`CORS Origins: ${allowedOrigins.join(', ')}`);
+    console.log(`${'='.repeat(60)}\n`);
   });
 }
 
