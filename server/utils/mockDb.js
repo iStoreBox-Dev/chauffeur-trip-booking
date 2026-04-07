@@ -154,6 +154,49 @@ function getSettings() {
   return MOCK_SETTINGS;
 }
 
+// Mock users for authentication
+const MOCK_USERS = [
+  {
+    id: 1,
+    email: 'admin@example.com',
+    password: '$2a$12$F9DgSq1bzFSkZ5OSSgAt8ODoJ8ZqOsenFaL8sxyFUTc64tsF6M4v6',
+    full_name: 'System Admin',
+    role: 'admin',
+    is_active: true,
+    created_at: new Date()
+  },
+  {
+    id: 2,
+    email: 'operator@example.com',
+    password: '$2a$12$F9DgSq1bzFSkZ5OSSgAt8ODoJ8ZqOsenFaL8sxyFUTc64tsF6M4v6',
+    full_name: 'Operations Manager',
+    role: 'operator',
+    is_active: true,
+    created_at: new Date()
+  }
+];
+
+/**
+ * Get user by email
+ */
+function getUserByEmail(email) {
+  return MOCK_USERS.find(u => u.email.toLowerCase() === String(email || '').toLowerCase());
+}
+
+/**
+ * Get all users
+ */
+function getAllUsers() {
+  return MOCK_USERS.map(u => ({
+    id: u.id,
+    email: u.email,
+    full_name: u.full_name,
+    role: u.role,
+    is_active: u.is_active,
+    created_at: u.created_at
+  }));
+}
+
 // In-memory bookings storage
 const MOCK_BOOKINGS = [];
 let BOOKING_ID_COUNTER = 1;
@@ -194,11 +237,14 @@ module.exports = {
   getVehicleById,
   getAllVehicles,
   getSettings,
+  getUserByEmail,
+  getAllUsers,
   createBooking,
   getBookingById,
   getAllBookings,
   MOCK_PROMO_CODES,
   MOCK_VEHICLES,
+  MOCK_USERS,
   MOCK_SETTINGS,
   MOCK_BOOKINGS
 };

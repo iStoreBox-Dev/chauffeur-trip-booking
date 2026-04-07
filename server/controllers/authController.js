@@ -2,6 +2,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../../config/db');
 const { safeEqual } = require('../utils/helpers');
+const mockDb = require('../utils/mockDb');
+
+const USE_MOCK_DB = process.env.USE_MOCK_DB === 'true';
 
 function signToken(user) {
   return jwt.sign(
@@ -23,15 +26,19 @@ async function login(req, res) {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
-    const result = await pool.query(
-      `SELECT id, email, password, full_name, role, is_active
-       FROM users
-       WHERE LOWER(email) = LOWER($1)
-       LIMIT 1`,
-      [email]
-    );
-
-    const user = result.rows[0];
+    let user;
+    if (USE_MOCK_DB) {
+      user = mockDb.getUserByEmail(email);
+    } else {
+      const result = await pool.query(
+        `SELECT id, email, password, full_name, role, is_active
+         FROM users
+         WHERE LOWER(email) = LOWER($1)
+         LIMIT 1`,
+        [email]
+      );
+      user = result.rows[0];
+    }
 
     if (!user || !user.is_active) {
       return res.status(401).json({ error: 'Invalid credentials.' });
@@ -65,12 +72,17 @@ async function login(req, res) {
 
 async function me(req, res) {
   try {
-    const result = await pool.query(
-      'SELECT id, email, full_name, role, is_active FROM users WHERE id = $1',
-      [req.user.id]
-    );
+    let user;
+    if (USE_MOCK_DB) {
+      user = mockDb.MOCK_USERS.find(u => u.id === req.user.id);
+    } else {
+      const result = await pool.query(
+        'SELECT id, email, full_name, role, is_active FROM users WHERE id = $1',
+        [req.user.id]
+      );
+      user = result.rows[0];
+    }
 
-    const user = result.rows[0];
     if (!user || !user.is_active) {
       return res.status(404).json({ error: 'User not found.' });
     }
@@ -84,13 +96,19 @@ async function me(req, res) {
 
 async function listUsers(_req, res) {
   try {
-    const result = await pool.query(
-      `SELECT id, email, full_name, role, is_active
-       FROM users
-       ORDER BY id DESC`
-    );
+    let users;
+    if (USE_MOCK_DB) {
+      users = mockDb.getAllUsers();
+    } else {
+      const result = await pool.query(
+        `SELECT id, email, full_name, role, is_active
+         FROM users
+         ORDER BY id DESC`
+      );
+      users = result.rows;
+    }
 
-    return res.json({ users: result.rows });
+    return res.json({ users });
   } catch (error) {
     console.error('Failed to list users:', error.message);
     return res.status(500).json({ error: 'Unable to load users right now.' });

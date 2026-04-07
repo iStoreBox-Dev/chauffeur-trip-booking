@@ -151,7 +151,9 @@ async function createBooking(req, res) {
     notifyWhatsapp({ event: 'new_booking', booking_ref: booking.booking_ref, customer: `${booking.first_name} ${booking.last_name}`, final_price: booking.final_price }).catch(() => {});
     return res.status(201).json({ message: msg(req, 'messages.bookingCreated'), booking });
   } catch (error) {
-    console.error('Create booking failed:', error.message);
+    console.error('Create booking failed:', error.message, error.stack);
+    console.error('Booking payload attempted:', JSON.stringify(req.body, null, 2));
+    console.error('USE_MOCK_DB mode:', USE_MOCK_DB);
     return res.status(500).json({ error: msg(req, 'errors.createBookingFailed') });
   }
 }
