@@ -102,6 +102,7 @@
     "reference": "رقم الحجز",
     "promoApplied": "تم تطبيق الرمز الترقيمي بنجاح!",
     "chauffeurAssigned": "تم تعيين السائق بنجاح.",
+    "bookingCancelled": "تم إلغاء الحجز بنجاح.",
     "quoteLoading": "حساب السعر الشخصي لك...",
     "capacityWarning": "قد تتجاوز هذه المركبة السعة المطلوبة لعدد الركاب. يرجى اختيار مركبة أخرى أو تعديل عدد الركاب."
   },
@@ -153,6 +154,9 @@
     "listChauffeursFailed": "تعذر تحميل السائقين حالياً.",
     "createChauffeurFailed": "تعذر إنشاء السائق.",
     "toggleChauffeurFailed": "تعذر تحديث حالة السائق.",
-    "assignChauffeurFailed": "تعذر تعيين السائق حالياً."
+    "assignChauffeurFailed": "تعذر تعيين السائق حالياً.",
+    "cancelBookingFailed": "تعذر إلغاء الحجز حالياً.",
+    "updateChauffeurFailed": "تعذر تحديث السائق.",
+    "deleteChauffeurFailed": "تعذر حذف السائق."
   }
 }

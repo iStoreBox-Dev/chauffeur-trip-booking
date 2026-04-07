@@ -146,6 +146,19 @@
   "recommendation": {
     "title": "Recommended alternatives"
   },
+  "tracking": {
+    "title": "Track My Booking",
+    "subtitle": "Use your booking reference and email to view status and trip details.",
+    "reference": "Booking Reference",
+    "email": "Email",
+    "track": "Track Booking",
+    "cancel": "Cancel Booking",
+    "cancelTitle": "Cancel Booking?",
+    "cancelText": "This action cannot be undone. Only pending or confirmed bookings can be cancelled.",
+    "confirmCancel": "Confirm Cancellation",
+    "keep": "Keep Booking",
+    "whatsapp": "WhatsApp"
+  },
   "benefits": {
     "dispatch": "24/7 Dispatch Center",
     "chauffeurs": "Professional Chauffeurs",

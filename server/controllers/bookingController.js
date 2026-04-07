@@ -8,7 +8,7 @@ const {
   normalizeAddOns,
   scoreVehicleFit
 } = require('../utils/helpers');
-const { sendBookingConfirmation, sendBookingCancellation } = require('../utils/email');
+const { sendBookingConfirmation, sendBookingCancellation, sendBookingAssigned } = require('../utils/email');
 const { notifyWhatsapp } = require('../utils/whatsapp');
 const { t, normalizeLocale } = require('../utils/i18n');
 const mockDb = require('../utils/mockDb');
@@ -22,6 +22,19 @@ function getRequestIp(req) {
 function toNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function canTransitionStatus(fromStatus, toStatus) {
+  const flow = {
+    pending: ['confirmed', 'rejected', 'cancelled'],
+    confirmed: ['chauffeur_assigned', 'cancelled', 'rejected'],
+    chauffeur_assigned: ['in_progress', 'cancelled'],
+    in_progress: ['completed'],
+    completed: [],
+    cancelled: [],
+    rejected: []
+  };
+  return (flow[fromStatus] || []).includes(toStatus);
 }
 
 function serializeCsv(rows) {
@@ -224,9 +237,16 @@ async function addBookingNote(req, res) {
     if (!note) return res.status(400).json({ error: 'Note text is required.' });
     const booking = await Booking.findById(bookingId);
     if (!booking) return res.status(404).json({ error: msg(req, 'errors.bookingNotFound') });
+    const noteEntry = {
+      admin_id: req.user.id,
+      admin_name: req.user.full_name,
+      note,
+      created_at: new Date().toISOString()
+    };
+    const notes = await Booking.addInternalNote(bookingId, noteEntry);
     await Booking.addLog({ bookingId, userId: req.user.id, action: 'note_added', note });
     const logs = await Booking.getLogs(bookingId);
-    return res.json({ message: 'Note saved.', logs });
+    return res.json({ message: 'Note saved.', logs, notes });
   } catch (error) {
     console.error('Add note failed:', error.message);
     return res.status(500).json({ error: 'Unable to save note right now.' });
@@ -238,6 +258,11 @@ async function updateBookingStatus(req, res) {
     const allowed = Booking.VALID_STATUSES;
     const status = req.body.status;
     if (!allowed.includes(status)) return res.status(400).json({ error: msg(req, 'errors.invalidBookingStatus') });
+    const current = await Booking.findById(Number(req.params.id));
+    if (!current) return res.status(404).json({ error: msg(req, 'errors.bookingNotFound') });
+    if (current.status !== status && !canTransitionStatus(current.status, status)) {
+      return res.status(400).json({ error: `Invalid status transition from ${current.status} to ${status}.` });
+    }
     const updated = await Booking.updateStatus(Number(req.params.id), status);
     if (!updated) return res.status(404).json({ error: msg(req, 'errors.bookingNotFound') });
     await Booking.addLog({ bookingId: updated.id, userId: req.user.id, action: 'status_updated', note: `Status changed to ${status}` });
@@ -268,12 +293,23 @@ async function assignChauffeur(req, res) {
   try {
     const bookingId = Number(req.params.id);
     const chauffeurId = req.body.chauffeur_id ? Number(req.body.chauffeur_id) : null;
-    const vehicleId = req.body.vehicle_id ? Number(req.body.vehicle_id) : undefined;
+    const vehicleId = req.body.vehicle_id ? Number(req.body.vehicle_id) : null;
+
+    const current = await Booking.findById(bookingId);
+    if (!current) return res.status(404).json({ error: msg(req, 'errors.bookingNotFound') });
+
+    if (!chauffeurId) {
+      return res.status(400).json({ error: 'chauffeur_id is required for assignment.' });
+    }
+
     if (chauffeurId) {
       const chauffeur = await Chauffeur.findById(chauffeurId);
       if (!chauffeur || !chauffeur.is_active) return res.status(404).json({ error: msg(req, 'errors.chauffeurNotFound') });
+      if (!['available', 'off_duty'].includes(chauffeur.status)) {
+        return res.status(400).json({ error: 'Only available or off-duty chauffeurs can be assigned.' });
+      }
     }
-    const updated = await Booking.updateChauffeur(bookingId, chauffeurId, vehicleId);
+    const updated = await Booking.updateChauffeurAssignment(bookingId, chauffeurId, vehicleId);
     if (!updated) return res.status(404).json({ error: msg(req, 'errors.bookingNotFound') });
     if (chauffeurId) {
       await Chauffeur.update(chauffeurId, { status: 'on_trip' }).catch(() => {});
@@ -282,6 +318,7 @@ async function assignChauffeur(req, res) {
       ? `Assigned chauffeur #${chauffeurId}${vehicleId ? ` with vehicle #${vehicleId}` : ''}`
       : 'Chauffeur unassigned';
     await Booking.addLog({ bookingId: updated.id, userId: req.user.id, action: 'chauffeur_assigned', note: noteText });
+    sendBookingAssigned(updated).catch(() => {});
     return res.json({ message: msg(req, 'messages.chauffeurAssigned'), booking: updated });
   } catch (error) {
     console.error('Assign chauffeur failed:', error.message);
@@ -460,7 +497,10 @@ async function geoSearch(req, res) {
 
 async function listChauffeurs(req, res) {
   try {
-    const chauffeurs = await Chauffeur.getAll();
+    const chauffeurs = await Chauffeur.getAll({
+      search: req.query.search ? String(req.query.search).trim() : '',
+      assignableOnly: req.query.assignable === 'true'
+    });
     return res.json({ chauffeurs });
   } catch (error) {
     console.error('List chauffeurs failed:', error.message);
@@ -471,6 +511,9 @@ async function listChauffeurs(req, res) {
 async function createChauffeur(req, res) {
   try {
     if (!req.body.full_name || !req.body.phone) return res.status(400).json({ error: msg(req, 'errors.contactRequired') });
+    if (req.body.status && !Chauffeur.VALID_STATUSES.includes(req.body.status)) {
+      return res.status(400).json({ error: 'Invalid chauffeur status.' });
+    }
     const languages = Array.isArray(req.body.languages)
       ? req.body.languages.map((item) => normalizeLocale(item))
       : [normalizeLocale(req.body.language_code || req.locale)];
@@ -478,7 +521,7 @@ async function createChauffeur(req, res) {
       full_name: req.body.full_name, phone: req.body.phone, email: req.body.email || null,
       national_id: req.body.national_id || null, license_number: req.body.license_number || null,
       license_expiry: req.body.license_expiry || null, status: req.body.status || 'available',
-      vehicle_id: req.body.vehicle_id ? Number(req.body.vehicle_id) : null,
+      assigned_vehicle_id: req.body.assigned_vehicle_id ? Number(req.body.assigned_vehicle_id) : null,
       languages, notes: req.body.notes || null
     });
     return res.status(201).json({ chauffeur });
@@ -490,12 +533,39 @@ async function createChauffeur(req, res) {
 
 async function updateChauffeur(req, res) {
   try {
-    const chauffeur = await Chauffeur.update(Number(req.params.id), req.body);
+    if (req.body.status && !Chauffeur.VALID_STATUSES.includes(req.body.status)) {
+      return res.status(400).json({ error: 'Invalid chauffeur status.' });
+    }
+    const payload = { ...req.body };
+    if (Object.prototype.hasOwnProperty.call(payload, 'assigned_vehicle_id')) {
+      payload.assigned_vehicle_id = payload.assigned_vehicle_id ? Number(payload.assigned_vehicle_id) : null;
+    }
+    const chauffeur = await Chauffeur.update(Number(req.params.id), payload);
     if (!chauffeur) return res.status(404).json({ error: msg(req, 'errors.chauffeurNotFound') });
     return res.json({ chauffeur });
   } catch (error) {
     console.error('Update chauffeur failed:', error.message);
     return res.status(500).json({ error: msg(req, 'errors.updateChauffeurFailed') });
+  }
+}
+
+async function cancelBookingById(req, res) {
+  try {
+    const bookingId = Number(req.params.id);
+    const email = String(req.body?.email || req.query?.email || '').trim();
+    if (!bookingId || !email) return res.status(400).json({ error: 'Booking id and email are required.' });
+
+    const cancelled = await Booking.cancelByIdAndEmail(bookingId, email);
+    if (!cancelled) {
+      return res.status(400).json({ error: 'Unable to cancel booking. It may be too close to pickup or already processed.' });
+    }
+
+    await Booking.addLog({ bookingId: cancelled.id, userId: null, action: 'cancelled', note: 'Customer requested cancellation via lookup' });
+    sendBookingCancellation(cancelled).catch(() => {});
+    return res.json({ message: msg(req, 'messages.bookingCancelled'), booking: { id: cancelled.id, booking_ref: cancelled.booking_ref, status: cancelled.status } });
+  } catch (error) {
+    console.error('Cancel booking by id failed:', error.message);
+    return res.status(500).json({ error: msg(req, 'errors.cancelBookingFailed') });
   }
 }
 
@@ -528,5 +598,6 @@ module.exports = {
   listVehicles, listAllVehicles, createVehicle, updateVehicle, deleteVehicle,
   validatePromo, listPromos, createPromo, togglePromo,
   geoSearch,
-  listChauffeurs, createChauffeur, updateChauffeur, deleteChauffeur, toggleChauffeur
+  listChauffeurs, createChauffeur, updateChauffeur, deleteChauffeur, toggleChauffeur,
+  cancelBookingById
 };

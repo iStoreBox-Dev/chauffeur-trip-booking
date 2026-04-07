@@ -270,6 +270,32 @@
     </section>
   </main>
 
+  <section class="track-shell" id="track-booking">
+    <div class="track-card">
+      <h2 data-i18n="tracking.title">Track My Booking</h2>
+      <p class="subtext" data-i18n="tracking.subtitle">Use your booking reference and email to view status and trip details.</p>
+      <form id="track-form" class="grid-2">
+        <label class="field"><span data-i18n="tracking.reference">Booking Reference</span><input id="track-ref" required placeholder="LXR-ABC123" /></label>
+        <label class="field"><span data-i18n="tracking.email">Email</span><input id="track-email" type="email" required placeholder="you@example.com" /></label>
+        <div class="actions"><button class="btn gold" type="submit" data-i18n="tracking.track">Track Booking</button></div>
+      </form>
+      <div id="track-result" class="track-result hidden"></div>
+    </div>
+  </section>
+
+  <div id="cancel-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
+    <div class="modal-card">
+      <h3 id="cancel-modal-title" data-i18n="tracking.cancelTitle">Cancel Booking?</h3>
+      <p data-i18n="tracking.cancelText">This action cannot be undone. Only pending or confirmed bookings can be cancelled.</p>
+      <div class="actions">
+        <button class="btn" type="button" id="cancel-modal-close" data-i18n="tracking.keep">Keep Booking</button>
+        <button class="btn gold" type="button" id="cancel-confirm-btn" data-i18n="tracking.confirmCancel">Confirm Cancellation</button>
+      </div>
+    </div>
+  </div>
+
+  <a id="whatsapp-fab" class="whatsapp-fab hidden" href="#" target="_blank" rel="noopener" data-i18n="tracking.whatsapp">WhatsApp</a>
+
   <section id="service" class="service-strip">
     <div data-i18n="benefits.dispatch">24/7 Dispatch</div>
     <div data-i18n="benefits.chauffeurs">Professional Chauffeurs</div>

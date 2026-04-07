@@ -1013,3 +1013,107 @@ html[data-theme="dark"] .alert.info::before { background: #60a5fa; }
 .alert-close:hover {
   opacity: 1;
 }
+
+.track-shell {
+  width: min(1160px, 96vw);
+  margin: 0 auto 1.8rem;
+  padding: 0 1.5rem;
+}
+
+.track-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface-glass);
+  padding: 1rem;
+}
+
+.track-result {
+  margin-top: 0.8rem;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  border-radius: var(--radius-md);
+  padding: 0.7rem;
+}
+
+.track-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.45rem;
+}
+
+.track-grid div {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 0.45rem;
+}
+
+.track-grid span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.track-grid strong {
+  display: block;
+  margin-top: 0.2rem;
+}
+
+.track-timeline {
+  margin-top: 0.65rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.track-timeline-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 0.35rem 0.5rem;
+}
+
+.track-timeline-item.active {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.12);
+}
+
+.track-timeline-item span,
+.track-timeline-item small {
+  display: block;
+}
+
+.track-timeline-item small {
+  color: var(--muted);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 8, 14, 0.75);
+  padding: 1rem;
+}
+
+.modal-card {
+  width: min(460px, 100%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 1rem;
+}
+
+.whatsapp-fab {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 260;
+  text-decoration: none;
+  background: linear-gradient(130deg, #29b163, #22cf76);
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.65rem 0.95rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-md);
+}

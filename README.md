@@ -242,3 +242,13 @@ heroku open --app your-app-name
 - `GET /api/chauffeurs` — list chauffeurs (operator+).
 - `POST /api/chauffeurs` — create chauffeur (admin).
 - `PATCH /api/chauffeurs/:id/toggle` — toggle chauffeur active status (admin).
+
+## Dispatch + Follow-up MVP Flow
+- `booking -> assignment -> customer lookup -> optional cancellation` is now supported end-to-end.
+- Admin booking details include grouped dispatch tools: assignment, internal notes, timeline, status transitions, and print invoice.
+- Customer page includes a new `Track My Booking` section with status timeline and cancellation action for eligible bookings.
+
+### Additional Endpoints
+- `DELETE /api/bookings/:id/cancel` — customer cancellation by booking id + email (only pending/confirmed and at least 2 hours before pickup).
+- `GET /api/settings/public` — minimal public contact payload: app name, support phone/email, WhatsApp number.
+- `GET /api/admin/stats` — admin stats alias.

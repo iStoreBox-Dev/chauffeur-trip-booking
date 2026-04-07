@@ -26,6 +26,7 @@
     appliedPromo: null,
     quote: null,
     quoteBusy: false,
+    trackedBooking: null,
     locale: 'en',
     theme: 'dark',
     translations: {
@@ -389,6 +390,94 @@
       console.error('Load settings failed:', result.error);
       showWarning(tr('errors.failedLoadSettings'), tr('alerts.warning'));
     }
+  }
+
+  async function loadPublicContactSettings() {
+    const result = await fetchApi('/api/settings/public', { silent: true });
+    if (!result.success || !result.data.settings) return;
+
+    const whatsApp = result.data.settings.whatsapp_number;
+    const fab = qs('#whatsapp-fab');
+    if (!fab) return;
+
+    if (!whatsApp) {
+      fab.classList.add('hidden');
+      return;
+    }
+
+    const clean = String(whatsApp).replace(/\D/g, '');
+    if (!clean) {
+      fab.classList.add('hidden');
+      return;
+    }
+
+    const bookingRef = state.trackedBooking?.booking_ref || '';
+    const text = bookingRef
+      ? `Hello, I need support with booking ${bookingRef}.`
+      : 'Hello, I need help with booking.';
+    fab.href = `https://wa.me/${clean}?text=${encodeURIComponent(text)}`;
+    fab.classList.remove('hidden');
+  }
+
+  function renderTrackResult(booking) {
+    const container = qs('#track-result');
+    if (!container) return;
+
+    const timeline = booking.timeline || {};
+    const timelineRows = ['pending', 'confirmed', 'chauffeur_assigned', 'in_progress', 'completed', 'cancelled', 'rejected']
+      .map((status) => `<div class="track-timeline-item ${booking.status === status ? 'active' : ''}"><span>${status}</span><small>${timeline[`${status}_at`] || (status === 'pending' ? timeline.created_at : '-') || '-'}</small></div>`)
+      .join('');
+
+    const canCancel = ['pending', 'confirmed'].includes(booking.status);
+    container.innerHTML = `
+      <div class="track-grid">
+        <div><span>${escapeHtml(tr('messages.reference'))}</span><strong>${escapeHtml(booking.booking_ref)}</strong></div>
+        <div><span>Status</span><strong>${escapeHtml(booking.status)}</strong></div>
+        <div><span>${escapeHtml(tr('summary.pickup'))}</span><strong>${escapeHtml(booking.pickup_location || '-')}</strong></div>
+        <div><span>${escapeHtml(tr('summary.dropoff'))}</span><strong>${escapeHtml(booking.dropoff_location || '-')}</strong></div>
+        <div><span>${escapeHtml(tr('summary.departure'))}</span><strong>${escapeHtml(`${booking.departure_date || ''} ${booking.departure_time || ''}`.trim() || '-')}</strong></div>
+        <div><span>${escapeHtml(tr('summary.service'))}</span><strong>${escapeHtml(booking.service_type || '-')}</strong></div>
+        <div><span>${escapeHtml(tr('summary.vehicle'))}</span><strong>${escapeHtml(booking.assigned_vehicle_name || booking.vehicle_snapshot?.name || '-')}</strong></div>
+        <div><span>Chauffeur</span><strong>${escapeHtml((booking.chauffeur_name || '').split(' ')[0] || '-')}</strong></div>
+        <div><span>${escapeHtml(tr('summary.total'))}</span><strong>${money(booking.final_price || 0)}</strong></div>
+      </div>
+      <div class="track-timeline">${timelineRows}</div>
+      ${canCancel ? `<div class="actions"><button id="track-cancel-btn" class="btn">${escapeHtml(tr('tracking.cancel'))}</button></div>` : ''}
+    `;
+    container.classList.remove('hidden');
+
+    const cancelBtn = qs('#track-cancel-btn');
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        qs('#cancel-modal').classList.remove('hidden');
+      });
+    }
+  }
+
+  async function lookupBooking(event) {
+    event.preventDefault();
+    const ref = qs('#track-ref').value.trim();
+    const email = qs('#track-email').value.trim();
+    if (!ref || !email) return;
+
+    const result = await fetchApi(`/api/bookings/lookup?ref=${encodeURIComponent(ref)}&email=${encodeURIComponent(email)}`);
+    if (!result.success) return;
+    state.trackedBooking = result.data.booking;
+    renderTrackResult(state.trackedBooking);
+    loadPublicContactSettings();
+  }
+
+  async function cancelTrackedBooking() {
+    if (!state.trackedBooking) return;
+    const email = qs('#track-email').value.trim();
+    const result = await fetchApi(`/api/bookings/${state.trackedBooking.id}/cancel`, {
+      method: 'DELETE',
+      body: { email }
+    });
+    qs('#cancel-modal').classList.add('hidden');
+    if (!result.success) return;
+    showSuccess('Booking cancelled successfully.');
+    await lookupBooking({ preventDefault() {} });
   }
 
   async function loadTranslations() {
@@ -1100,6 +1189,13 @@
       currencyToggle.addEventListener('change', (e) => setCurrency(e.target.value));
     }
     qs('#new-booking-btn').addEventListener('click', () => window.location.reload());
+
+    const trackForm = qs('#track-form');
+    if (trackForm) trackForm.addEventListener('submit', lookupBooking);
+    const modalClose = qs('#cancel-modal-close');
+    if (modalClose) modalClose.addEventListener('click', () => qs('#cancel-modal').classList.add('hidden'));
+    const cancelConfirm = qs('#cancel-confirm-btn');
+    if (cancelConfirm) cancelConfirm.addEventListener('click', cancelTrackedBooking);
   }
 
   function initMinDates() {
@@ -1128,7 +1224,7 @@
     bindGeoAutocomplete('hourly-pickup', 'hourly-suggestions', 'hourly');
     initMinDates();
 
-    await Promise.all([loadVehicles(), loadSettings()]);
+    await Promise.all([loadVehicles(), loadSettings(), loadPublicContactSettings()]);
 
     const year = qs('#footer-year');
     if (year) year.textContent = String(new Date().getFullYear());

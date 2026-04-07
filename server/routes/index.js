@@ -41,7 +41,7 @@ router.get('/auth/me', authenticate, authController.me);
 
 // ── Public Settings ─────────────────────────────────────────────────────
 router.get('/settings', settingsController.getPublicSettings);
-router.get('/settings/public', settingsController.getPublicSettings);
+router.get('/settings/public', settingsController.getPublicContactSettings);
 
 // ── Vehicles ─────────────────────────────────────────────────────────────
 router.get('/vehicles', bookingController.listVehicles);
@@ -55,6 +55,7 @@ router.post('/bookings', bookingCreateLimiter, validateBookingPayload, bookingCo
 router.post('/bookings/quote', bookingController.quoteBooking);
 router.get('/bookings/lookup', lookupLimiter, bookingController.lookupBooking);
 router.post('/bookings/cancel', lookupLimiter, bookingController.cancelBooking);
+router.delete('/bookings/:id/cancel', lookupLimiter, bookingController.cancelBookingById);
 
 // ── Bookings (admin) ─────────────────────────────────────────────────────
 router.get('/bookings', authenticate, bookingController.listBookings);
@@ -91,5 +92,6 @@ router.post('/admin/users', authenticate, requireRole('admin'), authController.c
 router.patch('/admin/users/:id/toggle', authenticate, requireRole('admin'), authController.toggleUser);
 router.get('/admin/settings', authenticate, requireRole('admin'), settingsController.getAdminSettings);
 router.put('/admin/settings', authenticate, requireRole('admin'), settingsController.updateAdminSettings);
+router.get('/admin/stats', authenticate, bookingController.bookingStats);
 
 module.exports = router;

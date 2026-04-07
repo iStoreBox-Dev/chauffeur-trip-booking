@@ -9,14 +9,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/css/admin.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
 </head>
 <body class="admin-auth-locked">
   <div class="admin-layout" id="admin-layout">
     <aside class="admin-side" id="admin-side">
       <h1 id="admin-brand-name">LUXERIDE <span>ADMIN</span></h1>
-      <p id="admin-brand-tagline">Operations cockpit</p>
+      <p id="admin-brand-tagline">Dispatch Console</p>
       <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
       <button class="tab-btn" data-tab="bookings">Bookings</button>
+      <button class="tab-btn" data-tab="chauffeurs">Chauffeurs</button>
       <button class="tab-btn" data-tab="vehicles">Vehicles</button>
       <button class="tab-btn" data-tab="promos">Promos</button>
       <button class="tab-btn" data-tab="users">Users</button>
@@ -41,6 +43,7 @@
             <p id="whoami">Loading user...</p>
           </div>
           <div class="top-actions">
+            <span class="pending-chip">Pending: <strong id="pending-badge">0</strong></span>
             <button id="btn-export">Export CSV</button>
             <button id="btn-refresh">Refresh</button>
             <button id="btn-logout" class="danger">Logout</button>
@@ -52,12 +55,21 @@
             <article><h3>Total Bookings</h3><strong id="kpi-total">0</strong></article>
             <article><h3>Pending</h3><strong id="kpi-pending">0</strong></article>
             <article><h3>Confirmed</h3><strong id="kpi-confirmed">0</strong></article>
-            <article><h3>Today</h3><strong id="kpi-today">0</strong></article>
+            <article><h3>Completed Trips</h3><strong id="kpi-completed">0</strong></article>
             <article><h3>Revenue</h3><strong id="kpi-revenue">BHD 0.000</strong></article>
+            <article><h3>This Month Revenue</h3><strong id="kpi-month-revenue">BHD 0.000</strong></article>
+            <article><h3>Average Booking Value</h3><strong id="kpi-avg-value">BHD 0.000</strong></article>
+            <article><h3>Today</h3><strong id="kpi-today">0</strong></article>
           </div>
-          <div class="chart-box">
-            <h3>Status Mix</h3>
-            <div id="status-mix"></div>
+          <div class="analytics-grid">
+            <div class="chart-box">
+              <h3>Bookings (Last 14 Days)</h3>
+              <canvas id="bookings-chart"></canvas>
+            </div>
+            <div class="chart-box">
+              <h3>Revenue (Last 7 Days)</h3>
+              <canvas id="revenue-chart"></canvas>
+            </div>
           </div>
         </section>
 
@@ -68,6 +80,8 @@
               <option value="">All statuses</option>
               <option value="pending">pending</option>
               <option value="confirmed">confirmed</option>
+              <option value="chauffeur_assigned">chauffeur_assigned</option>
+              <option value="in_progress">in_progress</option>
               <option value="completed">completed</option>
               <option value="cancelled">cancelled</option>
               <option value="rejected">rejected</option>
@@ -84,9 +98,46 @@
             </table>
           </div>
           <article id="booking-detail" class="detail-panel" hidden>
-            <h3>Booking Details</h3>
-            <div id="booking-detail-body" class="detail-grid"></div>
+            <div class="detail-head">
+              <h3>Booking Details</h3>
+              <button id="print-invoice-btn" class="btn-secondary">Print Invoice</button>
+            </div>
+            <div id="booking-detail-body" class="detail-groups"></div>
+            <div class="detail-sticky-actions" id="booking-actions"></div>
           </article>
+        </section>
+
+        <section class="tab-content" id="tab-chauffeurs">
+          <div class="filters">
+            <input id="search-chauffeurs" placeholder="Search name/phone/email" />
+          </div>
+          <div class="split">
+            <form id="chauffeur-form" class="form-panel">
+              <h3>Create Chauffeur</h3>
+              <label>Full Name<input name="full_name" required /></label>
+              <label>Phone<input name="phone" required /></label>
+              <label>Email<input name="email" type="email" /></label>
+              <label>National ID<input name="national_id" /></label>
+              <label>License Number<input name="license_number" /></label>
+              <label>License Expiry<input name="license_expiry" type="date" /></label>
+              <label>Status
+                <select name="status">
+                  <option value="available">available</option>
+                  <option value="on_trip">on_trip</option>
+                  <option value="off_duty">off_duty</option>
+                  <option value="inactive">inactive</option>
+                </select>
+              </label>
+              <label>Assigned Vehicle
+                <select name="assigned_vehicle_id" id="chauffeur-vehicle-select">
+                  <option value="">No vehicle</option>
+                </select>
+              </label>
+              <label>Notes<textarea name="notes" rows="3"></textarea></label>
+              <button type="submit">Add Chauffeur</button>
+            </form>
+            <div class="list-panel" id="chauffeur-list"></div>
+          </div>
         </section>
 
         <section class="tab-content" id="tab-vehicles">

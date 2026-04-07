@@ -5,24 +5,40 @@ const VALID_STATUSES = ['available', 'on_trip', 'off_duty', 'inactive'];
 class Chauffeur {
   static get VALID_STATUSES() { return VALID_STATUSES; }
 
-  static async getAll() {
+  static async getAll(filters = {}) {
+    const values = [];
+    const where = [];
+
+    if (filters.search) {
+      values.push(`%${filters.search}%`);
+      where.push(`(ch.full_name ILIKE $${values.length} OR ch.phone ILIKE $${values.length} OR ch.email ILIKE $${values.length})`);
+    }
+
+    if (filters.assignableOnly) {
+      where.push(`ch.is_active = true AND ch.status IN ('available', 'off_duty')`);
+    }
+
+    const whereClause = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const result = await pool.query(
       `SELECT ch.id, ch.full_name, ch.phone, ch.email, ch.national_id,
               ch.license_number, ch.license_expiry, ch.status,
-              ch.vehicle_id, ch.languages, ch.notes, ch.is_active, ch.created_at,
+              ch.assigned_vehicle_id, ch.languages, ch.notes, ch.is_active, ch.created_at,
               v.name AS vehicle_name
        FROM chauffeurs ch
-       LEFT JOIN vehicles v ON v.id = ch.vehicle_id
+       LEFT JOIN vehicles v ON v.id = ch.assigned_vehicle_id
+       ${whereClause}
        ORDER BY ch.is_active DESC, ch.full_name ASC`
+      ,
+      values
     );
     return result.rows;
   }
 
   static async getActive() {
     const result = await pool.query(
-      `SELECT ch.id, ch.full_name, ch.phone, ch.email, ch.status, ch.vehicle_id, ch.is_active
+      `SELECT ch.id, ch.full_name, ch.phone, ch.email, ch.status, ch.assigned_vehicle_id, ch.is_active
        FROM chauffeurs ch
-       WHERE ch.is_active = true AND ch.status = 'available'
+       WHERE ch.is_active = true AND ch.status IN ('available', 'off_duty')
        ORDER BY ch.full_name ASC`
     );
     return result.rows;
@@ -32,10 +48,10 @@ class Chauffeur {
     const result = await pool.query(
       `SELECT ch.id, ch.full_name, ch.phone, ch.email, ch.national_id,
               ch.license_number, ch.license_expiry, ch.status,
-              ch.vehicle_id, ch.languages, ch.notes, ch.is_active, ch.created_at,
+          ch.assigned_vehicle_id, ch.languages, ch.notes, ch.is_active, ch.created_at,
               v.name AS vehicle_name
        FROM chauffeurs ch
-       LEFT JOIN vehicles v ON v.id = ch.vehicle_id
+        LEFT JOIN vehicles v ON v.id = ch.assigned_vehicle_id
        WHERE ch.id = $1 LIMIT 1`,
       [id]
     );
@@ -46,10 +62,10 @@ class Chauffeur {
     const result = await pool.query(
       `INSERT INTO chauffeurs
          (full_name, phone, email, national_id, license_number, license_expiry,
-          status, vehicle_id, languages, notes, is_active)
+         status, assigned_vehicle_id, languages, notes, is_active)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, true)
        RETURNING id, full_name, phone, email, national_id, license_number,
-                 license_expiry, status, vehicle_id, languages, notes, is_active, created_at`,
+                   license_expiry, status, assigned_vehicle_id, languages, notes, is_active, created_at`,
       [
         payload.full_name,
         payload.phone,
@@ -58,7 +74,7 @@ class Chauffeur {
         payload.license_number || null,
         payload.license_expiry || null,
         payload.status || 'available',
-        payload.vehicle_id || null,
+        payload.assigned_vehicle_id || null,
         JSON.stringify(payload.languages || ['en']),
         payload.notes || null
       ]
@@ -69,7 +85,7 @@ class Chauffeur {
   static async update(id, payload) {
     const allowed = [
       'full_name', 'phone', 'email', 'national_id', 'license_number',
-      'license_expiry', 'status', 'vehicle_id', 'notes'
+      'license_expiry', 'status', 'assigned_vehicle_id', 'notes', 'is_active'
     ];
     const keys = Object.keys(payload).filter((k) => allowed.includes(k));
     if (keys.length === 0) return this.findById(id);

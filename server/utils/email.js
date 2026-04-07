@@ -1,7 +1,7 @@
 'use strict';
 
 const nodemailer = require('nodemailer');
-const { confirmationEmail, cancellationEmail } = require('./emailTemplates');
+const { confirmationEmail, cancellationEmail, assignedEmail } = require('./emailTemplates');
 
 let transporter;
 
@@ -64,4 +64,19 @@ async function sendBookingCancellation(booking) {
   });
 }
 
-module.exports = { sendBookingConfirmation, sendBookingCancellation };
+async function sendBookingAssigned(booking) {
+  const mailer = getTransporter();
+  if (!mailer) return;
+
+  const settings = await loadSettings();
+  const { subject, html } = assignedEmail(booking, settings);
+
+  await mailer.sendMail({
+    from: process.env.EMAIL_FROM || settings.support_email || 'noreply@luxeride.com',
+    to: booking.email,
+    subject,
+    html
+  });
+}
+
+module.exports = { sendBookingConfirmation, sendBookingCancellation, sendBookingAssigned };

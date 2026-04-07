@@ -40,6 +40,11 @@ async function migrate() {
         full_name TEXT NOT NULL,
         phone TEXT NOT NULL,
         email TEXT,
+        national_id TEXT,
+        license_number TEXT,
+        license_expiry DATE,
+        status TEXT NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'on_trip', 'off_duty', 'inactive')),
+        assigned_vehicle_id INTEGER REFERENCES vehicles(id),
         languages JSONB NOT NULL DEFAULT '["en"]'::jsonb,
         notes TEXT,
         is_active BOOLEAN NOT NULL DEFAULT true,
@@ -110,16 +115,28 @@ async function migrate() {
         distance_km NUMERIC(10,2),
         language_code TEXT NOT NULL DEFAULT 'en',
         chauffeur_id INTEGER REFERENCES chauffeurs(id),
+        assigned_chauffeur_id INTEGER REFERENCES chauffeurs(id),
+        assigned_vehicle_id INTEGER REFERENCES vehicles(id),
+        assigned_at TIMESTAMP,
+        confirmed_at TIMESTAMP,
+        chauffeur_assigned_at TIMESTAMP,
+        in_progress_at TIMESTAMP,
+        completed_at TIMESTAMP,
+        cancelled_at TIMESTAMP,
+        rejected_at TIMESTAMP,
+        cancelled_by TEXT,
+        internal_notes JSONB NOT NULL DEFAULT '[]'::jsonb,
         payment_provider TEXT,
         payment_status TEXT NOT NULL DEFAULT 'pending',
         payment_reference TEXT,
         customer_rating INTEGER CHECK (customer_rating BETWEEN 1 AND 5),
         chauffeur_rating INTEGER CHECK (chauffeur_rating BETWEEN 1 AND 5),
         feedback_text TEXT,
-        status TEXT NOT NULL DEFAULT 'pending',
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'chauffeur_assigned', 'in_progress', 'completed', 'cancelled', 'rejected')),
         ip_address TEXT,
         source TEXT,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       )
     `);
 
@@ -194,7 +211,24 @@ async function migrate() {
     await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS customer_rating INTEGER CHECK (customer_rating BETWEEN 1 AND 5)');
     await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS chauffeur_rating INTEGER CHECK (chauffeur_rating BETWEEN 1 AND 5)');
     await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS feedback_text TEXT');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW()');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS assigned_chauffeur_id INTEGER REFERENCES chauffeurs(id)');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS assigned_vehicle_id INTEGER REFERENCES vehicles(id)');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMP');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS confirmed_at TIMESTAMP');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS chauffeur_assigned_at TIMESTAMP');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS in_progress_at TIMESTAMP');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS completed_at TIMESTAMP');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS rejected_at TIMESTAMP');
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancelled_by TEXT');
+    await client.query("ALTER TABLE bookings ADD COLUMN IF NOT EXISTS internal_notes JSONB NOT NULL DEFAULT '[]'::jsonb");
 
+    await client.query('ALTER TABLE chauffeurs ADD COLUMN IF NOT EXISTS national_id TEXT');
+    await client.query('ALTER TABLE chauffeurs ADD COLUMN IF NOT EXISTS license_number TEXT');
+    await client.query('ALTER TABLE chauffeurs ADD COLUMN IF NOT EXISTS license_expiry DATE');
+    await client.query("ALTER TABLE chauffeurs ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'available'");
+    await client.query('ALTER TABLE chauffeurs ADD COLUMN IF NOT EXISTS assigned_vehicle_id INTEGER REFERENCES vehicles(id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_users_email ON users (email)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_promos_code ON promo_codes (code)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_chauffeurs_active ON chauffeurs (is_active)');
@@ -204,6 +238,8 @@ async function migrate() {
     await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_ref ON bookings (booking_ref)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_vehicle ON bookings (vehicle_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_chauffeur ON bookings (chauffeur_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_assigned_chauffeur ON bookings (assigned_chauffeur_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_assigned_vehicle ON bookings (assigned_vehicle_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_departure_date ON bookings (departure_date)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_booking_logs_booking_id ON booking_logs (booking_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_payment_transactions_booking_id ON payment_transactions (booking_id)');

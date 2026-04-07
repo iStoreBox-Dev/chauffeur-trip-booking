@@ -1,6 +1,14 @@
 const pool = require('../../config/db');
 
 const VALID_STATUSES = ['pending', 'confirmed', 'chauffeur_assigned', 'in_progress', 'completed', 'cancelled', 'rejected'];
+const STATUS_TIMESTAMP_MAP = {
+  confirmed: 'confirmed_at',
+  chauffeur_assigned: 'chauffeur_assigned_at',
+  in_progress: 'in_progress_at',
+  completed: 'completed_at',
+  cancelled: 'cancelled_at',
+  rejected: 'rejected_at'
+};
 
 class Booking {
   static get VALID_STATUSES() { return VALID_STATUSES; }
@@ -17,7 +25,8 @@ class Booking {
         first_name, last_name, email, country_code, phone,
         special_requests, add_ons, add_ons_price, promo_code,
         base_price, discount_amount, final_price, distance_km,
-        language_code, chauffeur_id, payment_provider, payment_status,
+        language_code, chauffeur_id, assigned_chauffeur_id, assigned_vehicle_id,
+        assigned_at, payment_provider, payment_status,
         payment_reference, status, ip_address, source
       ) VALUES (
         $1,$2,$3,
@@ -30,7 +39,8 @@ class Booking {
         $25,$26,$27,$28,
         $29,$30,$31,$32,
         $33,$34,$35,$36,
-        $37,$38,$39,$40
+        $37,$38,$39,$40,
+        $41,$42,$43
       ) RETURNING *
     `;
 
@@ -45,6 +55,8 @@ class Booking {
       payload.special_requests, JSON.stringify(payload.add_ons || {}), payload.add_ons_price, payload.promo_code,
       payload.base_price, payload.discount_amount, payload.final_price, payload.distance_km,
       payload.language_code || 'en', payload.chauffeur_id || null,
+      payload.chauffeur_id || null, payload.vehicle_id || null,
+      payload.chauffeur_id ? new Date() : null,
       payload.payment_provider || null, payload.payment_status || 'pending',
       payload.payment_reference || null, payload.status || 'pending',
       payload.ip_address, payload.source || 'web'
@@ -56,9 +68,13 @@ class Booking {
 
   static async findById(id) {
     const result = await pool.query(
-      `SELECT b.*, c.full_name AS chauffeur_name, c.phone AS chauffeur_phone
+      `SELECT b.*, c.full_name AS chauffeur_name, c.phone AS chauffeur_phone,
+              ac.full_name AS assigned_chauffeur_name,
+              v.name AS assigned_vehicle_name, v.model AS assigned_vehicle_model
        FROM bookings b
        LEFT JOIN chauffeurs c ON c.id = b.chauffeur_id
+       LEFT JOIN chauffeurs ac ON ac.id = b.assigned_chauffeur_id
+       LEFT JOIN vehicles v ON v.id = b.assigned_vehicle_id
        WHERE b.id = $1`,
       [id]
     );
@@ -70,14 +86,62 @@ class Booking {
       `SELECT b.id, b.booking_ref, b.service_type, b.transfer_type,
               b.pickup_location, b.dropoff_location, b.departure_date, b.departure_time,
               b.passengers, b.flight_number, b.status, b.final_price, b.vehicle_snapshot,
-              b.created_at, b.updated_at,
-              c.full_name AS chauffeur_name
+              b.created_at, b.updated_at, b.assigned_at,
+              b.confirmed_at, b.chauffeur_assigned_at, b.in_progress_at, b.completed_at,
+              b.cancelled_at, b.rejected_at,
+              c.full_name AS chauffeur_name,
+              v.name AS assigned_vehicle_name
        FROM bookings b
-       LEFT JOIN chauffeurs c ON c.id = b.chauffeur_id
+       LEFT JOIN chauffeurs c ON c.id = b.assigned_chauffeur_id
+       LEFT JOIN vehicles v ON v.id = b.assigned_vehicle_id
        WHERE UPPER(b.booking_ref) = UPPER($1)
          AND LOWER(b.email) = LOWER($2)
        LIMIT 1`,
       [ref, email]
+    );
+    const booking = result.rows[0];
+    if (!booking) return null;
+
+    return {
+      id: booking.id,
+      booking_ref: booking.booking_ref,
+      service_type: booking.service_type,
+      transfer_type: booking.transfer_type,
+      pickup_location: booking.pickup_location,
+      dropoff_location: booking.dropoff_location,
+      departure_date: booking.departure_date,
+      departure_time: booking.departure_time,
+      status: booking.status,
+      final_price: booking.final_price,
+      vehicle_snapshot: booking.vehicle_snapshot,
+      assigned_vehicle_name: booking.assigned_vehicle_name,
+      chauffeur_name: booking.chauffeur_name,
+      assigned_at: booking.assigned_at,
+      timeline: {
+        created_at: booking.created_at,
+        confirmed_at: booking.confirmed_at,
+        chauffeur_assigned_at: booking.chauffeur_assigned_at,
+        in_progress_at: booking.in_progress_at,
+        completed_at: booking.completed_at,
+        cancelled_at: booking.cancelled_at,
+        rejected_at: booking.rejected_at
+      }
+    };
+  }
+
+  static async cancelByIdAndEmail(id, email) {
+    const result = await pool.query(
+      `UPDATE bookings
+       SET status = 'cancelled',
+           cancelled_at = NOW(),
+           cancelled_by = 'customer',
+           updated_at = NOW()
+       WHERE id = $1
+         AND LOWER(email) = LOWER($2)
+         AND status IN ('pending', 'confirmed')
+         AND (departure_date::timestamp + departure_time) > NOW() + INTERVAL '2 hours'
+       RETURNING *`,
+      [id, email]
     );
     return result.rows[0];
   }
@@ -85,10 +149,14 @@ class Booking {
   static async cancelByRefAndEmail(ref, email) {
     const result = await pool.query(
       `UPDATE bookings
-       SET status = 'cancelled', updated_at = NOW()
+       SET status = 'cancelled',
+           cancelled_at = NOW(),
+           cancelled_by = 'customer',
+           updated_at = NOW()
        WHERE UPPER(booking_ref) = UPPER($1)
          AND LOWER(email) = LOWER($2)
          AND status IN ('pending', 'confirmed')
+         AND (departure_date::timestamp + departure_time) > NOW() + INTERVAL '2 hours'
        RETURNING *`,
       [ref, email]
     );
@@ -158,7 +226,7 @@ class Booking {
     const dataQuery = `
       SELECT b.*, c.full_name AS chauffeur_name, c.phone AS chauffeur_phone
       FROM bookings b
-      LEFT JOIN chauffeurs c ON c.id = b.chauffeur_id
+      LEFT JOIN chauffeurs c ON c.id = b.assigned_chauffeur_id
       ${whereClause}
       ORDER BY b.created_at DESC
       LIMIT $${limitIdx} OFFSET $${offsetIdx}
@@ -180,10 +248,11 @@ class Booking {
   }
 
   static async updateStatus(id, status) {
-    const result = await pool.query(
-      `UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
-      [status, id]
-    );
+    const timestampColumn = STATUS_TIMESTAMP_MAP[status];
+    const query = timestampColumn
+      ? `UPDATE bookings SET status = $1, ${timestampColumn} = NOW(), updated_at = NOW() WHERE id = $2 RETURNING *`
+      : `UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`;
+    const result = await pool.query(query, [status, id]);
     return result.rows[0];
   }
 
@@ -192,7 +261,9 @@ class Booking {
       'pickup_location', 'dropoff_location', 'departure_date', 'departure_time',
       'return_date', 'return_time', 'hourly_duration', 'passengers', 'luggage',
       'flight_number', 'first_name', 'last_name', 'email', 'country_code', 'phone',
-      'special_requests', 'status', 'chauffeur_id', 'add_ons', 'add_ons_price',
+      'special_requests', 'status', 'chauffeur_id', 'assigned_chauffeur_id', 'assigned_vehicle_id',
+      'assigned_at', 'internal_notes',
+      'add_ons', 'add_ons_price',
       'language_code', 'payment_provider', 'payment_status', 'payment_reference',
       'vehicle_id'
     ];
@@ -226,7 +297,8 @@ class Booking {
         COUNT(*) FILTER (WHERE DATE(created_at) = CURRENT_DATE) AS today,
         COALESCE(SUM(final_price), 0) AS total_revenue,
         COALESCE(SUM(final_price) FILTER (WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', NOW())), 0) AS month_revenue,
-        COUNT(*) FILTER (WHERE status = 'completed') AS completed_trips
+        COUNT(*) FILTER (WHERE status = 'completed') AS completed_trips,
+        COALESCE(AVG(final_price), 0) AS average_booking_value
       FROM bookings
     `;
     const result = await pool.query(query);
@@ -262,26 +334,39 @@ class Booking {
               b.departure_date, b.departure_time, b.final_price, b.status,
               c.full_name AS chauffeur_name, b.language_code, b.created_at
        FROM bookings b
-       LEFT JOIN chauffeurs c ON c.id = b.chauffeur_id
+       LEFT JOIN chauffeurs c ON c.id = b.assigned_chauffeur_id
        ORDER BY b.created_at DESC`
     );
     return result.rows;
   }
 
-  static async updateChauffeur(bookingId, chauffeurId, vehicleId) {
-    const setClauses = ['chauffeur_id = $1', 'updated_at = NOW()'];
-    const values = [chauffeurId, bookingId];
-
-    if (vehicleId !== undefined) {
-      setClauses.push(`vehicle_id = $${values.length + 1}`);
-      values.splice(values.length - 1, 0, vehicleId);
-    }
-
+  static async updateChauffeurAssignment(bookingId, chauffeurId, vehicleId) {
     const result = await pool.query(
-      `UPDATE bookings SET ${setClauses.join(', ')} WHERE id = $2 RETURNING *`,
-      values
+      `UPDATE bookings
+       SET chauffeur_id = $1,
+           assigned_chauffeur_id = $1,
+           assigned_vehicle_id = COALESCE($2, assigned_vehicle_id, vehicle_id),
+           assigned_at = NOW(),
+           chauffeur_assigned_at = COALESCE(chauffeur_assigned_at, NOW()),
+           status = CASE WHEN status IN ('pending', 'confirmed') THEN 'chauffeur_assigned' ELSE status END,
+           updated_at = NOW()
+       WHERE id = $3
+       RETURNING *`,
+      [chauffeurId || null, vehicleId || null, bookingId]
     );
     return result.rows[0];
+  }
+
+  static async addInternalNote(bookingId, noteEntry) {
+    const result = await pool.query(
+      `UPDATE bookings
+       SET internal_notes = COALESCE(internal_notes, '[]'::jsonb) || $1::jsonb,
+           updated_at = NOW()
+       WHERE id = $2
+       RETURNING internal_notes`,
+      [JSON.stringify([noteEntry]), bookingId]
+    );
+    return result.rows[0]?.internal_notes || [];
   }
 }
 

@@ -1,49 +1,45 @@
 (function () {
   'use strict';
 
+  const TOKEN_KEY = 'chauffeur_admin_token';
+  const STATUS_COLORS = {
+    pending: 'status-pending',
+    confirmed: 'status-confirmed',
+    chauffeur_assigned: 'status-assigned',
+    in_progress: 'status-progress',
+    completed: 'status-completed',
+    cancelled: 'status-cancelled',
+    rejected: 'status-cancelled'
+  };
+
   const state = {
     token: '',
     user: null,
     currentTab: 'dashboard',
     bookings: [],
+    bookingLogs: [],
+    selectedBooking: null,
     stats: null,
+    analytics: { daily_bookings: [], daily_revenue: [] },
     vehicles: [],
+    chauffeurs: [],
     promos: [],
     users: [],
-    settings: null
+    settings: null,
+    charts: { bookings: null, revenue: null }
   };
 
-  const TOKEN_KEY = 'chauffeur_admin_token';
+  function qs(selector, ctx = document) { return ctx.querySelector(selector); }
+  function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
 
-  function qs(s, ctx = document) { return ctx.querySelector(s); }
-  function qsa(s, ctx = document) { return Array.from(ctx.querySelectorAll(s)); }
-
-  function setAuthView(isAuthenticated) {
-    document.body.classList.toggle('admin-auth-locked', !isAuthenticated);
-    const loginCard = qs('#login-card');
-    const appShell = qs('#app-shell');
-    if (loginCard) loginCard.hidden = isAuthenticated;
-    if (appShell) appShell.hidden = !isAuthenticated;
+  function setAuthView(authenticated) {
+    document.body.classList.toggle('admin-auth-locked', !authenticated);
+    qs('#login-card').hidden = authenticated;
+    qs('#app-shell').hidden = !authenticated;
   }
 
   function authHeaders() {
-    return {
-      Authorization: `Bearer ${state.token}`,
-      'Content-Type': 'application/json'
-    };
-  }
-
-  function setLoginMessage(msg, isError) {
-    const el = qs('#login-message');
-    el.textContent = msg;
-    el.style.color = isError ? 'var(--err)' : 'var(--ok)';
-  }
-
-  function setSettingsMessage(msg, isError) {
-    const el = qs('#settings-message');
-    if (!el) return;
-    el.textContent = msg;
-    el.style.color = isError ? 'var(--err)' : 'var(--ok)';
+    return { Authorization: `Bearer ${state.token}`, 'Content-Type': 'application/json' };
   }
 
   function money(v) {
@@ -51,78 +47,42 @@
     return `${currency} ${Number(v || 0).toFixed(3)}`;
   }
 
-  function toRgbTuple(hex) {
-    if (!hex || typeof hex !== 'string') return null;
-    const safe = hex.trim().replace('#', '');
-    if (!/^[0-9a-fA-F]{6}$/.test(safe)) return null;
-    const r = parseInt(safe.slice(0, 2), 16);
-    const g = parseInt(safe.slice(2, 4), 16);
-    const b = parseInt(safe.slice(4, 6), 16);
-    return `${r}, ${g}, ${b}`;
+  function statusBadge(status) {
+    const cls = STATUS_COLORS[status] || 'status-pending';
+    return `<span class="pill ${cls}">${status}</span>`;
   }
 
-  function applyAdminTheme(settings) {
-    const root = document.documentElement;
-
-    if (settings.primary_color) {
-      root.style.setProperty('--accent', settings.primary_color);
-      const rgb = toRgbTuple(settings.primary_color);
-      if (rgb) root.style.setProperty('--accent-rgb', rgb);
-    }
-    if (settings.secondary_color) {
-      root.style.setProperty('--accent-2', settings.secondary_color);
-      const rgb = toRgbTuple(settings.secondary_color);
-      if (rgb) root.style.setProperty('--accent-2-rgb', rgb);
-    }
-
-    const appName = settings.app_name || 'LUXERIDE';
-    document.title = `${appName} Admin Control Center`;
-
-    const brandName = qs('#admin-brand-name');
-    if (brandName) {
-      brandName.innerHTML = `${appName} <span>ADMIN</span>`;
-    }
-
-    const brandTagline = qs('#admin-brand-tagline');
-    if (brandTagline) {
-      brandTagline.textContent = settings.app_tagline || 'Operations cockpit';
-    }
-
-    const footerBrand = qs('#admin-footer-brand');
-    if (footerBrand) footerBrand.textContent = appName;
-  }
-
-  function activateTab(tab) {
-    state.currentTab = tab;
-    qsa('.tab-btn').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
-    qsa('.tab-content').forEach((c) => c.classList.remove('active'));
-    qs(`#tab-${tab}`).classList.add('active');
-    qs('#tab-title').textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
+  function setLoginMessage(message, error = false) {
+    const el = qs('#login-message');
+    el.textContent = message;
+    el.style.color = error ? 'var(--admin-danger)' : 'var(--admin-success)';
   }
 
   async function request(url, options = {}) {
     const res = await fetch(url, options);
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data.error || 'Request failed');
-    }
+    if (!res.ok) throw new Error(data.error || 'Request failed');
     return data;
+  }
+
+  function activateTab(tab) {
+    state.currentTab = tab;
+    qsa('.tab-btn').forEach((btn) => btn.classList.toggle('active', btn.dataset.tab === tab));
+    qsa('.tab-content').forEach((panel) => panel.classList.remove('active'));
+    qs(`#tab-${tab}`).classList.add('active');
+    qs('#tab-title').textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
   }
 
   async function login(event) {
     event.preventDefault();
     const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
-
     try {
       const data = await request('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
       state.token = data.token;
       state.user = data.user;
       localStorage.setItem(TOKEN_KEY, state.token);
-      setLoginMessage('Login successful.', false);
       setAuthView(true);
       qs('#whoami').textContent = `${state.user.full_name} (${state.user.role})`;
       await refreshAll();
@@ -133,33 +93,22 @@
 
   function logout() {
     state.token = '';
-    state.user = null;
     localStorage.removeItem(TOKEN_KEY);
-    setAuthView(false);
     location.reload();
   }
 
   async function restoreSession() {
-    const saved = localStorage.getItem(TOKEN_KEY);
-    if (!saved) return;
-
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return;
     try {
-      state.token = saved;
-      const data = await request('/api/auth/me', { 
-        headers: authHeaders(),
-        method: 'GET'
-      });
-      
-      if (data && data.user) {
-        state.user = data.user;
-        setAuthView(true);
-        qs('#whoami').textContent = `${state.user.full_name} (${state.user.role})`;
-        await refreshAll();
-      }
+      state.token = token;
+      const data = await request('/api/auth/me', { headers: authHeaders() });
+      state.user = data.user;
+      setAuthView(true);
+      qs('#whoami').textContent = `${state.user.full_name} (${state.user.role})`;
+      await refreshAll();
     } catch (_error) {
       localStorage.removeItem(TOKEN_KEY);
-      state.token = '';
-      state.user = null;
       setAuthView(false);
     }
   }
@@ -169,141 +118,360 @@
     qs('#kpi-total').textContent = Number(s.total || 0);
     qs('#kpi-pending').textContent = Number(s.pending || 0);
     qs('#kpi-confirmed').textContent = Number(s.confirmed || 0);
-    qs('#kpi-today').textContent = Number(s.today || 0);
+    qs('#kpi-completed').textContent = Number(s.completed_trips || 0);
     qs('#kpi-revenue').textContent = money(s.total_revenue || 0);
+    qs('#kpi-month-revenue').textContent = money(s.month_revenue || 0);
+    qs('#kpi-avg-value').textContent = money(s.average_booking_value || 0);
+    qs('#kpi-today').textContent = Number(s.today || 0);
+    qs('#pending-badge').textContent = Number(s.pending || 0);
+    renderCharts();
+  }
 
-    const rows = [
-      ['Pending', Number(s.pending || 0)],
-      ['Confirmed', Number(s.confirmed || 0)],
-      ['Completed', Number(s.completed || 0)]
-    ];
-    qs('#status-mix').innerHTML = rows.map(([k, v]) => `<div>${k}: <strong>${v}</strong></div>`).join('');
+  function chartLabels(rows) {
+    return rows.map((r) => String(r.day).slice(0, 10));
+  }
+
+  function renderCharts() {
+    if (!window.Chart) return;
+    const bookingsCtx = qs('#bookings-chart');
+    const revenueCtx = qs('#revenue-chart');
+    if (!bookingsCtx || !revenueCtx) return;
+
+    if (state.charts.bookings) state.charts.bookings.destroy();
+    if (state.charts.revenue) state.charts.revenue.destroy();
+
+    state.charts.bookings = new Chart(bookingsCtx, {
+      type: 'bar',
+      data: {
+        labels: chartLabels(state.analytics.daily_bookings || []),
+        datasets: [{ label: 'Bookings', data: (state.analytics.daily_bookings || []).map((r) => Number(r.count || 0)), backgroundColor: 'rgba(193, 162, 90, 0.45)', borderColor: 'rgba(193, 162, 90, 1)', borderWidth: 1 }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    state.charts.revenue = new Chart(revenueCtx, {
+      type: 'line',
+      data: {
+        labels: chartLabels(state.analytics.daily_revenue || []),
+        datasets: [{ label: 'Revenue', data: (state.analytics.daily_revenue || []).map((r) => Number(r.revenue || 0)), borderColor: 'rgba(74, 144, 226, 1)', backgroundColor: 'rgba(74, 144, 226, 0.2)', tension: 0.35, fill: true }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
   }
 
   function renderBookings() {
     const query = qs('#search-bookings').value.trim().toLowerCase();
-    const status = qs('#status-filter').value;
-    const body = qs('#bookings-body');
-
+    const filter = qs('#status-filter').value;
     const rows = state.bookings.filter((b) => {
-      const text = `${b.booking_ref} ${b.first_name} ${b.last_name} ${b.email}`.toLowerCase();
-      const statusOk = status ? b.status === status : true;
-      return statusOk && (!query || text.includes(query));
+      const txt = `${b.booking_ref} ${b.first_name} ${b.last_name} ${b.email}`.toLowerCase();
+      const passText = !query || txt.includes(query);
+      const passStatus = !filter || b.status === filter;
+      return passText && passStatus;
     });
 
-    body.innerHTML = rows.map((b) => `
-      <tr>
+    qs('#bookings-body').innerHTML = rows.map((b) => `
+      <tr data-booking-row="${b.id}">
         <td>${b.booking_ref}</td>
         <td>${b.first_name} ${b.last_name}</td>
         <td>${b.service_type}</td>
-        <td>${b.pickup_location || '—'}</td>
+        <td>${b.pickup_location || '-'}</td>
         <td>${b.departure_date || ''} ${b.departure_time || ''}</td>
         <td>${money(b.final_price)}</td>
-        <td><span class="pill">${b.status}</span></td>
-        <td>
-          <button data-act="view" data-id="${b.id}">View</button>
-          <button data-act="status" data-id="${b.id}" data-status="confirmed">Confirm</button>
-          <button data-act="status" data-id="${b.id}" data-status="completed">Complete</button>
-          <button data-act="status" data-id="${b.id}" data-status="rejected">Reject</button>
-        </td>
+        <td>${statusBadge(b.status)}</td>
+        <td><button data-action="view-booking" data-id="${b.id}">Open</button></td>
       </tr>
     `).join('') || '<tr><td colspan="8">No bookings found.</td></tr>';
 
-    qsa('button[data-act="status"]', body).forEach((btn) => {
-      btn.addEventListener('click', () => updateBookingStatus(btn.dataset.id, btn.dataset.status));
-    });
-    qsa('button[data-act="view"]', body).forEach((btn) => {
-      btn.addEventListener('click', () => showBookingDetails(btn.dataset.id));
-    });
+    qsa('[data-action="view-booking"]').forEach((btn) => btn.addEventListener('click', () => showBookingDetails(Number(btn.dataset.id))));
   }
 
-  function formatDateTime(dateValue, timeValue) {
-    if (!dateValue) return '—';
-    return `${dateValue}${timeValue ? ` ${timeValue}` : ''}`;
+  function group(title, itemsHtml) {
+    return `<section class="detail-group"><h4>${title}</h4><div class="detail-grid">${itemsHtml}</div></section>`;
+  }
+
+  function detailItem(label, value) {
+    return `<div class="detail-item"><span>${label}</span><strong>${value || '-'}</strong></div>`;
+  }
+
+  function renderTimeline(booking) {
+    const steps = ['pending', 'confirmed', 'chauffeur_assigned', 'in_progress', 'completed', 'cancelled', 'rejected'];
+    const at = {
+      pending: booking.created_at,
+      confirmed: booking.confirmed_at,
+      chauffeur_assigned: booking.chauffeur_assigned_at,
+      in_progress: booking.in_progress_at,
+      completed: booking.completed_at,
+      cancelled: booking.cancelled_at,
+      rejected: booking.rejected_at
+    };
+    return `<section class="detail-group"><h4>Timeline</h4><div class="timeline">${steps.map((step) => `<div class="timeline-item ${booking.status === step ? 'active' : ''}"><span>${step}</span><small>${at[step] || '-'}</small></div>`).join('')}</div></section>`;
+  }
+
+  function allowedTransitions(status) {
+    const map = {
+      pending: ['confirmed', 'rejected', 'cancelled'],
+      confirmed: ['chauffeur_assigned', 'rejected', 'cancelled'],
+      chauffeur_assigned: ['in_progress', 'cancelled'],
+      in_progress: ['completed']
+    };
+    return map[status] || [];
+  }
+
+  function renderBookingActions(booking) {
+    const transitions = allowedTransitions(booking.status);
+    qs('#booking-actions').innerHTML = transitions.map((status) => `<button data-transition="${status}">Set ${status}</button>`).join('') || '<span>No transitions available.</span>';
+    qsa('[data-transition]').forEach((btn) => btn.addEventListener('click', async () => {
+      await request(`/api/bookings/${booking.id}/status`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: btn.dataset.transition }) });
+      await Promise.all([loadBookings(), loadStats()]);
+      await showBookingDetails(booking.id);
+    }));
+  }
+
+  function renderAssignmentSection(booking) {
+    const chauffeurOptions = state.chauffeurs
+      .filter((c) => c.is_active && ['available', 'off_duty'].includes(c.status))
+      .map((c) => `<option value="${c.id}" ${Number(booking.assigned_chauffeur_id) === Number(c.id) ? 'selected' : ''}>${c.full_name} (${c.status})</option>`)
+      .join('');
+    const vehicleOptions = state.vehicles
+      .filter((v) => v.is_active)
+      .map((v) => `<option value="${v.id}" ${Number(booking.assigned_vehicle_id) === Number(v.id) ? 'selected' : ''}>${v.name}</option>`)
+      .join('');
+
+    return `
+      <section class="detail-group">
+        <h4>Assignment</h4>
+        <div class="assignment-box">
+          <label>Assigned Chauffeur
+            <select id="assign-chauffeur"><option value="">Select chauffeur</option>${chauffeurOptions}</select>
+          </label>
+          <label>Assigned Vehicle
+            <select id="assign-vehicle"><option value="">Select vehicle</option>${vehicleOptions}</select>
+          </label>
+          <button id="save-assignment" class="btn-primary">Save Assignment</button>
+          <p>Current: ${booking.assigned_chauffeur_name || '-'} / ${booking.assigned_vehicle_name || '-'}</p>
+          <p>Assigned At: ${booking.assigned_at || '-'}</p>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderNotesSection(booking) {
+    const notes = Array.isArray(booking.internal_notes) ? booking.internal_notes.slice().reverse() : [];
+    return `
+      <section class="detail-group">
+        <h4>Notes</h4>
+        <div class="notes-box">
+          <textarea id="booking-note-input" rows="3" placeholder="Add internal note"></textarea>
+          <button id="add-booking-note">Add Note</button>
+          <div class="notes-history">${notes.map((n) => `<article><strong>${n.admin_name || 'Admin'}</strong><small>${n.created_at || ''}</small><p>${n.note || ''}</p></article>`).join('') || '<p>No notes yet.</p>'}</div>
+        </div>
+      </section>
+    `;
   }
 
   async function showBookingDetails(id) {
-    const data = await request(`/api/bookings/${id}`, { headers: authHeaders() });
-    const b = data.booking;
-    const fields = [
-      ['Reference', b.booking_ref],
-      ['Service', b.service_type],
-      ['Transfer Type', b.transfer_type],
-      ['Status', b.status],
-      ['Customer', `${b.first_name} ${b.last_name}`],
-      ['Email', b.email],
-      ['Phone', `${b.country_code || ''} ${b.phone || ''}`.trim()],
-      ['Pickup', b.pickup_location],
-      ['Dropoff', b.dropoff_location],
-      ['Departure', formatDateTime(b.departure_date, b.departure_time)],
-      ['Return', formatDateTime(b.return_date, b.return_time)],
-      ['Passengers', b.passengers],
-      ['Luggage', b.luggage],
-      ['Flight', b.flight_number],
-      ['Vehicle', b.vehicle_snapshot ? `${b.vehicle_snapshot.name} (${b.vehicle_snapshot.model})` : '—'],
-      ['Special Requests', b.special_requests],
-      ['Base Price', money(b.base_price)],
-      ['Discount', money(b.discount_amount)],
-      ['Final Price', money(b.final_price)],
-      ['Created At', b.created_at]
-    ];
+    const [detail, logs] = await Promise.all([
+      request(`/api/bookings/${id}`, { headers: authHeaders() }),
+      request(`/api/bookings/${id}/logs`, { headers: authHeaders() })
+    ]);
+    const b = detail.booking;
+    state.selectedBooking = b;
+    state.bookingLogs = logs.logs || [];
 
-    const detailBody = qs('#booking-detail-body');
-    detailBody.innerHTML = fields.map(([label, value]) => `
-      <div class="detail-item">
-        <span>${label}</span>
-        <strong>${value || '—'}</strong>
-      </div>
-    `).join('');
+    const customer = group('Customer', [
+      detailItem('Name', `${b.first_name} ${b.last_name}`),
+      detailItem('Email', b.email),
+      detailItem('Phone', `${b.country_code || ''} ${b.phone || ''}`.trim())
+    ].join(''));
+    const trip = group('Trip', [
+      detailItem('Reference', b.booking_ref),
+      detailItem('Service', b.service_type),
+      detailItem('Pickup', b.pickup_location),
+      detailItem('Dropoff', b.dropoff_location),
+      detailItem('Departure', `${b.departure_date || ''} ${b.departure_time || ''}`.trim()),
+      detailItem('Status', statusBadge(b.status))
+    ].join(''));
+    const pricing = group('Pricing', [
+      detailItem('Base', money(b.base_price)),
+      detailItem('Discount', money(b.discount_amount)),
+      detailItem('Total', money(b.final_price))
+    ].join(''));
+
+    qs('#booking-detail-body').innerHTML = customer + trip + pricing + renderAssignmentSection(b) + renderNotesSection(b) + renderTimeline(b);
     qs('#booking-detail').hidden = false;
+    renderBookingActions(b);
+    bindDetailActions(b.id);
+  }
+
+  function printInvoice() {
+    if (!state.selectedBooking) return;
+    const b = state.selectedBooking;
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(`<!DOCTYPE html><html><head><title>Invoice ${b.booking_ref}</title><style>
+      body{font-family:Arial,sans-serif;padding:24px;color:#111}
+      h1{margin-bottom:2px} .muted{color:#666} table{width:100%;border-collapse:collapse;margin-top:14px}
+      td,th{border-bottom:1px solid #ddd;padding:8px;text-align:left} .total{font-size:18px;font-weight:700}
+      @media print {button{display:none}}
+    </style></head><body>
+      <h1>${state.settings?.app_name || 'LUXERIDE'}</h1>
+      <p class="muted">Booking Invoice</p>
+      <p><strong>Reference:</strong> ${b.booking_ref}</p>
+      <table>
+        <tr><th>Customer</th><td>${b.first_name} ${b.last_name}</td></tr>
+        <tr><th>Service</th><td>${b.service_type}</td></tr>
+        <tr><th>Pickup</th><td>${b.pickup_location || '-'}</td></tr>
+        <tr><th>Dropoff</th><td>${b.dropoff_location || '-'}</td></tr>
+        <tr><th>Vehicle</th><td>${b.assigned_vehicle_name || b.vehicle_snapshot?.name || '-'}</td></tr>
+        <tr><th>Chauffeur</th><td>${b.assigned_chauffeur_name || '-'}</td></tr>
+        <tr><th>Add-ons</th><td>${JSON.stringify(b.add_ons || {})}</td></tr>
+        <tr><th>Subtotal</th><td>${money((Number(b.base_price || 0) + Number(b.add_ons_price || 0)))}</td></tr>
+        <tr><th>Discount</th><td>${money(b.discount_amount || 0)}</td></tr>
+        <tr><th class="total">Total</th><td class="total">${money(b.final_price)}</td></tr>
+      </table>
+      <p>Support: ${state.settings?.support_email || '-'} | ${state.settings?.support_phone || '-'}</p>
+      <button onclick="window.print()">Print</button>
+    </body></html>`);
+    w.document.close();
+  }
+
+  async function bindDetailActions(bookingId) {
+    const saveAssignment = qs('#save-assignment');
+    const addNoteBtn = qs('#add-booking-note');
+
+    if (saveAssignment) {
+      saveAssignment.addEventListener('click', async () => {
+        const chauffeurId = Number(qs('#assign-chauffeur').value || 0) || null;
+        const vehicleId = Number(qs('#assign-vehicle').value || 0) || null;
+        await request(`/api/bookings/${bookingId}/assign`, {
+          method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ chauffeur_id: chauffeurId, vehicle_id: vehicleId })
+        });
+        await Promise.all([loadBookings(), loadStats(), loadChauffeurs()]);
+        await showBookingDetails(bookingId);
+      });
+    }
+
+    if (addNoteBtn) {
+      addNoteBtn.addEventListener('click', async () => {
+        const note = qs('#booking-note-input').value.trim();
+        if (!note) return;
+        await request(`/api/bookings/${bookingId}/notes`, {
+          method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ note })
+        });
+        await showBookingDetails(bookingId);
+      });
+    }
   }
 
   function renderVehicles() {
-    const box = qs('#vehicle-list');
-    box.innerHTML = state.vehicles.map((v) => `
+    qs('#vehicle-list').innerHTML = state.vehicles.map((v) => `
       <article class="list-item">
-        <h4>${v.name} <span class="pill">${v.category}</span></h4>
-        <p>${v.model} • Capacity ${v.capacity} • ${money(v.base_price)} • ${v.is_active ? 'Active' : 'Inactive'}</p>
+        <h4>${v.name} ${statusBadge(v.is_active ? 'confirmed' : 'cancelled')}</h4>
+        <p>${v.model} | ${v.category} | ${money(v.base_price)}</p>
+        <div class="row"><button data-vehicle-toggle="${v.id}">Toggle Active</button><button data-vehicle-delete="${v.id}">Delete</button></div>
+      </article>
+    `).join('') || '<p>No vehicles</p>';
+    qsa('[data-vehicle-toggle]').forEach((btn) => btn.addEventListener('click', () => toggleVehicle(Number(btn.dataset.vehicleToggle))));
+    qsa('[data-vehicle-delete]').forEach((btn) => btn.addEventListener('click', () => deleteVehicle(Number(btn.dataset.vehicleDelete))));
+
+    const vehicleSelect = qs('#chauffeur-vehicle-select');
+    if (vehicleSelect) {
+      const currentValue = vehicleSelect.value;
+      vehicleSelect.innerHTML = '<option value="">No vehicle</option>'
+        + state.vehicles.filter((v) => v.is_active).map((v) => `<option value="${v.id}">${v.name}</option>`).join('');
+      vehicleSelect.value = currentValue;
+    }
+  }
+
+  function renderChauffeurs() {
+    const query = qs('#search-chauffeurs').value.trim().toLowerCase();
+    const rows = state.chauffeurs.filter((c) => {
+      const txt = `${c.full_name} ${c.phone} ${c.email || ''}`.toLowerCase();
+      return !query || txt.includes(query);
+    });
+
+    qs('#chauffeur-list').innerHTML = rows.map((c) => `
+      <article class="list-item">
+        <h4>${c.full_name} ${statusBadge(c.status)}</h4>
+        <p>${c.phone} ${c.email ? `| ${c.email}` : ''}</p>
+        <p>License: ${c.license_number || '-'} / Exp: ${c.license_expiry || '-'}</p>
+        <p>Vehicle: ${c.vehicle_name || '-'}</p>
         <div class="row">
-          <button data-vehicle-toggle="${v.id}">Toggle Active</button>
-          <button data-vehicle-delete="${v.id}">Delete</button>
+          <button data-chauffeur-edit="${c.id}">Set Off Duty</button>
+          <button data-chauffeur-delete="${c.id}">Delete</button>
         </div>
       </article>
-    `).join('') || '<p>No vehicles.</p>';
+    `).join('') || '<p>No chauffeurs found.</p>';
 
-    qsa('[data-vehicle-toggle]', box).forEach((btn) => btn.addEventListener('click', () => toggleVehicle(btn.dataset.vehicleToggle)));
-    qsa('[data-vehicle-delete]', box).forEach((btn) => btn.addEventListener('click', () => deleteVehicle(btn.dataset.vehicleDelete)));
+    qsa('[data-chauffeur-edit]').forEach((btn) => btn.addEventListener('click', async () => {
+      await request(`/api/chauffeurs/${btn.dataset.chauffeurEdit}`, {
+        method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: 'off_duty' })
+      });
+      await loadChauffeurs();
+    }));
+
+    qsa('[data-chauffeur-delete]').forEach((btn) => btn.addEventListener('click', async () => {
+      await request(`/api/chauffeurs/${btn.dataset.chauffeurDelete}`, { method: 'DELETE', headers: authHeaders() });
+      await loadChauffeurs();
+    }));
   }
 
   function renderPromos() {
-    const box = qs('#promo-list');
-    box.innerHTML = state.promos.map((p) => `
+    qs('#promo-list').innerHTML = state.promos.map((p) => `
       <article class="list-item">
-        <h4>${p.code} <span class="pill">${p.discount_type}</span></h4>
-        <p>Value ${p.discount_value} • Uses ${p.used_count}/${p.max_uses || '∞'} • Min ${money(p.min_amount)} • ${p.is_active ? 'Active' : 'Inactive'}</p>
+        <h4>${p.code} ${statusBadge(p.is_active ? 'confirmed' : 'cancelled')}</h4>
+        <p>${p.discount_type} ${p.discount_value} | Uses ${p.used_count}/${p.max_uses || 'inf'}</p>
         <div class="row"><button data-promo-toggle="${p.id}">Toggle Active</button></div>
       </article>
-    `).join('') || '<p>No promos.</p>';
-
-    qsa('[data-promo-toggle]', box).forEach((btn) => btn.addEventListener('click', () => togglePromo(btn.dataset.promoToggle)));
+    `).join('') || '<p>No promos</p>';
+    qsa('[data-promo-toggle]').forEach((btn) => btn.addEventListener('click', () => togglePromo(Number(btn.dataset.promoToggle))));
   }
 
   function renderUsers() {
-    const box = qs('#user-list');
-    box.innerHTML = state.users.map((u) => `
+    qs('#user-list').innerHTML = state.users.map((u) => `
       <article class="list-item">
-        <h4>${u.full_name} <span class="pill">${u.role}</span></h4>
-        <p>${u.email} • ${u.is_active ? 'Active' : 'Inactive'}</p>
+        <h4>${u.full_name} ${statusBadge(u.is_active ? 'confirmed' : 'cancelled')}</h4>
+        <p>${u.email} | ${u.role}</p>
         <div class="row"><button data-user-toggle="${u.id}">Toggle Active</button></div>
       </article>
-    `).join('') || '<p>No users.</p>';
+    `).join('') || '<p>No users</p>';
+    qsa('[data-user-toggle]').forEach((btn) => btn.addEventListener('click', () => toggleUser(Number(btn.dataset.userToggle))));
+  }
 
-    qsa('[data-user-toggle]', box).forEach((btn) => btn.addEventListener('click', () => toggleUser(btn.dataset.userToggle)));
+  function fillSettingsForms(settings) {
+    const app = qs('#settings-form');
+    const seo = qs('#seo-form');
+    if (!app || !seo) return;
+    app.app_name.value = settings.app_name || '';
+    app.app_tagline.value = settings.app_tagline || '';
+    app.hero_title.value = settings.hero_title || '';
+    app.hero_subtitle.value = settings.hero_subtitle || '';
+    app.currency_code.value = settings.currency_code || 'BHD';
+    app.primary_color.value = settings.primary_color || '#d6b16f';
+    app.secondary_color.value = settings.secondary_color || '#0e1a26';
+    app.support_email.value = settings.support_email || '';
+    app.support_phone.value = settings.support_phone || '';
+    app.whatsapp_number.value = settings.whatsapp_number || '';
+    app.maintenance_mode.value = String(Boolean(settings.maintenance_mode));
+    app.booking_enabled.value = String(Boolean(settings.booking_enabled));
+
+    seo.seo_title.value = settings.seo_title || '';
+    seo.seo_description.value = settings.seo_description || '';
+    seo.seo_keywords.value = settings.seo_keywords || '';
+    seo.seo_indexable.value = String(Boolean(settings.seo_indexable));
+    seo.instagram.value = settings.social_links?.instagram || '';
+    seo.x.value = settings.social_links?.x || '';
+    seo.facebook.value = settings.social_links?.facebook || '';
+    seo.linkedin.value = settings.social_links?.linkedin || '';
   }
 
   async function loadStats() {
-    const data = await request('/api/bookings/stats', { headers: authHeaders() });
-    state.stats = data.stats;
+    const [statsData, analyticsData] = await Promise.all([
+      request('/api/bookings/stats', { headers: authHeaders() }),
+      request('/api/bookings/analytics', { headers: authHeaders() })
+    ]);
+    state.stats = statsData.stats || {};
+    state.analytics = analyticsData;
     renderDashboard();
   }
 
@@ -319,6 +487,12 @@
     renderVehicles();
   }
 
+  async function loadChauffeurs() {
+    const data = await request('/api/chauffeurs', { headers: authHeaders() });
+    state.chauffeurs = data.chauffeurs || [];
+    renderChauffeurs();
+  }
+
   async function loadPromos() {
     const data = await request('/api/promo', { headers: authHeaders() });
     state.promos = data.promos || [];
@@ -331,49 +505,84 @@
     renderUsers();
   }
 
-  function fillSettingsForms(settings) {
-    const appForm = qs('#settings-form');
-    const seoForm = qs('#seo-form');
-    if (!appForm || !seoForm) return;
-
-    appForm.app_name.value = settings.app_name || '';
-    appForm.app_tagline.value = settings.app_tagline || '';
-    appForm.hero_title.value = settings.hero_title || '';
-    appForm.hero_subtitle.value = settings.hero_subtitle || '';
-    appForm.currency_code.value = settings.currency_code || 'BHD';
-    appForm.primary_color.value = settings.primary_color || '#ffd27d';
-    appForm.secondary_color.value = settings.secondary_color || '#0d1622';
-    appForm.support_email.value = settings.support_email || '';
-    appForm.support_phone.value = settings.support_phone || '';
-    appForm.whatsapp_number.value = settings.whatsapp_number || '';
-    appForm.maintenance_mode.value = String(Boolean(settings.maintenance_mode));
-    appForm.booking_enabled.value = String(Boolean(settings.booking_enabled));
-
-    seoForm.seo_title.value = settings.seo_title || '';
-    seoForm.seo_description.value = settings.seo_description || '';
-    seoForm.seo_keywords.value = settings.seo_keywords || '';
-    seoForm.seo_indexable.value = String(Boolean(settings.seo_indexable));
-    seoForm.instagram.value = settings.social_links?.instagram || '';
-    seoForm.x.value = settings.social_links?.x || '';
-    seoForm.facebook.value = settings.social_links?.facebook || '';
-    seoForm.linkedin.value = settings.social_links?.linkedin || '';
-  }
-
   async function loadSettings() {
     const data = await request('/api/admin/settings', { headers: authHeaders() });
-    state.settings = data.settings || null;
-    if (state.settings) {
-      fillSettingsForms(state.settings);
-      applyAdminTheme(state.settings);
-      renderDashboard();
-      renderBookings();
-      renderVehicles();
-      renderPromos();
-    }
+    state.settings = data.settings || {};
+    fillSettingsForms(state.settings);
   }
 
-  function settingsPayloadFromAppForm(form) {
-    return {
+  async function refreshAll() {
+    await Promise.all([loadStats(), loadBookings(), loadVehicles(), loadChauffeurs(), loadPromos(), loadUsers(), loadSettings()]);
+  }
+
+  async function createVehicle(event) {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+    data.capacity = Number(data.capacity);
+    data.base_price = Number(data.base_price);
+    data.features = data.features ? data.features.split(',').map((s) => s.trim()).filter(Boolean) : [];
+    await request('/api/vehicles', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
+    event.currentTarget.reset();
+    await loadVehicles();
+  }
+
+  async function toggleVehicle(id) {
+    const v = state.vehicles.find((x) => x.id === id);
+    if (!v) return;
+    await request(`/api/vehicles/${id}`, {
+      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ...v, is_active: !v.is_active, features: v.features || [] })
+    });
+    await loadVehicles();
+  }
+
+  async function deleteVehicle(id) {
+    await request(`/api/vehicles/${id}`, { method: 'DELETE', headers: authHeaders() });
+    await loadVehicles();
+  }
+
+  async function createChauffeur(event) {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+    data.assigned_vehicle_id = data.assigned_vehicle_id ? Number(data.assigned_vehicle_id) : null;
+    await request('/api/chauffeurs', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
+    event.currentTarget.reset();
+    await loadChauffeurs();
+  }
+
+  async function createPromo(event) {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+    data.discount_value = Number(data.discount_value);
+    data.max_uses = data.max_uses ? Number(data.max_uses) : null;
+    data.min_amount = Number(data.min_amount || 0);
+    data.expires_at = data.expires_at ? new Date(data.expires_at).toISOString() : null;
+    await request('/api/promo', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
+    event.currentTarget.reset();
+    await loadPromos();
+  }
+
+  async function togglePromo(id) {
+    await request(`/api/promo/${id}/toggle`, { method: 'PATCH', headers: authHeaders(), body: '{}' });
+    await loadPromos();
+  }
+
+  async function createUser(event) {
+    event.preventDefault();
+    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+    await request('/api/admin/users', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
+    event.currentTarget.reset();
+    await loadUsers();
+  }
+
+  async function toggleUser(id) {
+    await request(`/api/admin/users/${id}/toggle`, { method: 'PATCH', headers: authHeaders(), body: '{}' });
+    await loadUsers();
+  }
+
+  async function saveAppSettings(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const payload = {
       app_name: form.app_name.value.trim(),
       app_tagline: form.app_tagline.value.trim(),
       hero_title: form.hero_title.value.trim(),
@@ -387,26 +596,13 @@
       maintenance_mode: form.maintenance_mode.value === 'true',
       booking_enabled: form.booking_enabled.value === 'true'
     };
-  }
-
-  async function saveAppSettings(event) {
-    event.preventDefault();
-    const payload = settingsPayloadFromAppForm(event.currentTarget);
-
-    await request('/api/admin/settings', {
-      method: 'PUT',
-      headers: authHeaders(),
-      body: JSON.stringify(payload)
-    });
-
-    setSettingsMessage('App settings saved.', false);
+    await request('/api/admin/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(payload) });
     await loadSettings();
   }
 
   async function saveSeoSettings(event) {
     event.preventDefault();
     const form = event.currentTarget;
-
     const payload = {
       seo_title: form.seo_title.value.trim(),
       seo_description: form.seo_description.value.trim(),
@@ -419,140 +615,24 @@
         linkedin: form.linkedin.value.trim()
       }
     };
-
-    await request('/api/admin/settings', {
-      method: 'PUT',
-      headers: authHeaders(),
-      body: JSON.stringify(payload)
-    });
-
-    setSettingsMessage('SEO settings saved.', false);
+    await request('/api/admin/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(payload) });
     await loadSettings();
-  }
-
-  async function refreshAll() {
-    await Promise.all([loadStats(), loadBookings(), loadVehicles(), loadPromos(), loadUsers(), loadSettings()]);
-  }
-
-  async function updateBookingStatus(id, status) {
-    await request(`/api/bookings/${id}/status`, {
-      method: 'PATCH',
-      headers: authHeaders(),
-      body: JSON.stringify({ status })
-    });
-    await Promise.all([loadBookings(), loadStats()]);
-  }
-
-  async function createVehicle(event) {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-    data.capacity = Number(data.capacity);
-    data.base_price = Number(data.base_price);
-    data.features = data.features ? data.features.split(',').map((x) => x.trim()).filter(Boolean) : [];
-
-    await request('/api/vehicles', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(data)
-    });
-
-    event.currentTarget.reset();
-    await loadVehicles();
-  }
-
-  async function toggleVehicle(id) {
-    const vehicle = state.vehicles.find((x) => String(x.id) === String(id));
-    if (!vehicle) return;
-
-    await request(`/api/vehicles/${id}`, {
-      method: 'PUT',
-      headers: authHeaders(),
-      body: JSON.stringify({
-        name: vehicle.name,
-        model: vehicle.model,
-        category: vehicle.category,
-        capacity: Number(vehicle.capacity),
-        base_price: Number(vehicle.base_price),
-        features: vehicle.features || [],
-        is_active: !vehicle.is_active
-      })
-    });
-
-    await loadVehicles();
-  }
-
-  async function deleteVehicle(id) {
-    await request(`/api/vehicles/${id}`, { method: 'DELETE', headers: authHeaders() });
-    await loadVehicles();
-  }
-
-  async function createPromo(event) {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-    data.discount_value = Number(data.discount_value);
-    data.max_uses = data.max_uses ? Number(data.max_uses) : null;
-    data.min_amount = Number(data.min_amount || 0);
-    data.expires_at = data.expires_at ? new Date(data.expires_at).toISOString() : null;
-
-    await request('/api/promo', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(data)
-    });
-
-    event.currentTarget.reset();
-    await loadPromos();
-  }
-
-  async function togglePromo(id) {
-    await request(`/api/promo/${id}/toggle`, {
-      method: 'PATCH',
-      headers: authHeaders(),
-      body: JSON.stringify({})
-    });
-    await loadPromos();
-  }
-
-  async function createUser(event) {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-
-    await request('/api/admin/users', {
-      method: 'POST',
-      headers: authHeaders(),
-      body: JSON.stringify(data)
-    });
-
-    event.currentTarget.reset();
-    await loadUsers();
-  }
-
-  async function toggleUser(id) {
-    await request(`/api/admin/users/${id}/toggle`, {
-      method: 'PATCH',
-      headers: authHeaders(),
-      body: JSON.stringify({})
-    });
-    await loadUsers();
   }
 
   function bindEvents() {
     qs('#login-form').addEventListener('submit', login);
     qs('#btn-logout').addEventListener('click', logout);
     qs('#btn-refresh').addEventListener('click', refreshAll);
-    qs('#btn-export').addEventListener('click', () => {
-      window.open(`/api/bookings/export/csv?ts=${Date.now()}`, '_blank');
-    });
+    qs('#btn-export').addEventListener('click', () => window.open(`/api/bookings/export/csv?ts=${Date.now()}`, '_blank'));
+    qs('#print-invoice-btn').addEventListener('click', printInvoice);
 
-    qsa('.tab-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        activateTab(btn.dataset.tab);
-      });
-    });
-
+    qsa('.tab-btn').forEach((btn) => btn.addEventListener('click', () => activateTab(btn.dataset.tab)));
     qs('#search-bookings').addEventListener('input', renderBookings);
     qs('#status-filter').addEventListener('change', renderBookings);
+    qs('#search-chauffeurs').addEventListener('input', renderChauffeurs);
+
     qs('#vehicle-form').addEventListener('submit', createVehicle);
+    qs('#chauffeur-form').addEventListener('submit', createChauffeur);
     qs('#promo-form').addEventListener('submit', createPromo);
     qs('#user-form').addEventListener('submit', createUser);
     qs('#settings-form').addEventListener('submit', saveAppSettings);
@@ -561,7 +641,6 @@
 
   bindEvents();
   setAuthView(false);
-  const footerYear = qs('#admin-footer-year');
-  if (footerYear) footerYear.textContent = String(new Date().getFullYear());
+  qs('#admin-footer-year').textContent = String(new Date().getFullYear());
   restoreSession();
 })();

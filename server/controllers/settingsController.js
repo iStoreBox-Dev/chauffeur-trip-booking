@@ -88,6 +88,23 @@ async function getPublicSettings(_req, res) {
   }
 }
 
+async function getPublicContactSettings(_req, res) {
+  try {
+    const settings = await loadMergedSettings();
+    return res.json({
+      settings: {
+        app_name: settings.app_name,
+        support_phone: settings.support_phone,
+        support_email: settings.support_email,
+        whatsapp_number: settings.whatsapp_number
+      }
+    });
+  } catch (error) {
+    console.error('Get public contact settings failed:', error.message);
+    return res.status(500).json({ error: 'Unable to load app settings right now.' });
+  }
+}
+
 async function getAdminSettings(_req, res) {
   try {
     const settings = await loadMergedSettings();
@@ -129,6 +146,7 @@ async function updateAdminSettings(req, res) {
 
 module.exports = {
   getPublicSettings,
+  getPublicContactSettings,
   getAdminSettings,
   updateAdminSettings
 };

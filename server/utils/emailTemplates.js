@@ -144,4 +144,41 @@ function cancellationEmail(booking, settings = {}) {
   };
 }
 
-module.exports = { confirmationEmail, cancellationEmail };
+function assignedEmail(booking, settings = {}) {
+  const supportEmail = settings.support_email || 'booking@luxeride.com';
+  const supportPhone = settings.support_phone || '';
+  const appName = settings.app_name || 'LUXERIDE';
+
+  const vehicleName = booking.assigned_vehicle_name
+    || booking.vehicle_snapshot?.name
+    || booking.vehicle_name
+    || 'N/A';
+  const chauffeurName = booking.assigned_chauffeur_name || booking.chauffeur_name || 'Assigned Chauffeur';
+
+  const bodyHtml = `
+    <h2>Your Chauffeur Is Assigned</h2>
+    <p>Dear <strong>${booking.first_name} ${booking.last_name}</strong>, your trip is now assigned and preparing for dispatch.</p>
+    <div class="ref-box">
+      <div class="label">Booking Reference</div>
+      <div class="ref">${booking.booking_ref}</div>
+    </div>
+    <table class="details-table">
+      <tr><td>Service</td><td>${booking.service_type === 'hourly' ? 'Hourly Rental' : 'Point to Point Transfer'}</td></tr>
+      <tr><td>Pickup</td><td>${booking.pickup_location || '—'}</td></tr>
+      <tr><td>Dropoff</td><td>${booking.dropoff_location || '—'}</td></tr>
+      <tr><td>Date &amp; Time</td><td>${booking.departure_date || '—'} ${booking.departure_time || ''}</td></tr>
+      <tr><td>Vehicle</td><td>${vehicleName}</td></tr>
+      <tr><td>Chauffeur</td><td>${chauffeurName}</td></tr>
+      <tr><td>Status</td><td><span class="status-badge status-confirmed">Chauffeur Assigned</span></td></tr>
+      <tr class="price-row"><td>Total</td><td>${formatBHD(booking.final_price)}</td></tr>
+    </table>
+    <p>If you need to adjust your booking, contact support at <a href="mailto:${supportEmail}" style="color:#ffd27d;">${supportEmail}</a>${supportPhone ? ` or <a href="tel:${supportPhone}" style="color:#ffd27d;">${supportPhone}</a>` : ''}.</p>
+  `;
+
+  return {
+    subject: `Chauffeur Assigned — ${booking.booking_ref} | ${appName}`,
+    html: baseLayout(`Chauffeur Assigned — ${booking.booking_ref}`, bodyHtml, supportEmail, supportPhone)
+  };
+}
+
+module.exports = { confirmationEmail, cancellationEmail, assignedEmail };
