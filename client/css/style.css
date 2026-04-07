@@ -421,7 +421,7 @@ body::before {
   font-size: 0.88rem;
   color: #344b63;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .field > span {
