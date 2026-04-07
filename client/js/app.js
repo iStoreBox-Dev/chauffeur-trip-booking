@@ -732,29 +732,26 @@
     if (refs.quoteLoading) refs.quoteLoading.classList.remove('hidden');
 
     try {
-      const res = await fetch(`/api/bookings/quote?lang=${state.locale}`, {
+      const result = await fetchApi(`/api/bookings/quote`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Lang': state.locale
-        },
-        body: JSON.stringify(payload)
+        body: payload,
+        silent
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Quote calculation failed');
-      }
+      if (result.success) {
+        const data = result.data;
+        state.quote = data.quote || fallbackQuote();
+        state.recommendations = data.recommendations || [];
 
-      const data = await res.json();
-      state.quote = data.quote || fallbackQuote();
-      state.recommendations = data.recommendations || [];
-
-      if (data.promo) {
-        state.appliedPromo = data.promo;
-      } else if (state.appliedPromo?.code && data.promo_error) {
-        state.appliedPromo = null;
-        if (!silent) showWarning(data.promo_error || tr('messages.promoInvalid'), tr('alerts.warning'));
+        if (data.promo) {
+          state.appliedPromo = data.promo;
+        } else if (state.appliedPromo?.code && data.promo_error) {
+          state.appliedPromo = null;
+          if (!silent) showWarning(data.promo_error || tr('messages.promoInvalid'), tr('alerts.warning'));
+        }
+      } else {
+        state.quote = fallbackQuote();
+        if (!silent) showError(result.error || tr('messages.quoteFailed'), tr('alerts.error'));
       }
 
       renderSummary();
@@ -923,21 +920,16 @@
       
       await refreshQuote({ silent: true });
 
-      const res = await fetch(`/api/bookings?lang=${state.locale}`, {
+      const result = await fetchApi(`/api/bookings`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Lang': state.locale
-        },
-        body: JSON.stringify(bookingPayload())
+        body: bookingPayload()
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || tr('messages.submitFailed'));
+      if (!result.success) {
+        throw new Error(result.error || tr('messages.submitFailed'));
       }
 
-      const data = await res.json();
+      const data = result.data;
       qs('#booking-ref').textContent = data.booking.booking_ref || data.booking.id;
       
       showSuccess(tr('messages.bookingCreated') + ' (Ref: ' + (data.booking.booking_ref || data.booking.id) + ')', tr('alerts.success'));
@@ -1018,18 +1010,14 @@
       }
 
       try {
-        const res = await fetch(`/api/geo/search?q=${encodeURIComponent(q)}&lang=${state.locale}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const result = await fetchApi(`/api/geo/search?q=${encodeURIComponent(q)}`, { silent: true });
         
-        const data = await res.json();
-        
-        if (data.error) {
-          showWarning(data.error, tr('alerts.warning'));
+        if (!result.success) {
           list.classList.remove('show');
           return;
         }
         
-        const results = data.results || [];
+        const results = result.data.results || [];
 
         list.innerHTML = results.map((r) => `<li data-lat="${r.lat}" data-lng="${r.lon}" data-name="${escapeHtml(r.display_name)}">${escapeHtml(r.display_name)}</li>`).join('');
         list.classList.toggle('show', results.length > 0);
@@ -1046,7 +1034,6 @@
       } catch (error) {
         console.error('Geo search failed:', error);
         list.classList.remove('show');
-        showWarning(tr('errors.geoSearchFailed') || 'Could not search locations', tr('alerts.warning'));
       }
     }, 300);
 
