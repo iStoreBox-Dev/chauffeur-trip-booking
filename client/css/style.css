@@ -281,36 +281,52 @@ body::before {
 }
 
 .stepper {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  padding: 0.85rem 1.5rem;
   background: linear-gradient(135deg, var(--surface-soft) 0%, rgba(var(--accent-rgb), 0.03) 100%);
   border-bottom: 1px solid var(--line);
-  flex-wrap: wrap;
+  align-items: center;
+  position: relative;
+}
+
+.stepper::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--line);
+  z-index: 0;
 }
 
 .step {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   color: var(--text-light);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   font-weight: 600;
   transition: var(--transition);
+  position: relative;
+  z-index: 1;
 }
 
 .step span {
-  width: 2.2rem;
-  height: 2.2rem;
+  width: 1.6rem;
+  height: 1.6rem;
   border-radius: 999px;
   border: 2px solid var(--line-strong);
-  background: var(--surface-soft);
+  background: var(--surface);
   display: grid;
   place-items: center;
   font-weight: 700;
   transition: var(--transition);
-  font-size: 0.9rem;
+  font-size: 0.75rem;
+  flex-shrink: 0;
 }
 
 .step.active {
@@ -321,14 +337,12 @@ body::before {
   border-color: var(--accent);
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: white;
-  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.3);
-  transform: scale(1.1);
+  box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.4);
+  transform: scale(1.05);
 }
 
 .line {
-  flex: 1;
-  height: 1px;
-  background: var(--line);
+  display: none;
 }
 
 .form-step {
@@ -803,11 +817,11 @@ html[dir='rtl'] .promo-row {
   .chip-btn { padding: 0.35rem 0.65rem; font-size: 0.75rem; }
   .grid-2 { grid-template-columns: 1fr; }
   .addons-grid { grid-template-columns: 1fr; }
-  .line { display: none; }
-  .stepper { justify-content: space-between; padding: 1rem; flex-wrap: wrap; }
-  .step { font-size: 0.65rem; }
-  .step span:first-child { width: 1.8rem; height: 1.8rem; font-size: 0.75rem; }
-  .form-step { padding: 1rem 1rem; }
+  .stepper { grid-template-columns: repeat(4, 1fr); padding: 0.75rem 1rem; gap: 0.2rem; }
+  .stepper::before { top: 35%; }
+  .step { font-size: 0.65rem; gap: 0.25rem; }
+  .step span { width: 1.4rem; height: 1.4rem; font-size: 0.65rem; border-width: 1.5px; }
+  .form-step { padding: 0.85rem 1rem; }
   .form-step h2 { font-size: clamp(1.3rem, 2.5vw, 1.5rem); margin-bottom: 0.5rem; }
   .subtext { font-size: 0.8rem; margin-bottom: 0.5rem; }
   .booking-intro p { font-size: 0.9rem; line-height: 1.5; }
