@@ -221,7 +221,12 @@ async function quoteBooking(req, res) {
       return res.status(result.status).json({ error: result.error });
     }
 
-    const vehicles = await Vehicle.getActive();
+    let vehicles;
+    if (USE_MOCK_DB) {
+      vehicles = mockDb.getAllVehicles();
+    } else {
+      vehicles = await Vehicle.getActive();
+    }
     const criteria = {
       service_type: req.body.service_type,
       passengers: toNumber(req.body.passengers, 1),
@@ -281,7 +286,7 @@ async function createBooking(req, res) {
       }
     }
 
-    const booking = await Booking.create({
+    const bookingPayload = {
       booking_ref: generateRef(),
       service_type: req.body.service_type,
       transfer_type: req.body.transfer_type || 'oneway',
@@ -328,21 +333,29 @@ async function createBooking(req, res) {
       status: 'pending',
       ip_address: getRequestIp(req),
       source: req.body.source || 'web'
-    });
+    };
 
-    if (quoteResult.promo) {
-      await pool.query(
-        'UPDATE promo_codes SET used_count = used_count + 1 WHERE id = $1',
-        [quoteResult.promo.id]
-      );
+    let booking;
+    if (USE_MOCK_DB) {
+      booking = mockDb.createBooking(bookingPayload);
+      if (quoteResult.promo) {
+        mockDb.incrementPromoUsage(quoteResult.promo.code);
+      }
+    } else {
+      booking = await Booking.create(bookingPayload);
+      if (quoteResult.promo) {
+        await pool.query(
+          'UPDATE promo_codes SET used_count = used_count + 1 WHERE id = $1',
+          [quoteResult.promo.id]
+        );
+      }
+      await Booking.addLog({
+        bookingId: booking.id,
+        userId: null,
+        action: 'created',
+        note: 'Booking submitted from website'
+      });
     }
-
-    await Booking.addLog({
-      bookingId: booking.id,
-      userId: null,
-      action: 'created',
-      note: 'Booking submitted from website'
-    });
 
     sendBookingConfirmation(booking).catch(() => {});
     notifyWhatsapp({
@@ -524,20 +537,34 @@ async function exportCsv(req, res) {
 
 async function listVehicles(req, res) {
   try {
+    if (USE_MOCK_DB) {
+      const vehicles = mockDb.getAllVehicles();
+      return res.json({ vehicles });
+    }
     const vehicles = await Vehicle.getActive();
     return res.json({ vehicles });
   } catch (error) {
     console.error('List vehicles failed:', error.message);
+    if (USE_MOCK_DB) {
+      return res.json({ vehicles: mockDb.getAllVehicles() });
+    }
     return res.status(500).json({ error: msg(req, 'errors.listVehiclesFailed') });
   }
 }
 
 async function listAllVehicles(req, res) {
   try {
+    if (USE_MOCK_DB) {
+      const vehicles = mockDb.getAllVehicles();
+      return res.json({ vehicles });
+    }
     const vehicles = await Vehicle.getAll();
     return res.json({ vehicles });
   } catch (error) {
     console.error('List all vehicles failed:', error.message);
+    if (USE_MOCK_DB) {
+      return res.json({ vehicles: mockDb.getAllVehicles() });
+    }
     return res.status(500).json({ error: msg(req, 'errors.listAllVehiclesFailed') });
   }
 }

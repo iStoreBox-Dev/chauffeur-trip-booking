@@ -154,6 +154,38 @@ function getSettings() {
   return MOCK_SETTINGS;
 }
 
+// In-memory bookings storage
+const MOCK_BOOKINGS = [];
+let BOOKING_ID_COUNTER = 1;
+
+/**
+ * Create a mock booking
+ */
+function createBooking(payload) {
+  const booking = {
+    id: BOOKING_ID_COUNTER++,
+    created_at: new Date(),
+    updated_at: new Date(),
+    ...payload
+  };
+  MOCK_BOOKINGS.push(booking);
+  return booking;
+}
+
+/**
+ * Get booking by ID
+ */
+function getBookingById(id) {
+  return MOCK_BOOKINGS.find(b => b.id === parseInt(id));
+}
+
+/**
+ * Get all bookings
+ */
+function getAllBookings() {
+  return MOCK_BOOKINGS;
+}
+
 module.exports = {
   getPromoByCode,
   getAllPromos,
@@ -162,7 +194,11 @@ module.exports = {
   getVehicleById,
   getAllVehicles,
   getSettings,
+  createBooking,
+  getBookingById,
+  getAllBookings,
   MOCK_PROMO_CODES,
   MOCK_VEHICLES,
-  MOCK_SETTINGS
+  MOCK_SETTINGS,
+  MOCK_BOOKINGS
 };
