@@ -7,6 +7,7 @@ const path = require('path');
 
 const routes = require('./routes');
 const { attachLocale } = require('./middleware/locale');
+const { t: translate } = require('./utils/i18n');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -54,12 +55,20 @@ app.use('/js', express.static(path.join(__dirname, '../client/js')));
 app.use('/assets', express.static(path.join(__dirname, '../client/assets')));
 app.use('/admin', express.static(path.join(__dirname, '../client/admin')));
 
-app.get('/', (_req, res) => {
-  res.sendFile(path.join(__dirname, '../client/booking.html'));
+// Views (EJS) support
+app.set('views', path.join(__dirname, '../views'));
+app.set('view engine', 'ejs');
+
+app.get('/', (req, res) => {
+  return res.render('booking', { t: (k, p) => translate(req.locale, k, p), locale: req.locale });
 });
 
-app.get('/booking', (_req, res) => {
-  res.sendFile(path.join(__dirname, '../client/booking.html'));
+app.get('/booking', (req, res) => {
+  return res.render('booking', { t: (k, p) => translate(req.locale, k, p), locale: req.locale });
+});
+
+app.get('/contact', (req, res) => {
+  return res.render('contact', { t: (k, p) => translate(req.locale, k, p), locale: req.locale });
 });
 
 app.get('/admin', (_req, res) => {

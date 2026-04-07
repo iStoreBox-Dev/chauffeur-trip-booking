@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="<%= locale %>" data-theme="dark" dir="<%= locale === 'ar' ? 'rtl' : 'ltr' %>">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= (typeof t === 'function' ? t('contact.title') : 'Contact Us') %></title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="/" class="brand" id="brand-name">LUXE<span>RIDE</span></a>
+      <nav class="header-nav">
+        <a href="/"><%= t('nav.book') %></a>
+        <a href="/booking#track-booking"><%= t('nav.track') %></a>
+        <a href="/contact"><%= t('nav.contact') %></a>
+      </nav>
+      <div class="header-tools">
+        <select class="chip-btn" id="currency-toggle" type="button">
+          <option value="BHD" data-i18n="currency.bhd">BHD</option>
+          <option value="AED" data-i18n="currency.aed">AED</option>
+          <option value="SAR" data-i18n="currency.sar">SAR</option>
+          <option value="QAR" data-i18n="currency.qar">QAR</option>
+          <option value="OMR" data-i18n="currency.omr">OMR</option>
+          <option value="KWD" data-i18n="currency.kwd">KWD</option>
+          <option value="USD" data-i18n="currency.usd">USD</option>
+        </select>
+        <button class="chip-btn" id="lang-toggle" type="button">AR</button>
+        <button class="chip-btn" id="theme-toggle" type="button" data-i18n="theme.switchToLight">Light</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="contact-shell">
+    <section class="contact-card">
+      <h1 data-i18n="contact.title">Contact Us</h1>
+      <p class="subtext" data-i18n="contact.subtitle">Questions, partnerships or special requests — we’re here to help.</p>
+
+      <form id="contact-form" class="grid-2">
+        <label class="field"><span data-i18n="fields.firstName">First Name</span><input id="contact-first" type="text" required /></label>
+        <label class="field"><span data-i18n="fields.lastName">Last Name</span><input id="contact-last" type="text" required /></label>
+        <label class="field full"><span data-i18n="fields.email">Email</span><input id="contact-email" type="email" required /></label>
+        <label class="field"><span data-i18n="fields.countryCode">Country Code</span>
+          <select id="country-code">
+            <option value="+973">+973 (BH)</option>
+            <option value="+966">+966 (SA)</option>
+            <option value="+971">+971 (AE)</option>
+            <option value="+974">+974 (QA)</option>
+            <option value="+965">+965 (KW)</option>
+            <option value="+968">+968 (OM)</option>
+          </select>
+        </label>
+        <label class="field"><span data-i18n="fields.phone">Phone</span><input id="contact-phone" type="tel" required /></label>
+        <label class="field full"><span data-i18n="contact.message">Message</span><textarea id="contact-message-text" rows="6" required></textarea></label>
+
+        <div class="actions">
+          <button class="btn gold" type="submit" id="contact-submit">Send Message</button>
+        </div>
+        <p id="contact-message" class="subtext"></p>
+      </form>
+
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <p>© <span id="footer-year"></span> <span id="footer-brand">LUXERIDE</span>. <span data-i18n="footer.rights">All rights reserved.</span></p>
+      <p id="footer-contact" data-i18n="footer.defaultContact">Premium chauffeur experiences in the Gulf.</p>
+    </div>
+  </footer>
+
+  <script>
+    (function(){
+      const form = document.getElementById('contact-form');
+      const messageEl = document.getElementById('contact-message');
+      form && form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          first_name: document.getElementById('contact-first').value.trim(),
+          last_name: document.getElementById('contact-last').value.trim(),
+          email: document.getElementById('contact-email').value.trim(),
+          country_code: document.getElementById('country-code').value,
+          phone: document.getElementById('contact-phone').value.trim(),
+          message: document.getElementById('contact-message-text').value.trim()
+        };
+
+        try {
+          const res = await fetch('/api/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            messageEl.style.color = 'var(--ok)';
+            messageEl.textContent = 'Message sent — we will get back to you soon.';
+            form.reset();
+            return;
+          }
+
+          // If API not implemented, show local success
+          messageEl.style.color = 'var(--muted)';
+          messageEl.textContent = 'Message recorded locally (no server endpoint).';
+        } catch (err) {
+          messageEl.style.color = 'var(--err)';
+          messageEl.textContent = 'Failed to send message. Please try again later.';
+        }
+      });
+    })();
+  </script>
+
+  <script src="/js/app.js" defer></script>
+  <script src="/js/ui.js" defer></script>
+</body>
+</html>

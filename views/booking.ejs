@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark" dir="ltr">
+<html lang="<%= locale %>" data-theme="dark" dir="<%= locale === 'ar' ? 'rtl' : 'ltr' %>">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LUXERIDE | Premium Luxury Chauffeur Booking</title>
+  <title><%= (typeof t === 'function' ? t('intro.title') : 'LUXERIDE') %></title>
   <meta name="description" content="Experience luxury travel with LUXERIDE. Premium chauffeur services with transparent pricing, professional drivers, and exclusive vehicles." />
   <meta name="keywords" content="luxury chauffeur,premium transportation,airport transfer,executive ride,bahrain" />
   <meta name="robots" content="index,follow" />
@@ -20,9 +20,9 @@
     <div class="header-inner">
       <a href="/" class="brand" id="brand-name">LUXE<span>RIDE</span></a>
       <nav class="header-nav">
-        <a href="#booking" data-i18n="nav.book">Book</a>
-        <a href="#track-booking" data-i18n="nav.track">Track My Booking</a>
-        <a href="/contact" data-i18n="nav.contact">Contact Us</a>
+        <a href="#booking"><%= t('nav.book') %></a>
+        <a href="#track-booking"><%= t('nav.track') %></a>
+        <a href="/contact"><%= t('nav.contact') %></a>
       </nav>
       <div class="header-tools">
         <select class="chip-btn" id="currency-toggle" type="button">
@@ -49,15 +49,6 @@
       <h1 data-i18n="intro.title">Move in Silence & Style</h1>
       <p data-i18n="intro.description">Experience premium chauffeur services with transparent pricing, professional drivers, and exclusive vehicles designed for your comfort.</p>
     </section>
-
-    <div id="maintenance-overlay" class="maintenance-overlay hidden" aria-hidden="true">
-      <div class="maintenance-card">
-        <h2 data-i18n="messages.maintenanceTitle">Maintenance</h2>
-        <p class="maintenance-message"></p>
-        <p class="maintenance-contact"></p>
-        <div class="maintenance-actions"><button id="maintenance-refresh" class="btn">Reload</button></div>
-      </div>
-    </div>
 
     <section class="booking-card">
       <div class="stepper" aria-label="Booking steps">

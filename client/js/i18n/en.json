@@ -18,6 +18,8 @@
     "fleet": "Fleet",
     "benefits": "Benefits",
     "admin": "Admin"
+    ,"track": "Track My Booking",
+    "contact": "Contact Us"
   },
   "theme": {
     "switchToLight": "Light",

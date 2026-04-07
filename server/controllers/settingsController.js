@@ -30,6 +30,11 @@ const DEFAULT_SETTINGS = {
     facebook: '',
     linkedin: ''
   },
+  // UI toggles
+  enhance_journey_enabled: true,
+  enhance_journey_text: 'Enhance Your Journey',
+  addons_enabled: true,
+  addons_title: 'Enhance Your Journey',
   seo_indexable: true
 };
 
@@ -50,6 +55,10 @@ function sanitizePublic(settings) {
     secondary_color: settings.secondary_color,
     maintenance_mode: settings.maintenance_mode,
     booking_enabled: settings.booking_enabled,
+    enhance_journey_enabled: settings.enhance_journey_enabled,
+    enhance_journey_text: settings.enhance_journey_text,
+    addons_enabled: settings.addons_enabled,
+    addons_title: settings.addons_title,
     default_language: settings.default_language,
     supported_languages: settings.supported_languages,
     default_theme: settings.default_theme,

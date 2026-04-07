@@ -17,7 +17,9 @@
     "book": "Book",
     "fleet": "Fleet",
     "benefits": "Benefits",
-    "admin": "Admin"
+    "admin": "Admin",
+    "track": "Track My Booking",
+    "contact": "Contact Us"
   },
   "theme": {
     "switchToLight": "Light",

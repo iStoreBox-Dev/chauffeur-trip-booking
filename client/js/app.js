@@ -321,6 +321,7 @@
     localStorage.setItem('chauffeur_currency', currency);
     refreshQuote({ silent: true });
     renderSummary();
+    renderVehicleGrid();
     renderRecommendations();
   }
 
