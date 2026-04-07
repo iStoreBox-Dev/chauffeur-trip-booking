@@ -141,6 +141,14 @@
     setLocale(state.locale === 'en' ? 'ar' : 'en');
   }
 
+  function setCurrency(currency) {
+    state.currencyCode = currency;
+    localStorage.setItem('chauffeur_currency', currency);
+    refreshQuote({ silent: true });
+    renderSummary();
+    renderRecommendations();
+  }
+
   function applySettings(settings) {
     state.settings = settings;
     state.currencyCode = settings.currency_code || 'BHD';
@@ -890,6 +898,11 @@
       refreshQuote({ silent: true });
     });
     qs('#theme-toggle').addEventListener('click', toggleTheme);
+    const currencyToggle = qs('#currency-toggle');
+    if (currencyToggle) {
+      currencyToggle.value = state.currencyCode;
+      currencyToggle.addEventListener('change', (e) => setCurrency(e.target.value));
+    }
     qs('#new-booking-btn').addEventListener('click', () => window.location.reload());
   }
 
@@ -906,6 +919,9 @@
 
     const savedLocale = localStorage.getItem(LANG_KEY) || 'en';
     const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+    const savedCurrency = localStorage.getItem('chauffeur_currency') || 'BHD';
+    
+    state.currencyCode = savedCurrency;
     setLocale(savedLocale, false);
     setTheme(savedTheme, false);
 

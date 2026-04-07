@@ -11,6 +11,9 @@ const {
 const { sendBookingConfirmation } = require('../utils/email');
 const { notifyWhatsapp } = require('../utils/whatsapp');
 const { t, normalizeLocale } = require('../utils/i18n');
+const mockDb = require('../utils/mockDb');
+
+const USE_MOCK_DB = process.env.USE_MOCK_DB === 'true';
 
 function msg(req, key, params) {
   return t(req.locale, key, params);
@@ -43,6 +46,11 @@ function serializeCsv(rows) {
 }
 
 async function findVehicle(vehicleId, includeInactive = false) {
+  // Use mock database if enabled
+  if (USE_MOCK_DB) {
+    return mockDb.getVehicleById(vehicleId);
+  }
+
   const activeFilter = includeInactive ? '' : 'AND is_active = true';
   const result = await pool.query(
     `SELECT * FROM vehicles WHERE id = $1 ${activeFilter} LIMIT 1`,
@@ -82,6 +90,38 @@ async function validatePromoCode({ code, amount, req }) {
     return { promo: null, error: null, status: 200 };
   }
 
+  // Use mock database if enabled
+  if (USE_MOCK_DB) {
+    const promo = mockDb.getPromoByCode(code);
+    
+    if (!promo) {
+      return {
+        promo: null,
+        error: msg(req, 'errors.promoNotFound'),
+        status: 404
+      };
+    }
+
+    const hasUsesLeft = promo.max_uses === null || promo.used_count < promo.max_uses;
+    const notExpired = !promo.expires_at || new Date(promo.expires_at) >= new Date();
+    const minAmountSatisfied = toNumber(amount, 0) >= toNumber(promo.min_amount, 0);
+
+    if (!hasUsesLeft || !notExpired || !minAmountSatisfied) {
+      return {
+        promo: null,
+        error: msg(req, 'errors.promoInvalid'),
+        status: 400
+      };
+    }
+
+    return {
+      promo,
+      error: null,
+      status: 200
+    };
+  }
+
+  // Use real PostgreSQL database
   const result = await pool.query(
     `SELECT * FROM promo_codes
      WHERE code = UPPER($1) AND is_active = true

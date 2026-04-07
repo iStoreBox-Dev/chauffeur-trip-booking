@@ -60,16 +60,22 @@ function sanitizePublic(settings) {
 }
 
 async function loadMergedSettings() {
-  const result = await pool.query('SELECT value FROM app_settings WHERE key = $1 LIMIT 1', ['app']);
-  const current = result.rows[0]?.value || {};
-  return {
-    ...DEFAULT_SETTINGS,
-    ...current,
-    social_links: {
-      ...DEFAULT_SETTINGS.social_links,
-      ...(current.social_links || {})
-    }
-  };
+  try {
+    const result = await pool.query('SELECT value FROM app_settings WHERE key = $1 LIMIT 1', ['app']);
+    const current = result.rows[0]?.value || {};
+    return {
+      ...DEFAULT_SETTINGS,
+      ...current,
+      social_links: {
+        ...DEFAULT_SETTINGS.social_links,
+        ...(current.social_links || {})
+      }
+    };
+  } catch (dbError) {
+    // Database not available or not initialized, return defaults
+    console.warn('Database query failed, using default settings:', dbError.message);
+    return DEFAULT_SETTINGS;
+  }
 }
 
 async function getPublicSettings(_req, res) {

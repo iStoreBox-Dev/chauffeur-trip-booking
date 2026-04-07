@@ -145,11 +145,17 @@
 
     try {
       state.token = saved;
-      const data = await request('/api/auth/me', { headers: authHeaders() });
-      state.user = data.user;
-      setAuthView(true);
-      qs('#whoami').textContent = `${state.user.full_name} (${state.user.role})`;
-      await refreshAll();
+      const data = await request('/api/auth/me', { 
+        headers: authHeaders(),
+        method: 'GET'
+      });
+      
+      if (data && data.user) {
+        state.user = data.user;
+        setAuthView(true);
+        qs('#whoami').textContent = `${state.user.full_name} (${state.user.role})`;
+        await refreshAll();
+      }
     } catch (_error) {
       localStorage.removeItem(TOKEN_KEY);
       state.token = '';

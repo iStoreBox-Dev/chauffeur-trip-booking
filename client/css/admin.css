@@ -1,10 +1,23 @@
 .admin-layout {
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: 260px 1fr;
-  background:
-    radial-gradient(820px 520px at -15% -10%, rgba(var(--accent-rgb), 0.14), transparent 60%),
-    radial-gradient(760px 500px at 110% -5%, rgba(var(--accent-2-rgb), 0.12), transparent 60%);
+  grid-template-columns: 280px 1fr;
+  background: linear-gradient(135deg, var(--bg) 0%, var(--bg-strong) 100%);
+  position: relative;
+}
+
+.admin-layout::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(var(--accent-rgb), 0.08) 0%, transparent 60%),
+    radial-gradient(circle at 80% -20%, rgba(var(--accent-2-rgb), 0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .admin-auth-locked .admin-layout {
@@ -13,6 +26,13 @@
 
 .admin-auth-locked .admin-side {
   display: none;
+}
+
+.admin-auth--locked .admin-main {
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
 }
 
 .admin-auth-locked .admin-main {
@@ -27,58 +47,101 @@
 }
 
 .admin-side {
-  border-right: 1px solid #cfe0f2;
-  background: rgba(255, 255, 255, 0.82);
+  border-right: 1px solid var(--line);
+  background: var(--surface-glass);
   backdrop-filter: blur(12px);
-  padding: 1rem;
+  -webkit-backdrop-filter: blur(12px);
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.75rem;
+  position: relative;
+  z-index: 10;
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.05);
 }
 
 .admin-side h1 {
-  margin: 0;
-  font-size: 1.45rem;
-  font-family: 'Cormorant Garamond', serif;
-  color: #11263f;
+  margin: 0 0 0.5rem;
+  font-size: 1.4rem;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
 }
 
-.admin-side h1 span { color: var(--accent); }
+.admin-side h1 span { 
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
 .admin-side p {
-  margin: 0 0 0.6rem;
-  color: #5d7590;
-  font-size: 0.86rem;
+  margin: 0 0 1rem;
+  color: var(--text-light);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .tab-btn {
-  border: 1px solid #cfdeef;
-  background: #f5f9ff;
-  color: #36506c;
-  border-radius: 10px;
-  padding: 0.56rem 0.7rem;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  color: var(--text-light);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
   text-align: left;
   font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.tab-btn:hover {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateX(4px);
 }
 
 .tab-btn.active {
-  border-color: color-mix(in srgb, var(--accent) 40%, #ffffff);
-  color: var(--accent);
-  background: #eaf2ff;
+  border-color: var(--accent);
+  color: var(--text);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-2-rgb), 0.1));
+  box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.15);
 }
 
-.admin-main { padding: 1rem; }
+.admin-main { 
+  padding: 2rem;
+  position: relative;
+  z-index: 1;
+}
 
 .login-card,
 .note-card {
-  border: 2px solid var(--line);
-  background: var(--surface);
-  border-radius: 18px;
-  padding: 2rem;
+  border: 1px solid var(--line);
+  background: var(--surface-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--radius-xl);
+  padding: 2.5rem;
   width: min(520px, 94vw);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-lg);
   position: relative;
   overflow: hidden;
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .login-card::before {
@@ -87,41 +150,58 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent));
-}
-
-.login-card h2 {
-  margin: 0.5rem 0 0.3rem;
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.6rem;
-  color: var(--text);
-  font-weight: 600;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3));
 }
 
 .login-card::after {
-  content: 'SECURE OPERATIONS PORTAL';
-  display: block;
-  font-size: 0.72rem;
-  letter-spacing: 0.12em;
-  color: var(--accent);
+  content: 'SECURE  ·  OPERATIONS  ·  PORTAL';
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  margin-bottom: 1.2rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  opacity: 0.6;
+}
+
+.login-card h2 {
+  margin: 0 0 0.5rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 2rem;
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.login-card h2::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: 2px;
+  margin-top: 0.75rem;
 }
 
 .form-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
-  margin-bottom: 1.2rem;
+  gap: 1.2rem;
+  margin: 2rem 0;
 }
 
 .form-grid label,
 .form-panel label {
   display: grid;
-  gap: 0.45rem;
-  color: var(--muted);
-  font-size: 0.88rem;
+  gap: 0.6rem;
+  color: var(--text-light);
+  font-size: 0.85rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -132,13 +212,19 @@
 .form-panel label select,
 .form-panel label textarea {
   background: var(--bg);
-  border: 1px solid var(--line-strong);
+  border: 2px solid var(--line-strong);
   color: var(--text);
-  border-radius: 10px;
-  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
   font-family: inherit;
   font-size: 1rem;
-  transition: all 0.2s ease;
+  transition: var(--transition);
+}
+
+.form-grid label input::placeholder,
+.form-panel label input::placeholder {
+  color: var(--text-light);
+  opacity: 0.6;
 }
 
 .form-grid label input:focus,
@@ -147,8 +233,9 @@
 .form-panel label textarea:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.12);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.15);
   background: var(--surface-soft);
+  transform: translateY(-2px);
 }
 
 .form-grid button[type="submit"],

@@ -1,4 +1,120 @@
 {
+  "intro": {
+    "subtitle": "Premium Luxury Transportation",
+    "title": "Move in Silence & Style",
+    "description": "Experience premium chauffeur services with transparent pricing, professional drivers, and exclusive vehicles designed for your comfort."
+  },
+  "currency": {
+    "bhd": "BHD - Bahraini Dinar",
+    "aed": "AED - UAE Dirham",
+    "sar": "SAR - Saudi Riyal",
+    "qar": "QAR - Qatari Riyal",
+    "omr": "OMR - Omani Rial",
+    "kwd": "KWD - Kuwaiti Dinar",
+    "usd": "USD - US Dollar"
+  },
+  "nav": {
+    "book": "Book",
+    "fleet": "Fleet",
+    "benefits": "Benefits",
+    "admin": "Admin"
+  },
+  "theme": {
+    "switchToLight": "Light",
+    "switchToDark": "Dark"
+  },
+  "common": {
+    "select": "Select"
+  },
+  "steps": {
+    "trip": "Trip",
+    "vehicle": "Vehicle",
+    "details": "Details",
+    "confirm": "Confirm"
+  },
+  "sections": {
+    "tripDetails": "Trip Details",
+    "chooseVehicle": "Choose Your Vehicle",
+    "vehicleHelp": "Select from our premium fleet of luxury vehicles.",
+    "contactDetails": "Your Details",
+    "confirmBooking": "Confirm Booking",
+    "bookingSubmitted": "Booking Confirmed"
+  },
+  "service": {
+    "transfer": "Point to Point",
+    "hourly": "Hourly Rental"
+  },
+  "trip": {
+    "oneWay": "One Way",
+    "roundTrip": "Round Trip",
+    "locationHint": "Select locations from the suggestion list to ensure accurate routing."
+  },
+  "fields": {
+    "pickup": "Pickup Location",
+    "dropoff": "Dropoff Location",
+    "departureDate": "Departure Date",
+    "departureTime": "Departure Time",
+    "returnDate": "Return Date",
+    "returnTime": "Return Time",
+    "passengers": "Number of Passengers",
+    "luggage": "Luggage",
+    "flightNumber": "Flight Number (Optional)",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email Address",
+    "countryCode": "Country Code",
+    "phone": "Phone Number",
+    "specialRequests": "Special Requirements",
+    "promoCode": "Promo Code",
+    "date": "Date",
+    "startTime": "Start Time",
+    "duration": "Duration",
+    "terms": "I agree to the terms and privacy policy"
+  },
+  "placeholders": {
+    "pickup": "Bahrain International Airport",
+    "dropoff": "Seef District, Manama",
+    "hourlyPickup": "Manama City Centre",
+    "flight": "GF 123",
+    "promo": "WELCOME10"
+  },
+  "addons": {
+    "title": "Enhance Your Journey",
+    "childSeat": "Child Safety Seat",
+    "childSeatCount": "Number of child seats",
+    "extraLuggage": "Extra Luggage Handling",
+    "extraLuggageCount": "Extra luggage pieces",
+    "petFriendly": "Pet-Friendly Setup",
+    "note": "Selected add-ons will be reflected in your final quote."
+  },
+  "actions": {
+    "continue": "Continue",
+    "back": "Back",
+    "review": "Review Booking",
+    "confirmBooking": "Confirm Booking",
+    "apply": "Apply",
+    "remove": "Remove",
+    "newBooking": "Create New Booking"
+  },
+  "messages": {
+    "bookingCreated": "Booking submitted successfully.",
+    "bookingReceived": "Your booking request has been received. We will contact you shortly to confirm.",
+    "reference": "Booking Reference",
+    "promoApplied": "Promo code applied successfully!",
+    "chauffeurAssigned": "Chauffeur assigned successfully.",
+    "quoteLoading": "Calculating your personalized quote...",
+    "capacityWarning": "This vehicle may exceed the capacity for your passenger count. Please select another vehicle or adjust passenger count."
+  },
+  "benefits": {
+    "dispatch": "24/7 Dispatch Center",
+    "chauffeurs": "Professional Chauffeurs",
+    "business": "Business & Leisure",
+    "transparent": "Transparent Pricing"
+  },
+  "footer": {
+    "rights": "All rights reserved.",
+    "defaultContact": "Premium chauffeur experiences in the Gulf."
+  },
   "errors": {
     "invalidVehicle": "Please select a valid vehicle.",
     "createBookingFailed": "We could not submit your booking right now. Please try again.",
@@ -38,10 +154,5 @@
     "createChauffeurFailed": "Unable to create chauffeur.",
     "toggleChauffeurFailed": "Unable to update chauffeur status.",
     "assignChauffeurFailed": "Unable to assign chauffeur right now."
-  },
-  "messages": {
-    "bookingCreated": "Booking submitted successfully.",
-    "promoApplied": "Promo code applied.",
-    "chauffeurAssigned": "Chauffeur assigned successfully."
   }
 }

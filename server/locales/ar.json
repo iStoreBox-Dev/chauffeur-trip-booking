@@ -1,4 +1,120 @@
 {
+  "intro": {
+    "subtitle": "خدمات نقل فاخرة متميزة",
+    "title": "تحرك بصمت وأناقة",
+    "description": "اختبر خدمات سائق فاخرة مع أسعار شفافة وسائقين محترفين ومركبات حصرية مصممة لراحتك."
+  },
+  "currency": {
+    "bhd": "دينار بحريني",
+    "aed": "درهم إماراتي",
+    "sar": "ريال سعودي",
+    "qar": "ريال قطري",
+    "omr": "ريال عماني",
+    "kwd": "دينار كويتي",
+    "usd": "دولار أمريكي"
+  },
+  "nav": {
+    "book": "احجز",
+    "fleet": "الأسطول",
+    "benefits": "المزايا",
+    "admin": "الإدارة"
+  },
+  "theme": {
+    "switchToLight": "فاتح",
+    "switchToDark": "داكن"
+  },
+  "common": {
+    "select": "اختر"
+  },
+  "steps": {
+    "trip": "الرحلة",
+    "vehicle": "المركبة",
+    "details": "التفاصيل",
+    "confirm": "تأكيد"
+  },
+  "sections": {
+    "tripDetails": "تفاصيل الرحلة",
+    "chooseVehicle": "اختر مركبتك",
+    "vehicleHelp": "اختر من أسطولنا الفاخر من المركبات الفاخرة.",
+    "contactDetails": "بياناتك",
+    "confirmBooking": "تأكيد الحجز",
+    "bookingSubmitted": "تم تأكيد الحجز"
+  },
+  "service": {
+    "transfer": "من نقطة إلى نقطة",
+    "hourly": "إيجار بالساعة"
+  },
+  "trip": {
+    "oneWay": "في اتجاه واحد",
+    "roundTrip": "ذهاب وعودة",
+    "locationHint": "اختر المواقع من قائمة الاقتراحات لضمان التوجيه الدقيق."
+  },
+  "fields": {
+    "pickup": "موقع الالتقاط",
+    "dropoff": "موقع الإنزال",
+    "departureDate": "تاريخ المغادرة",
+    "departureTime": "وقت المغادرة",
+    "returnDate": "تاريخ العودة",
+    "returnTime": "وقت العودة",
+    "passengers": "عدد الركاب",
+    "luggage": "الأمتعة",
+    "flightNumber": "رقم الرحلة (اختياري)",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "email": "عنوان البريد الإلكتروني",
+    "countryCode": "رمز الدولة",
+    "phone": "رقم الهاتف",
+    "specialRequests": "متطلبات خاصة",
+    "promoCode": "رمز ترقيمي",
+    "date": "التاريخ",
+    "startTime": "وقت البداية",
+    "duration": "المدة",
+    "terms": "أوافق على الشروط وسياسة الخصوصية"
+  },
+  "placeholders": {
+    "pickup": "مطار البحرين الدولي",
+    "dropoff": "منطقة السيف، المنامة",
+    "hourlyPickup": "وسط مدينة المنامة",
+    "flight": "GF 123",
+    "promo": "WELCOME10"
+  },
+  "addons": {
+    "title": "حسّن رحلتك",
+    "childSeat": "مقعد أمان الطفل",
+    "childSeatCount": "عدد مقاعد الأطفال",
+    "extraLuggage": "معالجة الأمتعة الإضافية",
+    "extraLuggageCount": "قطع الأمتعة الإضافية",
+    "petFriendly": "إعداد صديق للحيوانات الأليفة",
+    "note": "ستظهر الإضافات المختارة في السعر النهائي."
+  },
+  "actions": {
+    "continue": "متابعة",
+    "back": "رجوع",
+    "review": "مراجعة الحجز",
+    "confirmBooking": "تأكيد الحجز",
+    "apply": "تطبيق",
+    "remove": "إزالة",
+    "newBooking": "إنشاء حجز جديد"
+  },
+  "messages": {
+    "bookingCreated": "تم تقديم الحجز بنجاح.",
+    "bookingReceived": "تم استقبال طلب حجزك. سنتصل بك قريباً للتأكيد.",
+    "reference": "رقم الحجز",
+    "promoApplied": "تم تطبيق الرمز الترقيمي بنجاح!",
+    "chauffeurAssigned": "تم تعيين السائق بنجاح.",
+    "quoteLoading": "حساب السعر الشخصي لك...",
+    "capacityWarning": "قد تتجاوز هذه المركبة السعة المطلوبة لعدد الركاب. يرجى اختيار مركبة أخرى أو تعديل عدد الركاب."
+  },
+  "benefits": {
+    "dispatch": "مركز الإرسال 24/7",
+    "chauffeurs": "سائقون محترفون",
+    "business": "العمل والترفيه",
+    "transparent": "أسعار شفافة"
+  },
+  "footer": {
+    "rights": "جميع الحقوق محفوظة.",
+    "defaultContact": "تجارب السائق الفاخر في الخليج."
+  },
   "errors": {
     "invalidVehicle": "يرجى اختيار مركبة صالحة.",
     "createBookingFailed": "تعذر إرسال الحجز الآن. يرجى المحاولة مرة أخرى.",
@@ -38,10 +154,5 @@
     "createChauffeurFailed": "تعذر إنشاء السائق.",
     "toggleChauffeurFailed": "تعذر تحديث حالة السائق.",
     "assignChauffeurFailed": "تعذر تعيين السائق حالياً."
-  },
-  "messages": {
-    "bookingCreated": "تم إرسال الحجز بنجاح.",
-    "promoApplied": "تم تطبيق رمز الخصم.",
-    "chauffeurAssigned": "تم تعيين السائق بنجاح."
   }
 }
