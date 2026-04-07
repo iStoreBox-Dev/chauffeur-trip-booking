@@ -1,6 +1,10 @@
 const pool = require('../../config/db');
 
+const VALID_STATUSES = ['pending', 'confirmed', 'chauffeur_assigned', 'in_progress', 'completed', 'cancelled', 'rejected'];
+
 class Booking {
+  static get VALID_STATUSES() { return VALID_STATUSES; }
+
   static async create(payload) {
     const query = `
       INSERT INTO bookings (
@@ -31,46 +35,19 @@ class Booking {
     `;
 
     const values = [
-      payload.booking_ref,
-      payload.service_type,
-      payload.transfer_type,
-      payload.pickup_location,
-      payload.pickup_lat,
-      payload.pickup_lng,
-      payload.dropoff_location,
-      payload.dropoff_lat,
-      payload.dropoff_lng,
-      payload.departure_date,
-      payload.departure_time,
-      payload.return_date,
-      payload.return_time,
-      payload.hourly_duration,
-      payload.passengers,
-      payload.luggage,
-      payload.flight_number,
-      payload.vehicle_id,
-      payload.vehicle_snapshot,
-      payload.first_name,
-      payload.last_name,
-      payload.email,
-      payload.country_code,
-      payload.phone,
-      payload.special_requests,
-      JSON.stringify(payload.add_ons || {}),
-      payload.add_ons_price,
-      payload.promo_code,
-      payload.base_price,
-      payload.discount_amount,
-      payload.final_price,
-      payload.distance_km,
-      payload.language_code || 'en',
-      payload.chauffeur_id || null,
-      payload.payment_provider || null,
-      payload.payment_status || 'pending',
-      payload.payment_reference || null,
-      payload.status || 'pending',
-      payload.ip_address,
-      payload.source || 'web'
+      payload.booking_ref, payload.service_type, payload.transfer_type,
+      payload.pickup_location, payload.pickup_lat, payload.pickup_lng,
+      payload.dropoff_location, payload.dropoff_lat, payload.dropoff_lng,
+      payload.departure_date, payload.departure_time, payload.return_date, payload.return_time,
+      payload.hourly_duration, payload.passengers, payload.luggage, payload.flight_number,
+      payload.vehicle_id, payload.vehicle_snapshot,
+      payload.first_name, payload.last_name, payload.email, payload.country_code, payload.phone,
+      payload.special_requests, JSON.stringify(payload.add_ons || {}), payload.add_ons_price, payload.promo_code,
+      payload.base_price, payload.discount_amount, payload.final_price, payload.distance_km,
+      payload.language_code || 'en', payload.chauffeur_id || null,
+      payload.payment_provider || null, payload.payment_status || 'pending',
+      payload.payment_reference || null, payload.status || 'pending',
+      payload.ip_address, payload.source || 'web'
     ];
 
     const result = await pool.query(query, values);
@@ -84,6 +61,36 @@ class Booking {
        LEFT JOIN chauffeurs c ON c.id = b.chauffeur_id
        WHERE b.id = $1`,
       [id]
+    );
+    return result.rows[0];
+  }
+
+  static async findByRefAndEmail(ref, email) {
+    const result = await pool.query(
+      `SELECT b.id, b.booking_ref, b.service_type, b.transfer_type,
+              b.pickup_location, b.dropoff_location, b.departure_date, b.departure_time,
+              b.passengers, b.flight_number, b.status, b.final_price, b.vehicle_snapshot,
+              b.created_at, b.updated_at,
+              c.full_name AS chauffeur_name
+       FROM bookings b
+       LEFT JOIN chauffeurs c ON c.id = b.chauffeur_id
+       WHERE UPPER(b.booking_ref) = UPPER($1)
+         AND LOWER(b.email) = LOWER($2)
+       LIMIT 1`,
+      [ref, email]
+    );
+    return result.rows[0];
+  }
+
+  static async cancelByRefAndEmail(ref, email) {
+    const result = await pool.query(
+      `UPDATE bookings
+       SET status = 'cancelled', updated_at = NOW()
+       WHERE UPPER(booking_ref) = UPPER($1)
+         AND LOWER(email) = LOWER($2)
+         AND status IN ('pending', 'confirmed')
+       RETURNING *`,
+      [ref, email]
     );
     return result.rows[0];
   }
@@ -157,11 +164,7 @@ class Booking {
       LIMIT $${limitIdx} OFFSET $${offsetIdx}
     `;
 
-    const countQuery = `
-      SELECT COUNT(*) AS total
-      FROM bookings b
-      ${whereClause}
-    `;
+    const countQuery = `SELECT COUNT(*) AS total FROM bookings b ${whereClause}`;
 
     const [dataResult, countResult] = await Promise.all([
       pool.query(dataQuery, values),
@@ -178,7 +181,7 @@ class Booking {
 
   static async updateStatus(id, status) {
     const result = await pool.query(
-      `UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *`,
+      `UPDATE bookings SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
       [status, id]
     );
     return result.rows[0];
@@ -190,13 +193,12 @@ class Booking {
       'return_date', 'return_time', 'hourly_duration', 'passengers', 'luggage',
       'flight_number', 'first_name', 'last_name', 'email', 'country_code', 'phone',
       'special_requests', 'status', 'chauffeur_id', 'add_ons', 'add_ons_price',
-      'language_code', 'payment_provider', 'payment_status', 'payment_reference'
+      'language_code', 'payment_provider', 'payment_status', 'payment_reference',
+      'vehicle_id'
     ];
 
     const keys = Object.keys(fields).filter((key) => allowed.includes(key));
-    if (keys.length === 0) {
-      return this.findById(id);
-    }
+    if (keys.length === 0) return this.findById(id);
 
     const values = keys.map((key) => (key === 'add_ons' ? JSON.stringify(fields[key] || {}) : fields[key]));
     const sets = keys
@@ -204,7 +206,7 @@ class Booking {
       .join(', ');
     values.push(id);
 
-    const query = `UPDATE bookings SET ${sets} WHERE id = $${values.length} RETURNING *`;
+    const query = `UPDATE bookings SET ${sets}, updated_at = NOW() WHERE id = $${values.length} RETURNING *`;
     const result = await pool.query(query, values);
     return result.rows[0];
   }
@@ -222,37 +224,63 @@ class Booking {
         COUNT(*) FILTER (WHERE status = 'confirmed') AS confirmed,
         COUNT(*) FILTER (WHERE status = 'completed') AS completed,
         COUNT(*) FILTER (WHERE DATE(created_at) = CURRENT_DATE) AS today,
-        COALESCE(SUM(final_price), 0) AS total_revenue
+        COALESCE(SUM(final_price), 0) AS total_revenue,
+        COALESCE(SUM(final_price) FILTER (WHERE DATE_TRUNC('month', created_at) = DATE_TRUNC('month', NOW())), 0) AS month_revenue,
+        COUNT(*) FILTER (WHERE status = 'completed') AS completed_trips
       FROM bookings
     `;
-
     const result = await pool.query(query);
     return result.rows[0];
   }
 
+  static async dailyBookings(days = 14) {
+    const result = await pool.query(
+      `SELECT DATE(created_at) AS day, COUNT(*) AS count
+       FROM bookings
+       WHERE created_at >= NOW() - INTERVAL '${days} days'
+       GROUP BY DATE(created_at)
+       ORDER BY day ASC`
+    );
+    return result.rows;
+  }
+
+  static async dailyRevenue(days = 7) {
+    const result = await pool.query(
+      `SELECT DATE(created_at) AS day, COALESCE(SUM(final_price), 0) AS revenue
+       FROM bookings
+       WHERE status = 'completed' AND created_at >= NOW() - INTERVAL '${days} days'
+       GROUP BY DATE(created_at)
+       ORDER BY day ASC`
+    );
+    return result.rows;
+  }
+
   static async allForExport() {
     const result = await pool.query(
-          `SELECT b.booking_ref, b.service_type, b.first_name, b.last_name, b.email,
-            b.country_code, b.phone, b.pickup_location, b.dropoff_location,
-            b.departure_date, b.departure_time, b.final_price, b.status,
-            c.full_name AS chauffeur_name, b.language_code, b.created_at
+      `SELECT b.booking_ref, b.service_type, b.first_name, b.last_name, b.email,
+              b.country_code, b.phone, b.pickup_location, b.dropoff_location,
+              b.departure_date, b.departure_time, b.final_price, b.status,
+              c.full_name AS chauffeur_name, b.language_code, b.created_at
        FROM bookings b
        LEFT JOIN chauffeurs c ON c.id = b.chauffeur_id
        ORDER BY b.created_at DESC`
     );
-
     return result.rows;
   }
 
-  static async updateChauffeur(bookingId, chauffeurId) {
-    const result = await pool.query(
-      `UPDATE bookings
-       SET chauffeur_id = $1
-       WHERE id = $2
-       RETURNING *`,
-      [chauffeurId, bookingId]
-    );
+  static async updateChauffeur(bookingId, chauffeurId, vehicleId) {
+    const setClauses = ['chauffeur_id = $1', 'updated_at = NOW()'];
+    const values = [chauffeurId, bookingId];
 
+    if (vehicleId !== undefined) {
+      setClauses.push(`vehicle_id = $${values.length + 1}`);
+      values.splice(values.length - 1, 0, vehicleId);
+    }
+
+    const result = await pool.query(
+      `UPDATE bookings SET ${setClauses.join(', ')} WHERE id = $2 RETURNING *`,
+      values
+    );
     return result.rows[0];
   }
 }
