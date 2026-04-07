@@ -694,6 +694,7 @@ async function togglePromo(req, res) {
 async function geoSearch(req, res) {
   try {
     const q = req.query.q;
+    const lang = req.query.lang || req.locale || 'en';
 
     if (!q || String(q).trim().length < 2) {
       return res.status(400).json({ error: msg(req, 'errors.geoQueryShort') });
@@ -706,7 +707,8 @@ async function geoSearch(req, res) {
 
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'chauffeur-trip-booking/1.0'
+        'User-Agent': 'chauffeur-trip-booking/1.0',
+        'Accept-Language': lang === 'ar' ? 'ar' : 'en'
       }
     });
 

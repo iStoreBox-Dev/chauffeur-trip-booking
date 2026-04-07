@@ -1010,7 +1010,7 @@
       }
 
       try {
-        const result = await fetchApi(`/api/geo/search?q=${encodeURIComponent(q)}`, { silent: true });
+        const result = await fetchApi(`/api/geo/search?q=${encodeURIComponent(q)}&lang=${state.locale}`, { silent: true });
         
         if (!result.success) {
           list.classList.remove('show');
