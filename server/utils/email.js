@@ -1,12 +1,12 @@
+'use strict';
+
 const nodemailer = require('nodemailer');
-const { formatBHD } = require('./helpers');
+const { confirmationEmail, cancellationEmail } = require('./emailTemplates');
 
 let transporter;
 
 function getTransporter() {
-  if (transporter) {
-    return transporter;
-  }
+  if (transporter) return transporter;
 
   if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
     return null;
@@ -16,41 +16,52 @@ function getTransporter() {
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT) || 587,
     secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
   });
 
   return transporter;
 }
 
+function loadSettings() {
+  try {
+    const pool = require('../../config/db');
+    return pool
+      .query('SELECT value FROM app_settings WHERE key = $1 LIMIT 1', ['app'])
+      .then((r) => r.rows[0]?.value || {})
+      .catch(() => ({}));
+  } catch {
+    return Promise.resolve({});
+  }
+}
+
 async function sendBookingConfirmation(booking) {
   const mailer = getTransporter();
+  if (!mailer) return;
 
-  if (!mailer) {
-    return;
-  }
+  const settings = await loadSettings();
+  const { subject, html } = confirmationEmail(booking, settings);
 
   await mailer.sendMail({
-    from: process.env.EMAIL_FROM,
+    from: process.env.EMAIL_FROM || settings.support_email || 'noreply@luxeride.com',
     to: booking.email,
-    subject: `Booking Confirmed - ${booking.booking_ref}`,
-    text: [
-      `Dear ${booking.first_name} ${booking.last_name},`,
-      '',
-      'Thank you for booking with us.',
-      `Reference: ${booking.booking_ref}`,
-      `Service: ${booking.service_type}`,
-      `Price: ${formatBHD(booking.final_price)}`,
-      '',
-      'Our team will contact you shortly.',
-      '',
-      'Best regards,'
-    ].join('\n')
+    subject,
+    html
   });
 }
 
-module.exports = {
-  sendBookingConfirmation
-};
+async function sendBookingCancellation(booking) {
+  const mailer = getTransporter();
+  if (!mailer) return;
+
+  const settings = await loadSettings();
+  const { subject, html } = cancellationEmail(booking, settings);
+
+  await mailer.sendMail({
+    from: process.env.EMAIL_FROM || settings.support_email || 'noreply@luxeride.com',
+    to: booking.email,
+    subject,
+    html
+  });
+}
+
+module.exports = { sendBookingConfirmation, sendBookingCancellation };
