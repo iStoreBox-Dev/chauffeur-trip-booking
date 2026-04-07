@@ -303,6 +303,15 @@
     bindDetailActions(b.id);
   }
 
+  function formatAddOnsForDisplay(addOns) {
+    if (!addOns || typeof addOns !== 'object') return 'None';
+    const parts = [];
+    if (addOns.child_seat) parts.push(`Child seat${addOns.child_seat_count ? ' x' + addOns.child_seat_count : ''}`);
+    if (addOns.extra_luggage) parts.push(`Extra luggage${addOns.extra_luggage_count ? ' x' + addOns.extra_luggage_count : ''}`);
+    if (addOns.pet_friendly) parts.push('Pet friendly');
+    return parts.length ? parts.join('; ') : 'None';
+  }
+
   function printInvoice() {
     if (!state.selectedBooking) return;
     const b = state.selectedBooking;
@@ -324,7 +333,7 @@
         <tr><th>Dropoff</th><td>${b.dropoff_location || '-'}</td></tr>
         <tr><th>Vehicle</th><td>${b.assigned_vehicle_name || b.vehicle_snapshot?.name || '-'}</td></tr>
         <tr><th>Chauffeur</th><td>${b.assigned_chauffeur_name || '-'}</td></tr>
-        <tr><th>Add-ons</th><td>${JSON.stringify(b.add_ons || {})}</td></tr>
+        <tr><th>Add-ons</th><td>${formatAddOnsForDisplay(b.add_ons || {})}</td></tr>
         <tr><th>Subtotal</th><td>${money((Number(b.base_price || 0) + Number(b.add_ons_price || 0)))}</td></tr>
         <tr><th>Discount</th><td>${money(b.discount_amount || 0)}</td></tr>
         <tr><th class="total">Total</th><td class="total">${money(b.final_price)}</td></tr>
@@ -623,7 +632,27 @@
     qs('#login-form').addEventListener('submit', login);
     qs('#btn-logout').addEventListener('click', logout);
     qs('#btn-refresh').addEventListener('click', refreshAll);
-    qs('#btn-export').addEventListener('click', () => window.open(`/api/bookings/export/csv?ts=${Date.now()}`, '_blank'));
+    qs('#btn-export').addEventListener('click', async () => {
+      try {
+        const res = await fetch(`/api/bookings/export/csv?ts=${Date.now()}`, { headers: authHeaders() });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          alert(err.error || 'Export failed');
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bookings-${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (e) {
+        alert('Export failed');
+      }
+    });
     qs('#print-invoice-btn').addEventListener('click', printInvoice);
 
     qsa('.tab-btn').forEach((btn) => btn.addEventListener('click', () => activateTab(btn.dataset.tab)));
