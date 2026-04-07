@@ -114,7 +114,9 @@
     "vehicleLoadFailed": "Unable to load vehicle list.",
     "quoteFailed": "Unable to calculate quote right now.",
     "maintenanceMode": "The service is currently in maintenance mode. Please try again shortly.",
-    "bookingDisabled": "Booking is temporarily disabled. Please contact support."
+    "bookingDisabled": "Booking is temporarily disabled. Please contact support.",
+    "processingBooking": "Processing your booking...",
+    "noVehiclesAvailable": "No vehicles available at the moment."
   },
   "summary": {
     "service": "Service",
@@ -163,5 +165,19 @@
   },
   "common": {
     "select": "Select"
+  },
+  "alerts": {
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Information"
+  },
+  "errors": {
+    "networkError": "Network error. Please check your connection and try again.",
+    "serverError": "Server error. Please try again later.",
+    "validationError": "Please check your input and try again.",
+    "geoSearchFailed": "Could not search for locations. Please try again.",
+    "failedLoadSettings": "Could not load settings. Using defaults.",
+    "failedLoadTranslations": "Could not load translations."
   }
 }

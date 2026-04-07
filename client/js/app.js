@@ -39,11 +39,111 @@
     vehicleGrid: document.getElementById('vehicle-grid'),
     promoMessage: document.getElementById('promo-message'),
     quoteLoading: document.getElementById('quote-loading'),
-    recommendationsBox: document.getElementById('recommendations-box')
+    recommendationsBox: document.getElementById('recommendations-box'),
+    alertContainer: document.getElementById('alert-container')
   };
 
   function qs(selector, ctx = document) { return ctx.querySelector(selector); }
   function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
+
+  /**
+   * ALERT SYSTEM - Comprehensive error & notification handling
+   */
+  function showAlert(message, type = 'info', title = '') {
+    if (!refs.alertContainer) return;
+    
+    const alertId = `alert-${Date.now()}`;
+    const icons = {
+      error: '❌',
+      success: '✅',
+      warning: '⚠️',
+      info: 'ℹ️'
+    };
+    
+    const alert = document.createElement('div');
+    alert.className = `alert ${type}`;
+    alert.id = alertId;
+    alert.setAttribute('role', 'alert');
+    
+    const titleText = title || {
+      error: tr('alerts.error'),
+      success: tr('alerts.success'),
+      warning: tr('alerts.warning'),
+      info: tr('alerts.info')
+    }[type] || 'Alert';
+    
+    alert.innerHTML = `
+      <span class="alert-icon">${icons[type]}</span>
+      <div class="alert-content">
+        <div class="alert-title">${escapeHtml(titleText)}</div>
+        <div class="alert-message">${escapeHtml(String(message || ''))}</div>
+      </div>
+      <button class="alert-close" type="button" aria-label="Close alert">×</button>
+    `;
+    
+    refs.alertContainer.appendChild(alert);
+    
+    const closeBtn = alert.querySelector('.alert-close');
+    const removeAlert = () => {
+      if (alert.parentNode) {
+        alert.style.animation = 'slideOut 0.3s ease-in forwards';
+        setTimeout(() => alert.remove(), 300);
+      }
+    };
+    
+    closeBtn.addEventListener('click', removeAlert);
+    
+    // Auto-dismiss after 5 seconds
+    if (type !== 'error') {
+      setTimeout(removeAlert, 5000);
+    }
+    
+    // Log to console for debugging
+    console.log(`[${type.toUpperCase()}]`, titleText, message);
+  }
+
+  function showError(message, title) {
+    showAlert(message, 'error', title || tr('alerts.error'));
+  }
+
+  function showSuccess(message, title) {
+    showAlert(message, 'success', title || tr('alerts.success'));
+  }
+
+  function showWarning(message, title) {
+    showAlert(message, 'warning', title || tr('alerts.warning'));
+  }
+
+  function showInfo(message, title) {
+    showAlert(message, 'info', title || tr('alerts.info'));
+  }
+
+  /**
+   * API Error Handler
+   */
+  async function handleApiError(error, defaultMessage = 'An error occurred') {
+    console.error('[API Error]', error);
+    
+    if (error instanceof TypeError) {
+      if (error.message.includes('fetch')) {
+        showError(tr('errors.networkError'), tr('alerts.error'));
+        return;
+      }
+    }
+    
+    if (error.response) {
+      try {
+        const data = await error.response.json();
+        showError(data.error || defaultMessage);
+      } catch (e) {
+        showError(defaultMessage);
+      }
+    } else if (error.message) {
+      showError(error.message);
+    } else {
+      showError(defaultMessage);
+    }
+  }
 
   function getValueByPath(obj, dottedPath) {
     return String(dottedPath || '')
@@ -210,12 +310,14 @@
   async function loadSettings() {
     try {
       const res = await fetch(`/api/settings?lang=${state.locale}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (res.ok && data.settings) {
         applySettings(data.settings);
       }
-    } catch (_error) {
-      // Keep defaults when settings API is unavailable.
+    } catch (error) {
+      console.error('Load settings failed:', error);
+      showWarning(tr('errors.failedLoadSettings'), tr('alerts.warning'));
     }
   }
 
@@ -226,10 +328,16 @@
         fetch('/js/i18n/ar.json')
       ]);
 
+      if (!enRes.ok || !arRes.ok) {
+        throw new Error('Failed to load translation files');
+      }
+
       const [enData, arData] = await Promise.all([enRes.json(), arRes.json()]);
       state.translations.en = enData || {};
       state.translations.ar = arData || {};
-    } catch (_error) {
+    } catch (error) {
+      console.error('Load translations failed:', error);
+      showWarning(tr('errors.failedLoadTranslations') || 'Could not load translations', tr('alerts.warning'));
       state.translations.en = {};
       state.translations.ar = {};
     }
@@ -459,11 +567,17 @@
   async function loadVehicles() {
     try {
       const res = await fetch(`/api/vehicles?lang=${state.locale}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       state.vehicles = data.vehicles || [];
+      if (!state.vehicles.length) {
+        showWarning(tr('messages.noVehiclesAvailable') || 'No vehicles available', tr('alerts.warning'));
+      }
       renderVehicleGrid();
-    } catch (_error) {
-      refs.vehicleGrid.innerHTML = `<p class="warn">${escapeHtml(tr('messages.vehicleLoadFailed'))}</p>`;
+    } catch (error) {
+      console.error('Load vehicles failed:', error);
+      showError(tr('messages.vehicleLoadFailed') || 'Could not load vehicles. Please refresh the page.', tr('alerts.error'));
+      refs.vehicleGrid.innerHTML = `<p class="warn">${escapeHtml(tr('messages.vehicleLoadFailed') || 'Failed to load vehicles')}</p>`;
     }
   }
 
@@ -552,14 +666,12 @@
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
       if (!res.ok) {
-        if (!silent) setPromoMessage(data.error || tr('messages.quoteFailed'), 'error');
-        state.quote = fallbackQuote();
-        renderSummary();
-        return;
+        const data = await res.json();
+        throw new Error(data.error || 'Quote calculation failed');
       }
 
+      const data = await res.json();
       state.quote = data.quote || fallbackQuote();
       state.recommendations = data.recommendations || [];
 
@@ -567,13 +679,14 @@
         state.appliedPromo = data.promo;
       } else if (state.appliedPromo?.code && data.promo_error) {
         state.appliedPromo = null;
-        if (!silent) setPromoMessage(data.promo_error || tr('messages.promoInvalid'), 'error');
+        if (!silent) showWarning(data.promo_error || tr('messages.promoInvalid'), tr('alerts.warning'));
       }
 
       renderSummary();
       renderRecommendations();
-    } catch (_error) {
-      if (!silent) setPromoMessage(tr('messages.quoteFailed'), 'error');
+    } catch (error) {
+      console.error('Quote failed:', error);
+      if (!silent) showError(error.message || tr('messages.quoteFailed'), tr('alerts.error'));
       state.quote = fallbackQuote();
       renderSummary();
     } finally {
@@ -717,17 +830,22 @@
 
   async function submitBooking() {
     if (state.settings?.maintenance_mode || state.settings?.booking_enabled === false) {
-      setMessage(tr('messages.bookingUnavailable'), 'error');
+      showError(tr('messages.bookingUnavailable'), tr('alerts.error'));
       return;
     }
 
-    if (!validateStep(4)) return;
+    if (!validateStep(4)) {
+      showError(tr('messages.termsRequired') || 'Please agree to terms and conditions', tr('alerts.error'));
+      return;
+    }
 
     const submitBtn = qs('#submit-btn');
     submitBtn.disabled = true;
     submitBtn.textContent = '...';
 
     try {
+      showInfo(tr('messages.processingBooking') || 'Processing your booking...', tr('alerts.info'));
+      
       await refreshQuote({ silent: true });
 
       const res = await fetch(`/api/bookings?lang=${state.locale}`, {
@@ -738,17 +856,21 @@
         },
         body: JSON.stringify(bookingPayload())
       });
-      const data = await res.json();
 
       if (!res.ok) {
-        setMessage(data.error || tr('messages.submitFailed'), 'error');
-        return;
+        const data = await res.json();
+        throw new Error(data.error || tr('messages.submitFailed'));
       }
 
-      qs('#booking-ref').textContent = data.booking.booking_ref;
+      const data = await res.json();
+      qs('#booking-ref').textContent = data.booking.booking_ref || data.booking.id;
+      
+      showSuccess(tr('messages.bookingCreated') + ' (Ref: ' + (data.booking.booking_ref || data.booking.id) + ')', tr('alerts.success'));
       updateStep(5);
-    } catch (_error) {
-      setMessage(tr('messages.networkError'), 'error');
+    } catch (error) {
+      console.error('Submit booking failed:', error);
+      const errorMsg = error.message || tr('messages.submitFailed') || 'Failed to submit booking';
+      showError(errorMsg, tr('alerts.error'));
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = tr('actions.confirmBooking');
@@ -759,12 +881,12 @@
     const input = qs('#promo-code');
     const code = input?.value.trim().toUpperCase();
     if (!code) {
-      setPromoMessage(tr('messages.promoCodeFirst'), 'error');
+      showWarning(tr('messages.promoCodeFirst') || 'Please enter a promo code', tr('alerts.warning'));
       return;
     }
 
     if (!state.selectedVehicle) {
-      setPromoMessage(tr('messages.promoBeforeTrip'), 'error');
+      showWarning(tr('messages.promoBeforeTrip') || 'Please select a trip first', tr('alerts.warning'));
       return;
     }
 
@@ -777,13 +899,14 @@
       await refreshQuote({ silent: true });
 
       if (state.appliedPromo?.code === code && Number(state.quote?.discount_amount || 0) > 0) {
-        setPromoMessage(tr('messages.promoApplied', { code }), 'ok');
+        showSuccess(tr('messages.promoApplied', { code }), tr('alerts.success'));
       } else {
         state.appliedPromo = null;
-        setPromoMessage(tr('messages.promoInvalid'), 'error');
+        showWarning(tr('messages.promoInvalid') || 'Promo code is not valid or expired', tr('alerts.warning'));
       }
-    } catch (_error) {
-      setPromoMessage(tr('messages.promoInvalid'), 'error');
+    } catch (error) {
+      console.error('Apply promo failed:', error);
+      showError(error.message || tr('messages.promoInvalid'), tr('alerts.error'));
     } finally {
       btn.disabled = false;
       btn.textContent = tr('actions.apply');
@@ -821,7 +944,16 @@
 
       try {
         const res = await fetch(`/api/geo/search?q=${encodeURIComponent(q)}&lang=${state.locale}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
         const data = await res.json();
+        
+        if (data.error) {
+          showWarning(data.error, tr('alerts.warning'));
+          list.classList.remove('show');
+          return;
+        }
+        
         const results = data.results || [];
 
         list.innerHTML = results.map((r) => `<li data-lat="${r.lat}" data-lng="${r.lon}" data-name="${escapeHtml(r.display_name)}">${escapeHtml(r.display_name)}</li>`).join('');
@@ -836,8 +968,10 @@
             refreshQuote({ silent: true });
           });
         });
-      } catch (_error) {
+      } catch (error) {
+        console.error('Geo search failed:', error);
         list.classList.remove('show');
+        showWarning(tr('errors.geoSearchFailed') || 'Could not search locations', tr('alerts.warning'));
       }
     }, 300);
 
