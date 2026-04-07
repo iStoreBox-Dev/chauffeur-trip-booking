@@ -269,6 +269,14 @@ body::before {
   line-height: 1.6;
 }
 
+.enhance-cta {
+  margin: 0 0 0.35rem;
+  font-weight: 800;
+  color: var(--accent);
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+
 .booking-card {
   background: var(--surface-glass);
   border: 1px solid var(--line);
@@ -315,7 +323,7 @@ body::before {
   z-index: 1;
 }
 
-.step span {
+.step > span:first-child {
   width: 1.6rem;
   height: 1.6rem;
   border-radius: 999px;
@@ -329,11 +337,26 @@ body::before {
   flex-shrink: 0;
 }
 
+.step > span:nth-child(2) {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  display: block;
+  padding: 0;
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: inherit;
+  white-space: nowrap;
+}
+
 .step.active {
   color: var(--accent);
 }
 
-.step.active span {
+.step.active > span:first-child {
   border-color: var(--accent);
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: white;
@@ -422,6 +445,22 @@ body::before {
   color: #344b63;
   position: relative;
   overflow: visible;
+}
+
+.field.field-inline {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+.field.field-inline .inline-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+@media (max-width: 760px) {
+  .field.field-inline { flex-direction: column; }
 }
 
 .field > span {
@@ -1026,6 +1065,28 @@ html[data-theme="dark"] .alert.info::before { background: #60a5fa; }
   background: var(--surface-glass);
   padding: 1rem;
 }
+
+.track-status {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+.track-status .status-pill {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 700;
+  color: #fff;
+  font-size: 0.95rem;
+}
+.track-status .status-pending { background: var(--muted); color: var(--surface); }
+.track-status .status-confirmed { background: linear-gradient(120deg, var(--accent), var(--accent-2)); }
+.track-status .status-assigned { background: linear-gradient(120deg, var(--accent-2), var(--accent)); }
+.track-status .status-in-progress { background: var(--warn); }
+.track-status .status-completed { background: var(--ok); color: #063; }
+.track-status .status-cancelled { background: var(--err); }
+.track-status .status-hint { color: var(--muted); font-size: 0.9rem; margin-left: 0.25rem; }
 
 .track-result {
   margin-top: 0.8rem;

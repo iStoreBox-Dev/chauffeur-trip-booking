@@ -367,6 +367,16 @@
       footerContact.textContent = contactBits.length ? `Contact: ${contactBits.join(' • ')}` : tr('footer.defaultContact');
     }
 
+    const enhanceEl = qs('#enhance-cta');
+    if (enhanceEl) {
+      if (settings.enhance_journey_enabled) {
+        enhanceEl.classList.remove('hidden');
+        enhanceEl.textContent = settings.enhance_journey_text || 'Enhance Your Journey';
+      } else {
+        enhanceEl.classList.add('hidden');
+      }
+    }
+
     const banner = qs('#system-banner');
     if (banner) {
       if (settings.maintenance_mode) {
@@ -423,27 +433,38 @@
     const container = qs('#track-result');
     if (!container) return;
 
-    const timeline = booking.timeline || {};
-    const timelineRows = ['pending', 'confirmed', 'chauffeur_assigned', 'in_progress', 'completed', 'cancelled', 'rejected']
-      .map((status) => `<div class="track-timeline-item ${booking.status === status ? 'active' : ''}"><span>${status}</span><small>${timeline[`${status}_at`] || (status === 'pending' ? timeline.created_at : '-') || '-'}</small></div>`)
-      .join('');
+    const statusMap = {
+      pending: { label: 'Pending', hint: 'Awaiting confirmation', cls: 'status-pending' },
+      confirmed: { label: 'Confirmed', hint: 'Booking confirmed', cls: 'status-confirmed' },
+      chauffeur_assigned: { label: 'Driver Assigned', hint: 'Chauffeur assigned', cls: 'status-assigned' },
+      in_progress: { label: 'In Progress', hint: 'Trip in progress', cls: 'status-in-progress' },
+      completed: { label: 'Completed', hint: 'Trip completed', cls: 'status-completed' },
+      cancelled: { label: 'Cancelled', hint: 'Booking cancelled', cls: 'status-cancelled' },
+      rejected: { label: 'Rejected', hint: 'Booking rejected', cls: 'status-cancelled' }
+    };
 
+    const current = statusMap[booking.status] || { label: booking.status, hint: '', cls: 'status-pending' };
+    const timeline = booking.timeline || {};
+    const lastUpdate = timeline[`${booking.status}_at`] || timeline.updated_at || booking.updated_at || '';
     const canCancel = ['pending', 'confirmed'].includes(booking.status);
+
     container.innerHTML = `
+      <div class="track-status">
+        <div class="status-pill ${current.cls}">${escapeHtml(current.label)}</div>
+        <div class="status-hint">${escapeHtml(current.hint)}</div>
+        <small class="status-updated">${escapeHtml(lastUpdate || '')}</small>
+      </div>
       <div class="track-grid">
         <div><span>${escapeHtml(tr('messages.reference'))}</span><strong>${escapeHtml(booking.booking_ref)}</strong></div>
-        <div><span>Status</span><strong>${escapeHtml(booking.status)}</strong></div>
         <div><span>${escapeHtml(tr('summary.pickup'))}</span><strong>${escapeHtml(booking.pickup_location || '-')}</strong></div>
         <div><span>${escapeHtml(tr('summary.dropoff'))}</span><strong>${escapeHtml(booking.dropoff_location || '-')}</strong></div>
         <div><span>${escapeHtml(tr('summary.departure'))}</span><strong>${escapeHtml(`${booking.departure_date || ''} ${booking.departure_time || ''}`.trim() || '-')}</strong></div>
-        <div><span>${escapeHtml(tr('summary.service'))}</span><strong>${escapeHtml(booking.service_type || '-')}</strong></div>
         <div><span>${escapeHtml(tr('summary.vehicle'))}</span><strong>${escapeHtml(booking.assigned_vehicle_name || booking.vehicle_snapshot?.name || '-')}</strong></div>
-        <div><span>Chauffeur</span><strong>${escapeHtml((booking.chauffeur_name || '').split(' ')[0] || '-')}</strong></div>
         <div><span>${escapeHtml(tr('summary.total'))}</span><strong>${money(booking.final_price || 0)}</strong></div>
       </div>
-      <div class="track-timeline">${timelineRows}</div>
       ${canCancel ? `<div class="actions"><button id="track-cancel-btn" class="btn">${escapeHtml(tr('tracking.cancel'))}</button></div>` : ''}
     `;
+
     container.classList.remove('hidden');
 
     const cancelBtn = qs('#track-cancel-btn');

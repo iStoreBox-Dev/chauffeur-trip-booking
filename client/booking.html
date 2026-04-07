@@ -21,9 +21,8 @@
       <a href="/" class="brand" id="brand-name">LUXE<span>RIDE</span></a>
       <nav class="header-nav">
         <a href="#booking" data-i18n="nav.book">Book</a>
-        <a href="#fleet" data-i18n="nav.fleet">Fleet</a>
-        <a href="#service" data-i18n="nav.benefits">Benefits</a>
-        <a href="/admin" data-i18n="nav.admin">Admin</a>
+        <a href="#track-booking" data-i18n="nav.track">Track My Booking</a>
+        <a href="#footer-contact" data-i18n="nav.contact">Contact Us</a>
       </nav>
       <div class="header-tools">
         <select class="chip-btn" id="currency-toggle" type="button">
@@ -46,6 +45,7 @@
 
     <section class="booking-intro">
       <p class="eyebrow" data-i18n="intro.subtitle">Premium Luxury Transportation</p>
+      <p id="enhance-cta" class="enhance-cta hidden">Enhance Your Journey</p>
       <h1 data-i18n="intro.title">Move in Silence & Style</h1>
       <p data-i18n="intro.description">Experience premium chauffeur services with transparent pricing, professional drivers, and exclusive vehicles designed for your comfort.</p>
     </section>
@@ -84,10 +84,14 @@
               <ul class="geo-list" id="dropoff-suggestions"></ul>
             </label>
             <p class="subtext" data-i18n="trip.locationHint">Select locations from the suggestion list to ensure accurate routing.</p>
-            <label class="field"><span data-i18n="fields.departureDate">Departure Date</span><input id="departure-date" type="date" required /></label>
-            <label class="field"><span data-i18n="fields.departureTime">Departure Time</span><input id="departure-time" type="time" required /></label>
-            <label class="field return-only hidden"><span data-i18n="fields.returnDate">Return Date</span><input id="return-date" type="date" /></label>
-            <label class="field return-only hidden"><span data-i18n="fields.returnTime">Return Time</span><input id="return-time" type="time" /></label>
+            <div class="field full field-inline">
+              <label class="inline-item"><span data-i18n="fields.departureDate">Departure Date</span><input id="departure-date" type="date" required /></label>
+              <label class="inline-item"><span data-i18n="fields.departureTime">Departure Time</span><input id="departure-time" type="time" required /></label>
+            </div>
+            <div class="field full return-only hidden field-inline">
+              <label class="inline-item"><span data-i18n="fields.returnDate">Return Date</span><input id="return-date" type="date" /></label>
+              <label class="inline-item"><span data-i18n="fields.returnTime">Return Time</span><input id="return-time" type="time" /></label>
+            </div>
             <label class="field"><span data-i18n="fields.passengers">Passengers</span>
               <select id="passengers" required>
                 <option value="" data-i18n="common.select">Select</option>

@@ -461,6 +461,8 @@
     app.support_email.value = settings.support_email || '';
     app.support_phone.value = settings.support_phone || '';
     app.whatsapp_number.value = settings.whatsapp_number || '';
+    app.enhance_journey_enabled.value = String(Boolean(settings.enhance_journey_enabled));
+    app.enhance_journey_text.value = settings.enhance_journey_text || '';
     app.maintenance_mode.value = String(Boolean(settings.maintenance_mode));
     app.booking_enabled.value = String(Boolean(settings.booking_enabled));
 
@@ -602,6 +604,8 @@
       support_email: form.support_email.value.trim(),
       support_phone: form.support_phone.value.trim(),
       whatsapp_number: form.whatsapp_number.value.trim(),
+      enhance_journey_enabled: form.enhance_journey_enabled ? (form.enhance_journey_enabled.value === 'true') : false,
+      enhance_journey_text: form.enhance_journey_text ? form.enhance_journey_text.value.trim() : '',
       maintenance_mode: form.maintenance_mode.value === 'true',
       booking_enabled: form.booking_enabled.value === 'true'
     };
