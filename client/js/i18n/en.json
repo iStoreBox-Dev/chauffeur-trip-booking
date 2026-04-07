@@ -1,4 +1,18 @@
 {
+  "intro": {
+    "subtitle": "Premium Luxury Transportation",
+    "title": "Move in Silence & Style",
+    "description": "Experience premium chauffeur services with transparent pricing, professional drivers, and exclusive vehicles designed for your comfort."
+  },
+  "currency": {
+    "bhd": "BHD - Bahraini Dinar",
+    "aed": "AED - UAE Dirham",
+    "sar": "SAR - Saudi Riyal",
+    "qar": "QAR - Qatari Riyal",
+    "omr": "OMR - Omani Rial",
+    "kwd": "KWD - Kuwaiti Dinar",
+    "usd": "USD - US Dollar"
+  },
   "nav": {
     "book": "Book",
     "fleet": "Fleet",
@@ -17,15 +31,15 @@
   },
   "sections": {
     "tripDetails": "Trip Details",
-    "chooseVehicle": "Choose Vehicle",
-    "vehicleHelp": "Select from our premium fleet.",
-    "contactDetails": "Contact Details",
+    "chooseVehicle": "Choose Your Vehicle",
+    "vehicleHelp": "Select from our premium fleet of luxury vehicles.",
+    "contactDetails": "Your Details",
     "confirmBooking": "Confirm Booking",
-    "bookingSubmitted": "Booking Submitted"
+    "bookingSubmitted": "Booking Confirmed"
   },
   "service": {
-    "transfer": "Transfer",
-    "hourly": "Hourly"
+    "transfer": "Point to Point",
+    "hourly": "Hourly Rental"
   },
   "trip": {
     "oneWay": "One Way",
@@ -39,44 +53,47 @@
     "departureTime": "Departure Time",
     "returnDate": "Return Date",
     "returnTime": "Return Time",
-    "passengers": "Passengers",
+    "passengers": "Number of Passengers",
     "luggage": "Luggage",
-    "flightNumber": "Flight Number",
+    "flightNumber": "Flight Number (Optional)",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email Address",
+    "countryCode": "Country Code",
+    "phone": "Phone Number",
+    "specialRequests": "Special Requirements",
+    "promoCode": "Promo Code",
     "date": "Date",
     "startTime": "Start Time",
     "duration": "Duration",
-    "firstName": "First Name",
-    "lastName": "Last Name",
-    "email": "Email",
-    "countryCode": "Country Code",
-    "phone": "Phone",
-    "specialRequests": "Special Requests",
-    "promoCode": "Promo Code",
-    "terms": "I agree to terms and privacy policy"
+    "terms": "I agree to the terms and privacy policy"
   },
   "addons": {
-    "title": "Optional Add-ons",
-    "childSeat": "Child seat",
-    "childSeatCount": "Child seats",
-    "extraLuggage": "Extra luggage handling",
+    "title": "Enhance Your Journey",
+    "childSeat": "Child Safety Seat",
+    "childSeatCount": "Number of child seats",
+    "extraLuggage": "Extra Luggage Handling",
     "extraLuggageCount": "Extra luggage pieces",
-    "petFriendly": "Pet-friendly trip setup",
-    "note": "Add-ons are reflected instantly in your live quote."
+    "petFriendly": "Pet-Friendly Setup",
+    "note": "Selected add-ons will be reflected in your final quote."
   },
   "actions": {
     "continue": "Continue",
     "back": "Back",
-    "review": "Review",
+    "review": "Review Booking",
     "apply": "Apply",
     "remove": "Remove",
     "confirmBooking": "Confirm Booking",
     "newBooking": "Create New Booking"
   },
   "messages": {
-    "capacityWarning": "Selected vehicle may not fit passenger count.",
-    "quoteLoading": "Calculating latest quote...",
-    "bookingReceived": "Your request has been received. We will contact you soon.",
-    "reference": "Reference",
+    "capacityWarning": "This vehicle may exceed the capacity for your passenger count. Please select another vehicle or adjust passenger count.",
+    "quoteLoading": "Calculating your personalized quote...",
+    "bookingReceived": "Your booking request has been received. We will contact you shortly to confirm.",
+    "reference": "Booking Reference",
+    "bookingCreated": "Booking submitted successfully.",
+    "promoApplied": "Promo code applied successfully!",
+    "chauffeurAssigned": "Chauffeur assigned successfully.",
     "requiredTripFields": "Please complete all required trip fields.",
     "locationSelectTrip": "Please select pickup and dropoff from the location suggestions.",
     "roundTripRequired": "Please add return date and time for round trip.",
@@ -92,7 +109,6 @@
     "promoCodeFirst": "Enter a promo code first.",
     "promoBeforeTrip": "Select trip and vehicle details before applying promo.",
     "promoInvalid": "Promo code is not valid.",
-    "promoApplied": "Promo {code} applied successfully.",
     "promoRemoved": "Promo code removed.",
     "submitFailed": "Unable to submit booking.",
     "vehicleLoadFailed": "Unable to load vehicle list.",
@@ -129,14 +145,14 @@
     "title": "Recommended alternatives"
   },
   "benefits": {
-    "dispatch": "24/7 Dispatch",
+    "dispatch": "24/7 Dispatch Center",
     "chauffeurs": "Professional Chauffeurs",
     "business": "Business & Leisure",
-    "pricing": "Transparent BHD Pricing"
+    "transparent": "Transparent Pricing"
   },
   "footer": {
     "rights": "All rights reserved.",
-    "defaultContact": "Premium chauffeur experiences."
+    "defaultContact": "Premium chauffeur experiences in the Gulf."
   },
   "placeholders": {
     "pickup": "Bahrain International Airport",

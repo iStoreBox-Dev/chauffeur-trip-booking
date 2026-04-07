@@ -1,4 +1,18 @@
 {
+  "intro": {
+    "subtitle": "خدمات نقل فاخرة متميزة",
+    "title": "تحرك بصمت وأناقة",
+    "description": "اختبر خدمات سائق فاخرة مع أسعار شفافة وسائقين محترفين ومركبات حصرية مصممة لراحتك."
+  },
+  "currency": {
+    "bhd": "دينار بحريني",
+    "aed": "درهم إماراتي",
+    "sar": "ريال سعودي",
+    "qar": "ريال قطري",
+    "omr": "ريال عماني",
+    "kwd": "دينار كويتي",
+    "usd": "دولار أمريكي"
+  },
   "nav": {
     "book": "الحجز",
     "fleet": "الأسطول",
@@ -17,71 +31,74 @@
   },
   "sections": {
     "tripDetails": "تفاصيل الرحلة",
-    "chooseVehicle": "اختر المركبة",
-    "vehicleHelp": "اختر من أسطولنا المميز.",
-    "contactDetails": "بيانات التواصل",
+    "chooseVehicle": "اختر مركبتك",
+    "vehicleHelp": "اختر من أسطولنا الفاخر من المركبات الفاخرة.",
+    "contactDetails": "بياناتك",
     "confirmBooking": "تأكيد الحجز",
-    "bookingSubmitted": "تم إرسال الحجز"
+    "bookingSubmitted": "تم تأكيد الحجز"
   },
   "service": {
-    "transfer": "تنقّل",
-    "hourly": "بالساعة"
+    "transfer": "من نقطة إلى نقطة",
+    "hourly": "إيجار بالساعة"
   },
   "trip": {
-    "oneWay": "ذهاب",
+    "oneWay": "في اتجاه واحد",
     "roundTrip": "ذهاب وعودة",
-    "locationHint": "اختر المواقع من قائمة الاقتراحات لضمان دقة المسار."
+    "locationHint": "اختر المواقع من قائمة الاقتراحات لضمان التوجيه الدقيق."
   },
   "fields": {
-    "pickup": "موقع الانطلاق",
-    "dropoff": "موقع الوصول",
-    "departureDate": "تاريخ الانطلاق",
-    "departureTime": "وقت الانطلاق",
+    "pickup": "موقع الالتقاط",
+    "dropoff": "موقع الإنزال",
+    "departureDate": "تاريخ المغادرة",
+    "departureTime": "وقت المغادرة",
     "returnDate": "تاريخ العودة",
     "returnTime": "وقت العودة",
     "passengers": "عدد الركاب",
     "luggage": "الأمتعة",
-    "flightNumber": "رقم الرحلة",
+    "flightNumber": "رقم الرحلة (اختياري)",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "email": "عنوان البريد الإلكتروني",
+    "countryCode": "رمز الدولة",
+    "phone": "رقم الهاتف",
+    "specialRequests": "متطلبات خاصة",
+    "promoCode": "رمز ترقيمي",
     "date": "التاريخ",
     "startTime": "وقت البداية",
     "duration": "المدة",
-    "firstName": "الاسم الأول",
-    "lastName": "اسم العائلة",
-    "email": "البريد الإلكتروني",
-    "countryCode": "مفتاح الدولة",
-    "phone": "الهاتف",
-    "specialRequests": "ملاحظات خاصة",
-    "promoCode": "رمز الخصم",
     "terms": "أوافق على الشروط وسياسة الخصوصية"
   },
   "addons": {
-    "title": "إضافات اختيارية",
-    "childSeat": "مقعد طفل",
+    "title": "حسّن رحلتك",
+    "childSeat": "مقعد أمان الطفل",
     "childSeatCount": "عدد مقاعد الأطفال",
-    "extraLuggage": "خدمة أمتعة إضافية",
-    "extraLuggageCount": "عدد قطع الأمتعة الإضافية",
-    "petFriendly": "تهيئة مناسبة للحيوانات الأليفة",
-    "note": "يتم احتساب الإضافات مباشرة في عرض السعر الحي."
+    "extraLuggage": "معالجة الأمتعة الإضافية",
+    "extraLuggageCount": "قطع الأمتعة الإضافية",
+    "petFriendly": "إعداد صديق للحيوانات الأليفة",
+    "note": "ستظهر الإضافات المختارة في السعر النهائي."
   },
   "actions": {
     "continue": "متابعة",
     "back": "رجوع",
-    "review": "مراجعة",
+    "review": "مراجعة الحجز",
     "apply": "تطبيق",
     "remove": "إزالة",
     "confirmBooking": "تأكيد الحجز",
     "newBooking": "إنشاء حجز جديد"
   },
   "messages": {
-    "capacityWarning": "المركبة المحددة قد لا تناسب عدد الركاب.",
-    "quoteLoading": "جاري حساب السعر المحدث...",
-    "bookingReceived": "تم استلام طلبك وسنتواصل معك قريباً.",
-    "reference": "رقم المرجع",
+    "capacityWarning": "قد تتجاوز هذه المركبة السعة المطلوبة لعدد الركاب. يرجى اختيار مركبة أخرى أو تعديل عدد الركاب.",
+    "quoteLoading": "حساب السعر الشخصي لك...",
+    "bookingReceived": "تم استقبال طلب حجزك. سنتصل بك قريباً للتأكيد.",
+    "reference": "رقم الحجز",
+    "bookingCreated": "تم تقديم الحجز بنجاح.",
+    "promoApplied": "تم تطبيق الرمز الترقيمي بنجاح!",
+    "chauffeurAssigned": "تم تعيين السائق بنجاح.",
     "requiredTripFields": "يرجى إكمال جميع الحقول المطلوبة للرحلة.",
-    "locationSelectTrip": "يرجى اختيار نقطة الانطلاق والوصول من قائمة الاقتراحات.",
+    "locationSelectTrip": "يرجى اختيار نقطة الالتقاط والإنزال من قائمة الاقتراحات.",
     "roundTripRequired": "يرجى إضافة تاريخ ووقت العودة لرحلة الذهاب والعودة.",
     "requiredHourlyFields": "يرجى إكمال جميع الحقول المطلوبة للحجز بالساعة.",
-    "locationSelectHourly": "يرجى اختيار موقع الانطلاق من الاقتراحات.",
+    "locationSelectHourly": "يرجى اختيار موقع الالتقاط من الاقتراحات.",
     "selectVehicle": "يرجى اختيار مركبة للمتابعة.",
     "capacityExceeded": "عدد الركاب أكبر من سعة المركبة المختارة.",
     "requiredDetails": "يرجى إكمال بياناتك الشخصية.",
@@ -92,7 +109,6 @@
     "promoCodeFirst": "أدخل رمز الخصم أولاً.",
     "promoBeforeTrip": "اختر تفاصيل الرحلة والمركبة قبل تطبيق الخصم.",
     "promoInvalid": "رمز الخصم غير صالح.",
-    "promoApplied": "تم تطبيق الرمز {code} بنجاح.",
     "promoRemoved": "تمت إزالة رمز الخصم.",
     "submitFailed": "تعذر إرسال الحجز.",
     "vehicleLoadFailed": "تعذر تحميل قائمة المركبات.",
@@ -107,9 +123,9 @@
     "type": "النوع",
     "oneWay": "ذهاب",
     "roundTrip": "ذهاب وعودة",
-    "pickup": "الانطلاق",
-    "dropoff": "الوصول",
-    "departure": "الانطلاق",
+    "pickup": "الالتقاط",
+    "dropoff": "الإنزال",
+    "departure": "المغادرة",
     "return": "العودة",
     "start": "البداية",
     "duration": "المدة",
@@ -129,19 +145,19 @@
     "title": "خيارات مقترحة"
   },
   "benefits": {
-    "dispatch": "خدمة 24/7",
+    "dispatch": "مركز الإرسال 24/7",
     "chauffeurs": "سائقون محترفون",
-    "business": "أعمال وترفيه",
-    "pricing": "أسعار واضحة بالدينار البحريني"
+    "business": "العمل والترفيه",
+    "transparent": "أسعار شفافة"
   },
   "footer": {
     "rights": "جميع الحقوق محفوظة.",
-    "defaultContact": "تجارب تنقّل فاخرة."
+    "defaultContact": "تجارب السائق الفاخر في الخليج."
   },
   "placeholders": {
     "pickup": "مطار البحرين الدولي",
-    "dropoff": "ضاحية السيف، المنامة",
-    "hourlyPickup": "مجمع سيتي سنتر المنامة",
+    "dropoff": "منطقة السيف، المنامة",
+    "hourlyPickup": "وسط مدينة المنامة",
     "flight": "GF 123",
     "promo": "WELCOME10"
   },
