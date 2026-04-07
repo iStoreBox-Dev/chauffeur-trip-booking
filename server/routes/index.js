@@ -9,65 +9,83 @@ const { sanitizeBody, requireFields, validateBookingPayload } = require('../midd
 const router = express.Router();
 
 const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
+  windowMs: 15 * 60 * 1000, max: 300,
+  standardHeaders: true, legacyHeaders: false,
   message: { error: 'Too many requests. Please try again shortly.' }
 });
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
+  windowMs: 15 * 60 * 1000, max: 20,
+  standardHeaders: true, legacyHeaders: false,
   message: { error: 'Too many login attempts. Please wait and try again.' }
 });
 
 const bookingCreateLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
+  windowMs: 60 * 60 * 1000, max: 10,
+  standardHeaders: true, legacyHeaders: false,
   message: { error: 'Booking limit reached. Please try again later.' }
+});
+
+const lookupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, max: 30,
+  standardHeaders: true, legacyHeaders: false,
+  message: { error: 'Too many lookup requests. Please try again shortly.' }
 });
 
 router.use(globalLimiter);
 router.use(sanitizeBody);
 
+// ── Auth ────────────────────────────────────────────────────────────────
 router.post('/auth/login', authLimiter, requireFields(['email', 'password']), authController.login);
 router.get('/auth/me', authenticate, authController.me);
 
-router.get('/vehicles', bookingController.listVehicles);
+// ── Public Settings ─────────────────────────────────────────────────────
 router.get('/settings', settingsController.getPublicSettings);
+router.get('/settings/public', settingsController.getPublicSettings);
+
+// ── Vehicles ─────────────────────────────────────────────────────────────
+router.get('/vehicles', bookingController.listVehicles);
 router.get('/vehicles/all', authenticate, requireRole('admin'), bookingController.listAllVehicles);
 router.post('/vehicles', authenticate, requireRole('admin'), bookingController.createVehicle);
 router.put('/vehicles/:id', authenticate, requireRole('admin'), bookingController.updateVehicle);
 router.delete('/vehicles/:id', authenticate, requireRole('admin'), bookingController.deleteVehicle);
 
+// ── Bookings (public) ────────────────────────────────────────────────────
 router.post('/bookings', bookingCreateLimiter, validateBookingPayload, bookingController.createBooking);
 router.post('/bookings/quote', bookingController.quoteBooking);
+router.get('/bookings/lookup', lookupLimiter, bookingController.lookupBooking);
+router.post('/bookings/cancel', lookupLimiter, bookingController.cancelBooking);
+
+// ── Bookings (admin) ─────────────────────────────────────────────────────
 router.get('/bookings', authenticate, bookingController.listBookings);
 router.get('/bookings/stats', authenticate, bookingController.bookingStats);
+router.get('/bookings/analytics', authenticate, bookingController.bookingAnalytics);
 router.get('/bookings/export/csv', authenticate, requireRole('operator'), bookingController.exportCsv);
 router.get('/bookings/:id', authenticate, bookingController.getBooking);
 router.get('/bookings/:id/logs', authenticate, bookingController.getBookingLogs);
 router.patch('/bookings/:id/status', authenticate, bookingController.updateBookingStatus);
-router.patch('/bookings/:id', authenticate, bookingController.updateBooking);
 router.patch('/bookings/:id/assign', authenticate, requireRole('operator'), bookingController.assignChauffeur);
+router.patch('/bookings/:id/notes', authenticate, bookingController.addBookingNote);
+router.patch('/bookings/:id', authenticate, bookingController.updateBooking);
 router.delete('/bookings/:id', authenticate, requireRole('admin'), bookingController.deleteBooking);
 
+// ── Promo ────────────────────────────────────────────────────────────────
 router.post('/promo/validate', bookingController.validatePromo);
 router.get('/promo', authenticate, requireRole('admin'), bookingController.listPromos);
 router.post('/promo', authenticate, requireRole('admin'), bookingController.createPromo);
 router.patch('/promo/:id/toggle', authenticate, requireRole('admin'), bookingController.togglePromo);
 
+// ── Geo ──────────────────────────────────────────────────────────────────
 router.get('/geo/search', bookingController.geoSearch);
 
+// ── Chauffeurs ───────────────────────────────────────────────────────────
 router.get('/chauffeurs', authenticate, requireRole('operator'), bookingController.listChauffeurs);
 router.post('/chauffeurs', authenticate, requireRole('admin'), bookingController.createChauffeur);
+router.patch('/chauffeurs/:id', authenticate, requireRole('admin'), bookingController.updateChauffeur);
 router.patch('/chauffeurs/:id/toggle', authenticate, requireRole('admin'), bookingController.toggleChauffeur);
+router.delete('/chauffeurs/:id', authenticate, requireRole('admin'), bookingController.deleteChauffeur);
 
+// ── Admin Users & Settings ───────────────────────────────────────────────
 router.get('/admin/users', authenticate, requireRole('admin'), authController.listUsers);
 router.post('/admin/users', authenticate, requireRole('admin'), authController.createUser);
 router.patch('/admin/users/:id/toggle', authenticate, requireRole('admin'), authController.toggleUser);
