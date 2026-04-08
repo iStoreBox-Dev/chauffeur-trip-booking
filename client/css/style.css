@@ -304,11 +304,15 @@ body{font-family:'Outfit',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Aria
   --font-display: 'Noto Kufi Arabic', serif;
   --font-body: 'Noto Kufi Arabic', 'DM Sans', sans-serif;
   font-size: 105%;
-  line-height: 1.8;
 }
 
 html, body { background: var(--color-bg); color: var(--color-text); }
 body { font-family: var(--font-body); line-height: 1.6; transition: background var(--transition-base), color var(--transition-base); }
+
+[lang='ar'] body,
+[dir='rtl'] body {
+  line-height: 1.8;
+}
 
 .skip-link {
   position: absolute;
