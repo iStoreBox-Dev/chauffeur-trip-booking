@@ -7,6 +7,12 @@
 */
 (function(){
   'use strict';
+  const DEBUG_MODE = (typeof window !== 'undefined')
+    && (window.location.search.includes('debug=1') || localStorage.getItem('chauffeur_debug') === '1');
+  const debugLog = (...args) => {
+    if (!DEBUG_MODE) return;
+    console.log('[LUXERIDE UI DEBUG]', ...args);
+  };
 
   function qs(sel, ctx=document){ return ctx.querySelector(sel); }
   function qsa(sel, ctx=document){ return Array.from((ctx||document).querySelectorAll(sel)); }

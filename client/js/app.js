@@ -44,6 +44,14 @@
     alertContainer: document.getElementById('alert-container')
   };
 
+  const DEBUG_MODE = (typeof window !== 'undefined')
+    && (window.location.search.includes('debug=1') || localStorage.getItem('chauffeur_debug') === '1');
+
+  function debugLog(...args) {
+    if (!DEBUG_MODE) return;
+    console.log('[LUXERIDE DEBUG]', ...args);
+  }
+
   function qs(selector, ctx = document) { return ctx.querySelector(selector); }
   function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
 
@@ -285,6 +293,11 @@
     if (persist) {
       localStorage.setItem(THEME_KEY, finalTheme);
     }
+    debugLog('Theme updated', {
+      finalTheme,
+      persist,
+      htmlTheme: document.documentElement.getAttribute('data-theme')
+    });
   }
 
   function toggleTheme() {
@@ -310,6 +323,11 @@
     if (persist) {
       localStorage.setItem(LANG_KEY, finalLocale);
     }
+    debugLog('Locale updated', {
+      finalLocale,
+      persist,
+      dir: document.documentElement.dir
+    });
   }
 
   function toggleLocale() {
@@ -1272,6 +1290,12 @@
     const savedCurrency = localStorage.getItem('chauffeur_currency') || 'BHD';
     
     state.currencyCode = savedCurrency;
+    debugLog('Init preferences', {
+      savedLocale,
+      savedTheme,
+      savedCurrency,
+      prefersLight
+    });
     setLocale(savedLocale, false);
     setTheme(savedTheme, false);
 
@@ -1287,7 +1311,27 @@
     const year = qs('#footer-year');
     if (year) year.textContent = String(new Date().getFullYear());
     renderSummary();
+
+    debugLog('DOM diagnostics', {
+      page: window.location.pathname,
+      hasBookingCard: !!qs('.booking-card'),
+      hasNav: !!qs('.header-nav'),
+      stylesheets: Array.from(document.styleSheets || []).map((sheet) => sheet.href || 'inline'),
+      htmlClass: document.documentElement.className,
+      htmlTheme: document.documentElement.getAttribute('data-theme'),
+      lang: document.documentElement.lang,
+      dir: document.documentElement.dir
+    });
   }
+
+  window.addEventListener('error', (event) => {
+    debugLog('Global error', {
+      message: event.message,
+      source: event.filename,
+      line: event.lineno,
+      column: event.colno
+    });
+  });
 
   init();
 })();
