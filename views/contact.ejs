@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="<%= locale %>" data-theme="dark" dir="<%= locale === 'ar' ? 'rtl' : 'ltr' %>">
+<html lang="<%= locale %>" dir="<%= locale === 'ar' ? 'rtl' : 'ltr' %>">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -74,46 +74,7 @@
     </div>
   </footer>
 
-  <script>
-    (function(){
-      const form = document.getElementById('contact-form');
-      const messageEl = document.getElementById('contact-message');
-      form && form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const payload = {
-          first_name: document.getElementById('contact-first').value.trim(),
-          last_name: document.getElementById('contact-last').value.trim(),
-          email: document.getElementById('contact-email').value.trim(),
-          country_code: document.getElementById('country-code').value,
-          phone: document.getElementById('contact-phone').value.trim(),
-          message: document.getElementById('contact-message-text').value.trim()
-        };
-
-        try {
-          const res = await fetch('/api/contact', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          if (res.ok) {
-            messageEl.style.color = 'var(--success)';
-            messageEl.textContent = 'Message sent — we will get back to you soon.';
-            form.reset();
-            return;
-          }
-
-          // If API not implemented, show local success
-          messageEl.style.color = 'var(--muted)';
-          messageEl.textContent = 'Message recorded locally (no server endpoint).';
-        } catch (err) {
-          messageEl.style.color = 'var(--err)';
-          messageEl.textContent = 'Failed to send message. Please try again later.';
-        }
-      });
-    })();
-  </script>
-
+  <script src="/js/contact.js" defer></script>
   <script src="/js/app.js" defer></script>
   <script src="/js/ui.js" defer></script>
 </body>
