@@ -44,6 +44,14 @@
     alertContainer: document.getElementById('alert-container')
   };
 
+  const DEBUG_MODE = (typeof window !== 'undefined')
+    && (window.location.search.includes('debug=1') || localStorage.getItem('chauffeur_debug') === '1');
+
+  function debugLog(...args) {
+    if (!DEBUG_MODE) return;
+    console.log('[LUXERIDE DEBUG]', ...args);
+  }
+
   function qs(selector, ctx = document) { return ctx.querySelector(selector); }
   function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
 
@@ -285,6 +293,11 @@
     if (persist) {
       localStorage.setItem(THEME_KEY, finalTheme);
     }
+    debugLog('Theme updated', {
+      finalTheme,
+      persist,
+      htmlTheme: document.documentElement.getAttribute('data-theme')
+    });
   }
 
   function toggleTheme() {
@@ -310,6 +323,11 @@
     if (persist) {
       localStorage.setItem(LANG_KEY, finalLocale);
     }
+    debugLog('Locale updated', {
+      finalLocale,
+      persist,
+      dir: document.documentElement.dir
+    });
   }
 
   function toggleLocale() {
@@ -1209,6 +1227,11 @@
   }
 
   function bindActions() {
+    const bindClick = (selector, handler) => {
+      const el = qs(selector);
+      if (el) el.addEventListener('click', handler);
+    };
+
     qsa('.service-btn').forEach((btn) => btn.addEventListener('click', () => setServiceType(btn.dataset.service)));
     qsa('input[name="transferType"]').forEach((radio) => {
       radio.addEventListener('change', () => setTransferType(radio.value));
@@ -1226,21 +1249,21 @@
       btn.addEventListener('click', () => updateStep(Number(btn.dataset.prev)));
     });
 
-    qs('#submit-btn').addEventListener('click', submitBooking);
-    qs('#apply-promo-btn').addEventListener('click', applyPromoCode);
-    qs('#remove-promo-btn').addEventListener('click', removePromoCode);
-    qs('#lang-toggle').addEventListener('click', () => {
+    bindClick('#submit-btn', submitBooking);
+    bindClick('#apply-promo-btn', applyPromoCode);
+    bindClick('#remove-promo-btn', removePromoCode);
+    bindClick('#lang-toggle', () => {
       toggleLocale();
       loadSettings();
       refreshQuote({ silent: true });
     });
-    qs('#theme-toggle').addEventListener('click', toggleTheme);
+    bindClick('#theme-toggle', toggleTheme);
     const currencyToggle = qs('#currency-toggle');
     if (currencyToggle) {
       currencyToggle.value = state.currencyCode;
       currencyToggle.addEventListener('change', (e) => setCurrency(e.target.value));
     }
-    qs('#new-booking-btn').addEventListener('click', () => window.location.reload());
+    bindClick('#new-booking-btn', () => window.location.reload());
 
     const trackForm = qs('#track-form');
     if (trackForm) trackForm.addEventListener('submit', lookupBooking);
@@ -1262,10 +1285,17 @@
     await loadTranslations();
 
     const savedLocale = localStorage.getItem(LANG_KEY) || 'en';
-    const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+    const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    const savedTheme = localStorage.getItem(THEME_KEY) || (prefersLight ? 'light' : 'dark');
     const savedCurrency = localStorage.getItem('chauffeur_currency') || 'BHD';
     
     state.currencyCode = savedCurrency;
+    debugLog('Init preferences', {
+      savedLocale,
+      savedTheme,
+      savedCurrency,
+      prefersLight
+    });
     setLocale(savedLocale, false);
     setTheme(savedTheme, false);
 
@@ -1281,7 +1311,27 @@
     const year = qs('#footer-year');
     if (year) year.textContent = String(new Date().getFullYear());
     renderSummary();
+
+    debugLog('DOM diagnostics', {
+      page: window.location.pathname,
+      hasBookingCard: !!qs('.booking-card'),
+      hasNav: !!qs('.header-nav'),
+      stylesheets: Array.from(document.styleSheets || []).map((sheet) => sheet.href || 'inline'),
+      htmlClass: document.documentElement.className,
+      htmlTheme: document.documentElement.getAttribute('data-theme'),
+      lang: document.documentElement.lang,
+      dir: document.documentElement.dir
+    });
   }
+
+  window.addEventListener('error', (event) => {
+    debugLog('Global error', {
+      message: event.message,
+      source: event.filename,
+      line: event.lineno,
+      column: event.colno
+    });
+  });
 
   init();
 })();
