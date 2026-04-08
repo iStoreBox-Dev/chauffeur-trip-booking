@@ -38,18 +38,7 @@
       </section>
 
       <section id="app-shell" hidden>
-        <header class="topbar">
-          <div>
-            <h2 id="tab-title">Dashboard</h2>
-            <p id="whoami">Loading user...</p>
-          </div>
-          <div class="top-actions">
-            <span class="pending-chip">Pending: <strong id="pending-badge">0</strong></span>
-            <button id="btn-export">Export CSV</button>
-            <button id="btn-refresh">Refresh</button>
-            <button id="btn-logout" class="danger">Logout</button>
-          </div>
-        </header>
+        <%- include('partials/admin-topbar') %>
 
         <section class="tab-content active" id="tab-dashboard">
           <div class="kpi-grid">
@@ -263,12 +252,7 @@
         </section>
       </section>
 
-      <footer class="app-footer">
-        <div class="footer-inner">
-          <p>© <span id="admin-footer-year"></span> <span id="admin-footer-brand">LUXERIDE</span>. Control Center.</p>
-          <p>Secure operations portal</p>
-        </div>
-      </footer>
+      <%- include('partials/admin-footer') %>
     </main>
   </div>
 
