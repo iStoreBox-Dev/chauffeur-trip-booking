@@ -103,7 +103,6 @@
     toggle.addEventListener('click', ()=>{
       const open = header.classList.toggle('nav-open');
       toggle.setAttribute('aria-expanded', String(open));
-      debugLog('Mobile nav toggled', { open });
     });
 
     qsa('#primary-nav a').forEach(link=>{
@@ -120,10 +119,6 @@
     if(!activeStep) return;
     const target = activeStep.querySelector('.actions .btn.gold, .actions .btn.primary');
     if(target) target.classList.add('mobile-sticky-btn');
-    debugLog('Sticky CTA updated', {
-      activeStepId: activeStep.id || null,
-      hasTarget: !!target
-    });
   }
 
   function bindStepWatcher(){
@@ -155,12 +150,6 @@
       initTransferToggleVisuals();
       initMobileNav();
       bindStepWatcher();
-      debugLog('UI helpers initialized', {
-        hasStepper: !!qs('.stepper'),
-        stepCount: qsa('.step').length,
-        hasNavToggle: !!qs('#nav-toggle'),
-        stylesheetCount: (document.styleSheets || []).length
-      });
     }catch(e){ console.error('UI helper init failed', e); }
   });
 })();
