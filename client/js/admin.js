@@ -356,9 +356,13 @@
         <tr><th class="total">Total</th><td class="total">${money(b.final_price)}</td></tr>
       </table>
       <p>Support: ${state.settings?.support_email || '-'} | ${state.settings?.support_phone || '-'}</p>
-      <button onclick="window.print()">Print</button>
+      <button id="print-invoice-btn" type="button">Print</button>
     </body></html>`);
     w.document.close();
+    const printBtn = w.document.getElementById('print-invoice-btn');
+    if (printBtn) {
+      printBtn.addEventListener('click', () => w.print());
+    }
   }
 
   async function bindDetailActions(bookingId) {
