@@ -1209,6 +1209,11 @@
   }
 
   function bindActions() {
+    const bindClick = (selector, handler) => {
+      const el = qs(selector);
+      if (el) el.addEventListener('click', handler);
+    };
+
     qsa('.service-btn').forEach((btn) => btn.addEventListener('click', () => setServiceType(btn.dataset.service)));
     qsa('input[name="transferType"]').forEach((radio) => {
       radio.addEventListener('change', () => setTransferType(radio.value));
@@ -1226,21 +1231,21 @@
       btn.addEventListener('click', () => updateStep(Number(btn.dataset.prev)));
     });
 
-    qs('#submit-btn').addEventListener('click', submitBooking);
-    qs('#apply-promo-btn').addEventListener('click', applyPromoCode);
-    qs('#remove-promo-btn').addEventListener('click', removePromoCode);
-    qs('#lang-toggle').addEventListener('click', () => {
+    bindClick('#submit-btn', submitBooking);
+    bindClick('#apply-promo-btn', applyPromoCode);
+    bindClick('#remove-promo-btn', removePromoCode);
+    bindClick('#lang-toggle', () => {
       toggleLocale();
       loadSettings();
       refreshQuote({ silent: true });
     });
-    qs('#theme-toggle').addEventListener('click', toggleTheme);
+    bindClick('#theme-toggle', toggleTheme);
     const currencyToggle = qs('#currency-toggle');
     if (currencyToggle) {
       currencyToggle.value = state.currencyCode;
       currencyToggle.addEventListener('change', (e) => setCurrency(e.target.value));
     }
-    qs('#new-booking-btn').addEventListener('click', () => window.location.reload());
+    bindClick('#new-booking-btn', () => window.location.reload());
 
     const trackForm = qs('#track-form');
     if (trackForm) trackForm.addEventListener('submit', lookupBooking);
@@ -1262,7 +1267,8 @@
     await loadTranslations();
 
     const savedLocale = localStorage.getItem(LANG_KEY) || 'en';
-    const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+    const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    const savedTheme = localStorage.getItem(THEME_KEY) || (prefersLight ? 'light' : 'dark');
     const savedCurrency = localStorage.getItem('chauffeur_currency') || 'BHD';
     
     state.currencyCode = savedCurrency;
