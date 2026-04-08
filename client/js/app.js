@@ -1262,7 +1262,8 @@
     await loadTranslations();
 
     const savedLocale = localStorage.getItem(LANG_KEY) || 'en';
-    const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+    const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+    const savedTheme = localStorage.getItem(THEME_KEY) || (prefersLight ? 'light' : 'dark');
     const savedCurrency = localStorage.getItem('chauffeur_currency') || 'BHD';
     
     state.currencyCode = savedCurrency;
