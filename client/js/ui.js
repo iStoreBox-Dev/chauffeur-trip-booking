@@ -86,6 +86,42 @@
     });
   }
 
+
+
+  function initMobileNav(){
+    const header = qs('.site-header');
+    const toggle = qs('#nav-toggle');
+    const nav = qs('#primary-nav');
+    if(!header || !toggle || !nav) return;
+
+    toggle.addEventListener('click', ()=>{
+      const open = header.classList.toggle('nav-open');
+      toggle.setAttribute('aria-expanded', String(open));
+    });
+
+    qsa('#primary-nav a').forEach(link=>{
+      link.addEventListener('click', ()=>{
+        header.classList.remove('nav-open');
+        toggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+
+  function updateStickyCta(){
+    qsa('.mobile-sticky-btn').forEach(btn=>btn.classList.remove('mobile-sticky-btn'));
+    const activeStep = qs('.form-step:not(.hidden)');
+    if(!activeStep) return;
+    const target = activeStep.querySelector('.actions .btn.gold, .actions .btn.primary');
+    if(target) target.classList.add('mobile-sticky-btn');
+  }
+
+  function bindStepWatcher(){
+    const observer = new MutationObserver(()=> updateStickyCta());
+    qsa('.form-step').forEach(el=>observer.observe(el, { attributes:true, attributeFilter:['class'] }));
+    qsa('[data-next],[data-prev]').forEach(btn=>btn.addEventListener('click', ()=> setTimeout(updateStickyCta, 150)));
+    updateStickyCta();
+  }
+
   function initTransferToggleVisuals(){
     qsa('.toggle-row input[type="radio"]').forEach(r => {
       const parent = r.closest('label');
@@ -106,6 +142,8 @@
       bindStepperEvents();
       initAddonTiles();
       initTransferToggleVisuals();
+      initMobileNav();
+      bindStepWatcher();
     }catch(e){ console.error('UI helper init failed', e); }
   });
 })();
