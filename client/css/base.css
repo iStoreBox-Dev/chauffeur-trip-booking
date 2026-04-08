@@ -1,0 +1,97 @@
+:root {
+  --color-bg: #0d0d0f;
+  --color-surface: #14141a;
+  --color-surface-2: #1c1c26;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-text: #f0ede8;
+  --color-text-muted: #8a8a99;
+  --color-primary: #c9a96e;
+  --color-primary-hover: #e2c08a;
+  --color-success: #3dba7e;
+  --color-error: #e05c5c;
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.6);
+
+  --bg: var(--color-bg);
+  --surface: var(--color-surface);
+  --surface-elev: var(--color-surface-2);
+  --border: var(--color-border);
+  --text: var(--color-text);
+  --muted: var(--color-text-muted);
+  --gold: var(--color-primary);
+  --gold-2: var(--color-primary-hover);
+  --ok: var(--color-success);
+  --err: var(--color-error);
+}
+
+:root[data-theme='light'] {
+  --color-bg: #f7f4ef;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3eee6;
+  --color-border: rgba(26, 26, 38, 0.12);
+  --color-text: #1a1a26;
+  --color-text-muted: #6e6a74;
+  --bg: var(--color-bg);
+  --surface: var(--color-surface);
+  --surface-elev: var(--color-surface-2);
+  --border: var(--color-border);
+  --text: var(--color-text);
+  --muted: var(--color-text-muted);
+}
+
+:root[lang='ar'],
+:root[dir='rtl'] {
+  --font-display: 'Noto Kufi Arabic', serif;
+  --font-body: 'Noto Kufi Arabic', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}

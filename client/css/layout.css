@@ -1,0 +1,147 @@
+.booking-shell {
+  max-width: 1440px;
+  margin-inline: auto;
+  padding: clamp(36px, 6vw, 84px) var(--space-4) var(--space-16);
+}
+
+.booking-intro {
+  max-width: 1200px;
+  margin: 0 auto var(--space-8);
+}
+
+.booking-intro .eyebrow {
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.8rem;
+}
+
+.booking-intro h1 {
+  font-size: clamp(2rem, 3.4vw, 3.4rem);
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.booking-intro p {
+  color: var(--muted);
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+
+.header-inner {
+  max-width: 1320px;
+  margin-inline: auto;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.brand {
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.brand span {
+  color: var(--gold);
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.header-nav a {
+  text-decoration: none;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+}
+
+.header-nav a:hover {
+  color: var(--gold);
+}
+
+.header-tools {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.service-strip {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding: var(--space-4);
+}
+
+.app-footer {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  color: var(--muted);
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.track-shell {
+  max-width: 1200px;
+  margin: 0 auto var(--space-8);
+  padding-inline: var(--space-4);
+}
+
+.nav-toggle {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .header-inner {
+    flex-wrap: wrap;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+  }
+
+  .header-nav {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+  }
+
+  .site-header.nav-open .header-nav {
+    display: flex;
+  }
+
+  .header-tools {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

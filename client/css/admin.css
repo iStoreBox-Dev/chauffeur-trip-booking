@@ -63,9 +63,9 @@ body {
   padding: 0.65rem 0.8rem;
   text-align: left;
   font-weight: 600;
+}
 
 .booking-status-badge { vertical-align: middle; }
-}
 
 .tab-btn.active,
 .tab-btn:hover {

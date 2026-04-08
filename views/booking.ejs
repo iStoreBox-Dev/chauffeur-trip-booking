@@ -242,7 +242,6 @@
         <h2 data-i18n="sections.confirmBooking">Confirm Booking</h2>
         <p id="quote-loading" class="subtext hidden" data-i18n="messages.quoteLoading">Calculating latest quote...</p>
         <div class="summary" id="summary-box"></div>
-        <div id="recommendations-box" class="recommendations hidden"></div>
         <div class="promo-row">
           <label class="field promo-field"><span data-i18n="fields.promoCode">Promo Code</span>
             <input id="promo-code" type="text" data-i18n-placeholder="placeholders.promo" placeholder="WELCOME10" />
@@ -310,6 +309,8 @@
 
   <%- include('partials/public-footer') %>
 
+  <script src="/js/api.js?v=20260408" defer></script>
+  <script src="/js/events.js?v=20260408" defer></script>
   <script src="/js/app.js?v=20260408" defer></script>
   <script src="/js/ui.js?v=20260408" defer></script>
 </body>

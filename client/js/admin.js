@@ -472,6 +472,16 @@
     const app = qs('#settings-form');
     const seo = qs('#seo-form');
     if (!app || !seo) return;
+    const toBool = (value, fallback = false) => {
+      if (typeof value === 'boolean') return value;
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'true') return true;
+        if (normalized === 'false') return false;
+      }
+      return fallback;
+    };
+
     app.app_name.value = settings.app_name || '';
     app.app_tagline.value = settings.app_tagline || '';
     app.hero_title.value = settings.hero_title || '';
@@ -482,15 +492,15 @@
     app.support_email.value = settings.support_email || '';
     app.support_phone.value = settings.support_phone || '';
     app.whatsapp_number.value = settings.whatsapp_number || '';
-    app.enhance_journey_enabled.value = String(Boolean(settings.enhance_journey_enabled));
+    app.enhance_journey_enabled.value = String(toBool(settings.enhance_journey_enabled, false));
     app.enhance_journey_text.value = settings.enhance_journey_text || '';
-    app.maintenance_mode.value = String(Boolean(settings.maintenance_mode));
-    app.booking_enabled.value = String(Boolean(settings.booking_enabled));
+    app.maintenance_mode.value = String(toBool(settings.maintenance_mode, false));
+    app.booking_enabled.value = String(toBool(settings.booking_enabled, true));
 
     seo.seo_title.value = settings.seo_title || '';
     seo.seo_description.value = settings.seo_description || '';
     seo.seo_keywords.value = settings.seo_keywords || '';
-    seo.seo_indexable.value = String(Boolean(settings.seo_indexable));
+    seo.seo_indexable.value = String(toBool(settings.seo_indexable, true));
     seo.instagram.value = settings.social_links?.instagram || '';
     seo.x.value = settings.social_links?.x || '';
     seo.facebook.value = settings.social_links?.facebook || '';

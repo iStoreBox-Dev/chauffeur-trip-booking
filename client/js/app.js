@@ -11,7 +11,6 @@
     transferType: 'oneway',
     selectedVehicle: null,
     vehicles: [],
-    recommendations: [],
     locationSelected: {
       pickup: false,
       dropoff: false,
@@ -41,7 +40,6 @@
     vehicleGrid: document.getElementById('vehicle-grid'),
     promoMessage: document.getElementById('promo-message'),
     quoteLoading: document.getElementById('quote-loading'),
-    recommendationsBox: document.getElementById('recommendations-box'),
     alertContainer: document.getElementById('alert-container')
   };
 
@@ -65,9 +63,6 @@
 
   function initDiagnostics() {
     if (!isDebugEnabled()) return;
-
-    const stylesheets = qsa('link[rel="stylesheet"]').map((node) => node.getAttribute('href'));
-    const scripts = qsa('script[src]').map((node) => node.getAttribute('src'));
 
     window.addEventListener('error', (event) => {
       const target = event.target;
@@ -200,29 +195,43 @@
     const { method = 'GET', body = null, silent = false, timeout = 30000 } = options;
     
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
-      
       const headers = {
         'Content-Type': 'application/json',
         'X-Lang': state.locale,
         ...options.headers
       };
-      
-      const fetchOptions = {
-        method,
-        headers,
-        signal: controller.signal
-      };
-      
-      if (body) {
-        fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
+
+      const apiHelper = window.LuxeApi && typeof window.LuxeApi.fetchJson === 'function' ? window.LuxeApi.fetchJson : null;
+      let responsePayload = null;
+
+      if (apiHelper) {
+        responsePayload = await apiHelper(endpoint, {
+          method,
+          headers,
+          body,
+          timeout
+        });
       }
-      
-      const response = await fetch(endpoint, fetchOptions);
-      clearTimeout(timeoutId);
-      
-      const data = await response.json().catch(() => ({}));
+
+      let response;
+      if (responsePayload) {
+        response = { ok: responsePayload.ok, status: responsePayload.status, statusText: responsePayload.statusText || '' };
+      } else {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        try {
+          response = await fetch(endpoint, {
+            method,
+            headers,
+            signal: controller.signal,
+            body: body ? (typeof body === 'string' ? body : JSON.stringify(body)) : undefined
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
+
+      const data = responsePayload ? responsePayload.data : await response.json().catch(() => ({}));
       
       if (!response.ok) {
         const errorMsg = data.error || `HTTP ${response.status}: ${response.statusText}`;
@@ -327,7 +336,9 @@
     document.documentElement.setAttribute('data-theme', finalTheme);
     const themeBtn = qs('#theme-toggle');
     if (themeBtn) {
-      themeBtn.textContent = finalTheme === 'dark' ? tr('theme.switchToLight') : tr('theme.switchToDark');
+      themeBtn.textContent = finalTheme === 'dark'
+        ? `☀ ${tr('theme.switchToLight')}`
+        : `🌙 ${tr('theme.switchToDark')}`;
     }
     if (persist) {
       localStorage.setItem(THEME_KEY, finalTheme);
@@ -352,12 +363,11 @@
 
     const langBtn = qs('#lang-toggle');
     if (langBtn) {
-      langBtn.textContent = finalLocale === 'en' ? 'AR' : 'EN';
+      langBtn.textContent = finalLocale === 'en' ? '🌐 AR' : '🌐 EN';
     }
 
     translatePage();
     renderSummary();
-    renderRecommendations();
 
     if (persist) {
       localStorage.setItem(LANG_KEY, finalLocale);
@@ -379,7 +389,6 @@
     refreshQuote({ silent: true });
     renderSummary();
     renderVehicleGrid();
-    renderRecommendations();
   }
 
   function applySettings(settings) {
@@ -630,7 +639,9 @@
     });
 
     qsa('option[data-i18n]').forEach((option) => {
-      option.textContent = tr(option.getAttribute('data-i18n'));
+      const key = option.getAttribute('data-i18n') || '';
+      const label = tr(key);
+      option.textContent = key.startsWith('currency.') ? `¤ ${label}` : label;
     });
 
     const titleNode = qs('title');
@@ -919,7 +930,6 @@
     if (!state.selectedVehicle) {
       state.quote = fallbackQuote();
       renderSummary();
-      renderRecommendations();
       return;
     }
 
@@ -939,7 +949,6 @@
       if (result.success) {
         const data = result.data;
         state.quote = data.quote || fallbackQuote();
-        state.recommendations = data.recommendations || [];
 
         if (data.promo) {
           state.appliedPromo = data.promo;
@@ -953,7 +962,6 @@
       }
 
       renderSummary();
-      renderRecommendations();
     } catch (error) {
       console.error('Quote failed:', error);
       if (!silent) showError(error.message || tr('messages.quoteFailed'), tr('alerts.error'));
@@ -963,31 +971,6 @@
       state.quoteBusy = false;
       if (refs.quoteLoading) refs.quoteLoading.classList.add('hidden');
     }
-  }
-
-  function renderRecommendations() {
-    const box = refs.recommendationsBox;
-    if (!box) return;
-
-    if (!state.recommendations.length) {
-      box.classList.add('hidden');
-      box.innerHTML = '';
-      return;
-    }
-
-    box.classList.remove('hidden');
-    const cards = state.recommendations.map((item) => {
-      return `
-        <article class="recommendation-item">
-          <h4>${escapeHtml(item.name)}</h4>
-          <p>${escapeHtml(item.model || '')}</p>
-          <p>${escapeHtml(item.reason || '')}</p>
-          <strong>${money(item.base_price)}</strong>
-        </article>
-      `;
-    }).join('');
-
-    box.innerHTML = `<h3>${escapeHtml(tr('recommendation.title'))}</h3><div class="recommendation-grid">${cards}</div>`;
   }
 
   function renderSummary() {

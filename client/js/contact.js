@@ -30,7 +30,7 @@
 
     const button = qs('#theme-toggle');
     if (button) {
-      button.textContent = finalTheme === 'dark' ? 'Light' : 'Dark';
+      button.textContent = finalTheme === 'dark' ? '☀ Light' : '🌙 Dark';
     }
 
     if (persist) {
@@ -47,7 +47,7 @@
 
     const button = qs('#lang-toggle');
     if (button) {
-      button.textContent = finalLocale === 'en' ? 'AR' : 'EN';
+      button.textContent = finalLocale === 'en' ? '🌐 AR' : '🌐 EN';
     }
 
     if (persist) {
