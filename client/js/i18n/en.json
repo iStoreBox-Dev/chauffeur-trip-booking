@@ -96,6 +96,7 @@
     "newBooking": "Create New Booking"
   },
   "messages": {
+    "maintenanceTitle": "Maintenance",
     "capacityWarning": "This vehicle may exceed the capacity for your passenger count. Please select another vehicle or adjust passenger count.",
     "quoteLoading": "Calculating your personalized quote...",
     "bookingReceived": "Your booking request has been received. We will contact you shortly to confirm.",

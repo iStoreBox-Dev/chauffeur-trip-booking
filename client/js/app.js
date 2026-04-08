@@ -45,14 +45,6 @@
     alertContainer: document.getElementById('alert-container')
   };
 
-  const DEBUG_MODE = (typeof window !== 'undefined')
-    && (window.location.search.includes('debug=1') || localStorage.getItem('chauffeur_debug') === '1');
-
-  function debugLog(...args) {
-    if (!DEBUG_MODE) return;
-    console.log('[LUXERIDE DEBUG]', ...args);
-  }
-
   function qs(selector, ctx = document) { return ctx.querySelector(selector); }
   function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
 
@@ -76,16 +68,6 @@
 
     const stylesheets = qsa('link[rel="stylesheet"]').map((node) => node.getAttribute('href'));
     const scripts = qsa('script[src]').map((node) => node.getAttribute('src'));
-
-    debugLog('DOM diagnostics', {
-      page: window.location.pathname,
-      hasBookingCard: Boolean(qs('.booking-card')),
-      hasNav: Boolean(qs('.header-nav')),
-      stylesheets,
-      scripts,
-      htmlClass: document.documentElement.className,
-      dataTheme: document.documentElement.getAttribute('data-theme')
-    });
 
     window.addEventListener('error', (event) => {
       const target = event.target;
@@ -1348,13 +1330,6 @@
     const savedTheme = localStorage.getItem(THEME_KEY) || (prefersLight ? 'light' : 'dark');
     const savedCurrency = localStorage.getItem('chauffeur_currency') || 'BHD';
 
-    debugLog('Init preferences', {
-      savedLocale,
-      savedTheme,
-      savedCurrency,
-      prefersLight: window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
-    });
-    
     state.currencyCode = savedCurrency;
     debugLog('Init preferences', {
       savedLocale,
