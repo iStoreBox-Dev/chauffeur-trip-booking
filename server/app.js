@@ -12,6 +12,7 @@ const { loadMergedSettings } = require('./utils/settings');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+const DEBUG_ASSETS = process.env.DEBUG_ASSETS === 'true';
 
 app.set('trust proxy', 1);
 
@@ -49,11 +50,43 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(attachLocale);
 
+app.use((req, res, next) => {
+  const wantsAssetLog = DEBUG_ASSETS || req.query.debug === '1';
+  const isAssetRequest = /^\/(css|js|assets)\//.test(req.path) || req.path === '/favicon.ico';
+
+  if (!isAssetRequest) {
+    return next();
+  }
+
+  const startedAt = Date.now();
+  res.on('finish', () => {
+    if (!wantsAssetLog && res.statusCode < 400) return;
+    console.log('[ASSET TRACE]', {
+      method: req.method,
+      path: req.path,
+      status: res.statusCode,
+      durationMs: Date.now() - startedAt,
+      referer: req.get('referer') || null,
+      userAgent: req.get('user-agent') || null
+    });
+  });
+
+  next();
+});
+
 app.use('/api', routes);
 
 app.use('/css', express.static(path.join(__dirname, '../client/css')));
 app.use('/js', express.static(path.join(__dirname, '../client/js')));
 app.use('/assets', express.static(path.join(__dirname, '../client/assets')));
+
+app.get('/js/vendor/chart.umd.min.js', (req, res) => {
+  return res.sendFile(path.join(__dirname, '../node_modules/chart.js/dist/chart.umd.min.js'));
+});
+
+app.get('/favicon.ico', (_req, res) => {
+  return res.sendFile(path.join(__dirname, '../client/assets/favicon.svg'));
+});
 
 // Views (EJS) support
 app.set('views', path.join(__dirname, '../views'));

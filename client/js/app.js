@@ -3,6 +3,7 @@
 
   const LANG_KEY = 'chauffeur_locale';
   const THEME_KEY = 'chauffeur_theme';
+  const DEBUG_KEY = 'chauffeur_debug';
 
   const state = {
     step: 1,
@@ -54,6 +55,62 @@
 
   function qs(selector, ctx = document) { return ctx.querySelector(selector); }
   function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
+
+  function isDebugEnabled() {
+    const fromStorage = localStorage.getItem(DEBUG_KEY) === '1';
+    const fromQuery = new URLSearchParams(window.location.search).get('debug') === '1';
+    return fromStorage || fromQuery;
+  }
+
+  function debugLog(message, data) {
+    if (!isDebugEnabled()) return;
+    if (typeof data === 'undefined') {
+      console.log('[LUXERIDE DEBUG]', message);
+      return;
+    }
+    console.log('[LUXERIDE DEBUG]', message, data);
+  }
+
+  function initDiagnostics() {
+    if (!isDebugEnabled()) return;
+
+    const stylesheets = qsa('link[rel="stylesheet"]').map((node) => node.getAttribute('href'));
+    const scripts = qsa('script[src]').map((node) => node.getAttribute('src'));
+
+    debugLog('DOM diagnostics', {
+      page: window.location.pathname,
+      hasBookingCard: Boolean(qs('.booking-card')),
+      hasNav: Boolean(qs('.header-nav')),
+      stylesheets,
+      scripts,
+      htmlClass: document.documentElement.className,
+      dataTheme: document.documentElement.getAttribute('data-theme')
+    });
+
+    window.addEventListener('error', (event) => {
+      const target = event.target;
+      if (target && (target.tagName === 'SCRIPT' || target.tagName === 'LINK' || target.tagName === 'IMG')) {
+        debugLog('Asset failed to load', {
+          tag: target.tagName,
+          source: target.src || target.href || ''
+        });
+        return;
+      }
+
+      debugLog('Runtime error', {
+        message: event.message,
+        source: event.filename,
+        line: event.lineno,
+        column: event.colno
+      });
+    }, true);
+
+    window.addEventListener('unhandledrejection', (event) => {
+      debugLog('Unhandled promise rejection', {
+        reason: event.reason?.message || String(event.reason || 'unknown')
+      });
+    });
+  }
 
   /**
    * ALERT SYSTEM - Comprehensive error & notification handling
@@ -1282,12 +1339,21 @@
   }
 
   async function init() {
+    initDiagnostics();
+
     await loadTranslations();
 
     const savedLocale = localStorage.getItem(LANG_KEY) || 'en';
     const prefersLight = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
     const savedTheme = localStorage.getItem(THEME_KEY) || (prefersLight ? 'light' : 'dark');
     const savedCurrency = localStorage.getItem('chauffeur_currency') || 'BHD';
+
+    debugLog('Init preferences', {
+      savedLocale,
+      savedTheme,
+      savedCurrency,
+      prefersLight: window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+    });
     
     state.currencyCode = savedCurrency;
     debugLog('Init preferences', {
