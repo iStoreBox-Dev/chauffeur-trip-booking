@@ -163,6 +163,11 @@
     qsa('.tab-content').forEach((panel) => panel.classList.remove('active'));
     qs(`#tab-${tab}`).classList.add('active');
     qs('#tab-title').textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
+    // Close mobile detail drawer when leaving bookings
+    if (tab !== 'bookings') {
+      const workspace = qs('.bookings-workspace');
+      if (workspace) workspace.classList.remove('detail-open');
+    }
   }
 
   async function login(event) {
@@ -269,16 +274,38 @@
       <tr data-booking-row="${b.id}">
         <td>${b.booking_ref}</td>
         <td>${b.first_name} ${b.last_name}</td>
-        <td>${b.service_type}</td>
         <td>${b.pickup_location || '-'}</td>
         <td>${b.departure_date || ''} ${b.departure_time || ''}</td>
         <td>${money(b.final_price)}</td>
         <td>${statusBadge(b.status)}</td>
         <td><button data-action="view-booking" data-id="${b.id}">Open</button></td>
       </tr>
-    `).join('') || '<tr><td colspan="8">No bookings found.</td></tr>';
+    `).join('') || '<tr><td colspan="7">No bookings found.</td></tr>';
 
-    qsa('[data-action="view-booking"]').forEach((btn) => btn.addEventListener('click', () => showBookingDetails(Number(btn.dataset.id))));
+    qsa('[data-action="view-booking"]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const id = Number(btn.dataset.id);
+        // highlight selected row
+        qsa('#bookings-body tr').forEach((tr) => tr.classList.toggle('selected', Number(tr.dataset.bookingRow) === id));
+        // open detail pane
+        showBookingDetails(id).then(() => {
+          const workspace = qs('.bookings-workspace');
+          if (workspace && window.innerWidth <= 900) workspace.classList.add('detail-open');
+          // hide empty state
+          const empty = qs('#detail-empty'); if (empty) empty.style.display = 'none';
+        }).catch((_) => {});
+      });
+    });
+
+    // keep prior selection visible after re-render
+    if (state.selectedBooking && Number(state.selectedBooking.id)) {
+      const selId = Number(state.selectedBooking.id);
+      const matched = qsa('#bookings-body tr').some((tr) => Number(tr.dataset.bookingRow) === selId);
+      if (matched) {
+        qsa('#bookings-body tr').forEach((tr) => tr.classList.toggle('selected', Number(tr.dataset.bookingRow) === selId));
+        const empty = qs('#detail-empty'); if (empty) empty.style.display = 'none';
+      }
+    }
   }
 
   function group(title, itemsHtml) {
@@ -315,7 +342,20 @@
 
   function renderBookingActions(booking) {
     const transitions = allowedTransitions(booking.status);
-    qs('#booking-actions').innerHTML = transitions.map((status) => `<button data-transition="${status}">Set ${status}</button>`).join('') || '<span>No transitions available.</span>';
+    const actions = [];
+    actions.push('<button id="action-print" class="btn-secondary">Print Invoice</button>');
+    actions.push('<button id="action-assign" class="btn-primary">Assign Chauffeur</button>');
+    if (transitions.length) {
+      transitions.forEach((s) => actions.push(`<button data-transition="${s}">Set ${s.replace('_', ' ')}</button>`));
+    }
+    qs('#booking-actions').innerHTML = actions.join('') || '<span>No actions available.</span>';
+
+    const printBtn = qs('#action-print'); if (printBtn) printBtn.addEventListener('click', printInvoice);
+    const assignBtn = qs('#action-assign'); if (assignBtn) assignBtn.addEventListener('click', () => {
+      const assignEl = qs('#assign-chauffeur') || qs('#assign-vehicle');
+      if (assignEl) { assignEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); assignEl.focus(); }
+    });
+
     qsa('[data-transition]').forEach((btn) => btn.addEventListener('click', async () => {
       await request(`/api/bookings/${booking.id}/status`, { method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ status: btn.dataset.transition }) });
       await Promise.all([loadBookings(), loadStats()]);
@@ -377,7 +417,7 @@
     const head = qs('#booking-detail .detail-head');
     if (head) {
       const h3 = head.querySelector('h3');
-      if (h3) h3.textContent = `Booking ${b.booking_ref}`;
+      if (h3) h3.innerHTML = `Booking ${b.booking_ref} <span class="detail-price">${money(b.final_price)}</span>`;
       // remove old badge if present
       const oldBadge = head.querySelector('.booking-status-badge');
       if (oldBadge) oldBadge.remove();
@@ -389,6 +429,13 @@
     const pickupHtml = `${b.pickup_location || '-'}${b.pickup_lat && b.pickup_lng ? `<div><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.pickup_lat + ',' + b.pickup_lng)}" target="_blank" rel="noopener" class="map-link">Open in Google Maps</a></div>` : ''}`;
     const dropoffHtml = `${b.dropoff_location || '-'}${b.dropoff_lat && b.dropoff_lng ? `<div><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(b.dropoff_lat + ',' + b.dropoff_lng)}" target="_blank" rel="noopener" class="map-link">Open in Google Maps</a></div>` : ''}`;
 
+    const summary = group('Summary', [
+      detailItem('Reference', b.booking_ref),
+      detailItem('Status', statusBadge(b.status)),
+      detailItem('Price', money(b.final_price)),
+      detailItem('Passengers', b.passengers || '-')
+    ].join(''));
+
     const customer = group('Customer', [
       detailItem('Name', `${b.first_name} ${b.last_name}`),
       detailItem('Email', b.email),
@@ -396,12 +443,10 @@
     ].join(''));
 
     const trip = group('Trip', [
-      detailItem('Reference', b.booking_ref),
       detailItem('Service', b.service_type),
       detailItem('Pickup', pickupHtml),
       detailItem('Dropoff', dropoffHtml),
-      detailItem('Departure', `${b.departure_date || ''} ${b.departure_time || ''}`.trim()),
-      detailItem('Status', statusBadge(b.status))
+      detailItem('Departure', `${b.departure_date || ''} ${b.departure_time || ''}`.trim())
     ].join(''));
 
     const pricing = group('Pricing', [
@@ -410,10 +455,16 @@
       detailItem('Total', money(b.final_price))
     ].join(''));
 
-    qs('#booking-detail-body').innerHTML = customer + trip + pricing + renderAssignmentSection(b) + renderNotesSection(b) + renderTimeline(b);
+    qs('#booking-detail-body').innerHTML = summary + customer + trip + pricing + renderAssignmentSection(b) + renderNotesSection(b) + renderTimeline(b);
     qs('#booking-detail').hidden = false;
+    // hide empty placeholder
+    const empty = qs('#detail-empty'); if (empty) empty.style.display = 'none';
     renderBookingActions(b);
     bindDetailActions(b.id);
+    // mark selected in state
+    state.selectedBooking = b;
+    // ensure bookings list highlights
+    qsa('#bookings-body tr').forEach((tr) => tr.classList.toggle('selected', Number(tr.dataset.bookingRow) === Number(id)));
   }
 
   function formatAddOnsForDisplay(addOns) {
@@ -464,6 +515,7 @@
   async function bindDetailActions(bookingId) {
     const saveAssignment = qs('#save-assignment');
     const addNoteBtn = qs('#add-booking-note');
+    const bookingCloseBtn = qs('#booking-detail-close');
 
     if (saveAssignment) {
       saveAssignment.addEventListener('click', async () => {
@@ -485,6 +537,13 @@
           method: 'PATCH', headers: authHeaders(), body: JSON.stringify({ note })
         });
         await showBookingDetails(bookingId);
+      });
+    }
+
+    if (bookingCloseBtn) {
+      bookingCloseBtn.addEventListener('click', () => {
+        const workspace = qs('.bookings-workspace');
+        if (workspace) workspace.classList.remove('detail-open');
       });
     }
   }

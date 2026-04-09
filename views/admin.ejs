@@ -65,37 +65,56 @@
         </section>
 
         <section class="tab-content" id="tab-bookings">
-          <div class="filters">
-            <input id="search-bookings" placeholder="Search ref/name/email" />
-            <select id="status-filter">
-              <option value="">All statuses</option>
-              <option value="pending">pending</option>
-              <option value="confirmed">confirmed</option>
-              <option value="chauffeur_assigned">chauffeur_assigned</option>
-              <option value="in_progress">in_progress</option>
-              <option value="completed">completed</option>
-              <option value="cancelled">cancelled</option>
-              <option value="rejected">rejected</option>
-            </select>
+          <div class="bookings-workspace">
+            <aside class="bookings-list">
+              <div class="filters sticky-filters">
+                <input id="search-bookings" placeholder="Search ref/name/email" />
+                <select id="status-filter">
+                  <option value="">All statuses</option>
+                  <option value="pending">pending</option>
+                  <option value="confirmed">confirmed</option>
+                  <option value="chauffeur_assigned">chauffeur_assigned</option>
+                  <option value="in_progress">in_progress</option>
+                  <option value="completed">completed</option>
+                  <option value="cancelled">cancelled</option>
+                  <option value="rejected">rejected</option>
+                </select>
+              </div>
+
+              <div class="table-wrap compact">
+                <table class="compact-table">
+                  <thead>
+                    <tr>
+                      <th>Ref</th><th>Name</th><th>Pickup</th><th>Date</th><th>Price</th><th>Status</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="bookings-body"></tbody>
+                </table>
+              </div>
+            </aside>
+
+            <aside class="booking-detail-pane" id="booking-detail-pane">
+              <div class="detail-empty" id="detail-empty">
+                <div style="font-size:46px;color:rgba(193,162,90,0.9)">🚘</div>
+                <h3>Select a booking to view details</h3>
+                <p class="muted">Bookings open here as a rich, operational workspace.</p>
+              </div>
+
+              <article id="booking-detail" class="detail-panel" hidden>
+                <div class="detail-head">
+                  <div style="display:flex;align-items:center;gap:0.6rem">
+                    <h3>Booking Details</h3>
+                    <button id="booking-detail-close" class="btn-secondary mobile-only">Close</button>
+                  </div>
+                  <div>
+                    <button id="print-invoice-btn" class="btn-secondary">Print Invoice</button>
+                  </div>
+                </div>
+                <div id="booking-detail-body" class="detail-groups"></div>
+                <div class="detail-sticky-actions" id="booking-actions"></div>
+              </article>
+            </aside>
           </div>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Ref</th><th>Name</th><th>Service</th><th>Pickup</th><th>Date</th><th>Price</th><th>Status</th><th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="bookings-body"></tbody>
-            </table>
-          </div>
-          <article id="booking-detail" class="detail-panel" hidden>
-            <div class="detail-head">
-              <h3>Booking Details</h3>
-              <button id="print-invoice-btn" class="btn-secondary">Print Invoice</button>
-            </div>
-            <div id="booking-detail-body" class="detail-groups"></div>
-            <div class="detail-sticky-actions" id="booking-actions"></div>
-          </article>
         </section>
 
         <section class="tab-content" id="tab-chauffeurs">
