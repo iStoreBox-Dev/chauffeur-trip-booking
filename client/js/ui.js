@@ -1,8 +1,7 @@
 /* Lightweight UI helpers for premium booking UX
-   - Stepper completion + gold line fill
-   - Add-on tile toggle visuals + count select show/hide
-   - Return-date fields show/hide on round-trip toggle
-   - Mobile nav toggle
+  - Stepper completion + gold line fill
+  - Add-on tile selected visual state
+  - Mobile nav toggle
 */
 (function(){
   'use strict';
@@ -51,26 +50,8 @@
     qsa('.step').forEach(el => observer.observe(el, { attributes: true, attributeFilter: ['class'] }));
   }
 
-  /* ── Add-on tiles + count select show/hide ── */
+  /* ── Add-on tiles (visual selected state only) ── */
   function initAddonTiles(){
-    // Child seat
-    const cbChild = qs('#addon-child-seat');
-    const countChild = qs('#addon-child-seat-count')?.closest('.field.compact');
-    if(cbChild && countChild){
-      const sync = () => countChild.classList.toggle('visible', cbChild.checked);
-      sync();
-      cbChild.addEventListener('change', sync);
-    }
-
-    // Extra luggage
-    const cbLuggage = qs('#addon-extra-luggage');
-    const countLuggage = qs('#addon-extra-luggage-count')?.closest('.field.compact');
-    if(cbLuggage && countLuggage){
-      const sync = () => countLuggage.classList.toggle('visible', cbLuggage.checked);
-      sync();
-      cbLuggage.addEventListener('change', sync);
-    }
-
     // General tile selected class
     qsa('.addon-item').forEach(label => {
       const cb = label.querySelector('input[type="checkbox"]');
@@ -79,26 +60,6 @@
       cb.addEventListener('change', () => label.classList.toggle('selected', !!cb.checked));
       label.addEventListener('keydown', (e) => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); cb.click(); } });
     });
-  }
-
-  /* ── Return date/time fields (round-trip toggle) ── */
-  function initReturnFieldToggle(){
-    const radios = qsa('input[name="transferType"]');
-    const returnFields = qsa('.return-only');
-
-    function syncReturnFields(){
-      const isRound = !!qs('input[name="transferType"][value="roundtrip"]:checked');
-      returnFields.forEach(el => {
-        el.classList.toggle('visible', isRound);
-        // also toggle required on inputs inside
-        el.querySelectorAll('input').forEach(inp => {
-          inp.required = isRound;
-        });
-      });
-    }
-
-    radios.forEach(r => r.addEventListener('change', syncReturnFields));
-    syncReturnFields(); // run on load
   }
 
   /* ── Transfer toggle pill visuals ── */
@@ -131,27 +92,12 @@
     });
   }
 
-  /* ── Floating label state ── */
-  function initFloatingLabels(){
-    qsa('.field').forEach(field => {
-      const input = field.querySelector('input,textarea,select');
-      if(!input) return;
-      const update = () => field.classList.toggle('has-value', String(input.value||'').trim().length > 0);
-      input.addEventListener('focus',  () => field.classList.add('has-focus'));
-      input.addEventListener('blur',   () => { field.classList.remove('has-focus'); setTimeout(update, 0); });
-      input.addEventListener('input',  update);
-      update();
-    });
-  }
-
   document.addEventListener('DOMContentLoaded', () => {
     try {
-      initFloatingLabels();
       transformStepper();
       updateStepperCompletion();
       bindStepperEvents();
       initAddonTiles();
-      initReturnFieldToggle();
       initTransferToggleVisuals();
       initMobileNav();
     } catch(e){ console.error('UI helper init failed', e); }

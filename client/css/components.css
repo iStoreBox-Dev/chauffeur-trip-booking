@@ -121,6 +121,14 @@
   animation: fadeSlideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.service-panel {
+  display: none;
+}
+
+.service-panel.active {
+  display: block;
+}
+
 .form-step h2 {
   font-size: clamp(1.4rem, 2.2vw, 2rem);
   font-weight: 500;
@@ -235,6 +243,10 @@
   position: relative;
 }
 
+.field.full .subtext {
+  margin-top: var(--space-1);
+}
+
 .field > span:first-child,
 .field > label > span {
   font-size: 0.68rem;
@@ -324,6 +336,7 @@
 .field-inline {
   display: flex;
   gap: var(--space-3);
+  align-items: flex-start;
 }
 
 .field-inline .inline-item {
@@ -331,6 +344,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+}
+
+@media (max-width: 639px) {
+  .field-inline {
+    flex-direction: column;
+  }
 }
 
 .field-inline .inline-item span {
@@ -668,6 +687,10 @@
   margin-bottom: var(--space-3);
 }
 
+.promo-row .field {
+  margin-bottom: 0;
+}
+
 .promo-field { flex: 1; min-width: 180px; }
 
 .promo-actions {
@@ -869,100 +892,4 @@
   margin-bottom: var(--space-4);
   font-size: 0.875rem;
 }
-
-.field input:focus,
-.field textarea:focus,
-.field select:focus {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.12);
-  outline: none;
-}
-
-.field input:hover:not(:focus),
-.field select:hover:not(:focus) { border-color: var(--border-hover); }
-
-/* Custom select chevron - gold */
-.field select {
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23C9A96E' d='M7 10l5 5 5-5z'/></svg>");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  background-size: 18px;
-  padding-right: 2.5rem;
-}
-
-/* Floating label */
-.field-float { position:relative; }
-.field-float span { position:absolute; top:50%; left:1rem; transform: translateY(-50%); transition: all 180ms ease; pointer-events:none; color:var(--text-muted); font-size:0.85rem; }
-/* move label up when focused, has value, or JS marks container as filled */
-.field-float input:focus ~ span,
-.field-float textarea:focus ~ span,
-.field-float select:focus ~ span,
-.field-float.filled span {
-  top: 8px; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-light);
-}
-.field-float input,
-.field-float textarea,
-.field-float select { padding: 1.5rem 1rem 0.5rem; }
-
-.btn.gold {
-  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
-  color: #0A0A0A;
-  font-weight: 600; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase;
-  border: none; border-radius: var(--radius-md); padding: 0 2rem; min-height: 52px; position: relative; overflow: hidden; transition: all var(--transition);
-}
-.btn.gold::after { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%); opacity: 0; transition: opacity var(--transition); }
-.btn.gold:hover::after { opacity: 1; }
-.btn.gold:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(201,169,110,0.3); }
-.btn.gold:active { transform: translateY(0); }
-
-.btn { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: var(--radius-md); min-height: 52px; padding: 0 1.5rem; font-size: 0.85rem; letter-spacing: 0.06em; transition: all var(--transition); }
-.btn:hover { border-color: var(--border-hover); color: var(--text); }
-
-.service-tabs { display:flex; background: var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:4px; gap:4px; width:fit-content; margin-bottom:1.5rem; }
-.service-btn { padding:0.5rem 1.5rem; border-radius:999px; border:none; background:transparent; color:var(--text-muted); font-size:0.8rem; letter-spacing:0.08em; text-transform:uppercase; transition:all var(--transition); cursor:pointer; }
-.service-btn.active { background: var(--gold); color:#111; font-weight:600; box-shadow: 0 2px 8px rgba(201,169,110,0.35); }
-
-.addon-item { background: var(--surface-2); border:1px solid var(--border); border-radius: var(--radius-md); padding:1rem; cursor:pointer; display:flex; align-items:center; gap:0.75rem; transition:all var(--transition); }
-.addon-item:hover { border-color: var(--border-hover); background: var(--surface-3); }
-.addon-item input[type="checkbox"] { appearance: none; width:20px; height:20px; border:1.5px solid var(--border); border-radius:4px; flex-shrink:0; transition:all var(--transition); position:relative; background:transparent; }
-.addon-item input[type="checkbox"]:checked { background: var(--gold); border-color: var(--gold); }
-.addon-item input[type="checkbox"]:checked::after { content: ''; position: absolute; top: 3px; left: 6px; width: 5px; height: 9px; border: 2px solid #111; border-top: none; border-left: none; transform: rotate(45deg); }
-
-.toggle-row label { display:flex; align-items:center; gap:0.5rem; padding:0.5rem 1.25rem; border:1px solid var(--border); border-radius:999px; cursor:pointer; font-size:0.85rem; transition:all var(--transition); color: var(--muted); }
-.toggle-row label:has(input:checked) { border-color: var(--gold); color: var(--gold); background: rgba(201, 169, 110, 0.08); }
-.toggle-row input[type="radio"] { display:none; }
-
-.geo-list { background: var(--surface-2); border:1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-lg); backdrop-filter: blur(16px); }
-.geo-list li { padding:0.75rem 1rem; font-size:0.875rem; color:var(--text-muted); border-bottom:1px solid rgba(201,169,110,0.06); transition:all var(--transition); }
-.geo-list li:hover { background: rgba(201,169,110,0.08); color:var(--text); padding-left:1.25rem; }
-
-.vehicle-card { background: var(--surface-elev); border:1px solid var(--border); border-radius: var(--radius-lg); overflow:hidden; cursor:pointer; transition:all var(--transition); position:relative; }
-.vehicle-card:hover { border-color: rgba(201,169,110,0.4); transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,0.5); }
-.vehicle-card.selected { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold), 0 12px 32px rgba(201,169,110,0.15); }
-.vehicle-media { height:180px; position:relative; overflow:hidden; }
-.vehicle-media img { transition: transform 0.4s ease; }
-.vehicle-card:hover .vehicle-media img { transform: scale(1.04); }
-
-.booking-intro { text-align:center; padding: clamp(2rem, 6vw, 5rem) var(--space-4); }
-.booking-intro h1 { font-family: var(--font-display); font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight:400; letter-spacing:0.04em; color:var(--text); margin-bottom:1rem; }
-.eyebrow { font-size:0.7rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--gold); margin-bottom:0.75rem; }
-
-.form-step h2 {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: clamp(1.5rem, 2vw, 2rem);
-  letter-spacing: 0.02em;
-  color: var(--gold-light);
-  margin-bottom: 0.5rem;
-}
-.form-step h2::after { content: ''; display:block; width:40px; height:1px; background: linear-gradient(90deg, var(--gold), transparent); margin-top:0.5rem; }
-
-@keyframes fadeSlideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-.form-step { animation: fadeSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-
-[dir="rtl"] .field select { background-position: left 1rem center !important; }
-[dir="rtl"] .form-step h2::after { margin-left: auto; background: linear-gradient(270deg, var(--gold), transparent); }
-
-.field span { font-family: var(--font-body); }
-.service-btn, .btn { font-family: var(--font-body); }
 

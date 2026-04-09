@@ -702,20 +702,86 @@
   function setServiceType(type) {
     state.serviceType = type;
     qsa('.service-btn').forEach((btn) => btn.classList.toggle('active', btn.dataset.service === type));
-    qs('#trip-panel').classList.toggle('active', type === 'trip');
-    qs('#hourly-panel').classList.toggle('active', type === 'hourly');
+
+    const tripPanel = qs('#trip-panel');
+    const hourlyPanel = qs('#hourly-panel');
+    const isTrip = type === 'trip';
+
+    if (tripPanel) {
+      tripPanel.classList.toggle('active', isTrip);
+      tripPanel.classList.toggle('hidden', !isTrip);
+      tripPanel.querySelectorAll('input, select, textarea').forEach((el) => {
+        if (el.dataset.baseRequired === undefined) {
+          el.dataset.baseRequired = el.required ? '1' : '0';
+        }
+        el.disabled = !isTrip;
+        if (!isTrip) {
+          el.required = false;
+        } else if (el.dataset.baseRequired === '1') {
+          el.required = true;
+        }
+      });
+    }
+
+    if (hourlyPanel) {
+      hourlyPanel.classList.toggle('active', !isTrip);
+      hourlyPanel.classList.toggle('hidden', isTrip);
+      hourlyPanel.querySelectorAll('input, select, textarea').forEach((el) => {
+        if (el.dataset.baseRequired === undefined) {
+          el.dataset.baseRequired = el.required ? '1' : '0';
+        }
+        el.disabled = isTrip;
+        if (isTrip) {
+          el.required = false;
+        } else if (el.dataset.baseRequired === '1') {
+          el.required = true;
+        }
+      });
+    }
+
+    // enforce transfer-type visibility/required rules after switching modes
+    setTransferType(state.transferType);
     refreshQuote({ silent: true });
   }
 
   function setTransferType(type) {
     state.transferType = type;
+    const isRoundTrip = type === 'roundtrip';
     qsa('.return-only').forEach((el) => {
       // keep existing hidden class behavior for compatibility
-      el.classList.toggle('hidden', type !== 'roundtrip');
+      el.classList.toggle('hidden', !isRoundTrip);
       // also toggle a visible class used by the CSS safety net
-      el.classList.toggle('visible', type === 'roundtrip');
+      el.classList.toggle('visible', isRoundTrip);
+
+      el.querySelectorAll('input, select, textarea').forEach((field) => {
+        field.disabled = !isRoundTrip;
+        const shouldRequire = isRoundTrip && (field.id === 'return-date' || field.id === 'return-time');
+        field.required = shouldRequire;
+      });
     });
     refreshQuote({ silent: true });
+  }
+
+  function syncAddOnQuantityVisibility() {
+    const pairs = [
+      ['#addon-child-seat', '#addon-child-seat-count'],
+      ['#addon-extra-luggage', '#addon-extra-luggage-count']
+    ];
+
+    pairs.forEach(([checkboxSelector, selectSelector]) => {
+      const checkbox = qs(checkboxSelector);
+      const select = qs(selectSelector);
+      if (!checkbox || !select) return;
+
+      const compact = select.closest('.compact');
+      if (!compact) return;
+
+      const checked = Boolean(checkbox.checked);
+      compact.classList.toggle('hidden', !checked);
+      compact.classList.toggle('visible', checked);
+      select.disabled = !checked;
+      if (!checked) select.value = '0';
+    });
   }
 
   function currentPassengers() {
@@ -1311,31 +1377,15 @@
     }
     bindClick('#new-booking-btn', () => window.location.reload());
 
-    // Add-on count visibility: show the adjacent .compact when the checkbox is checked
     qsa('#addon-child-seat, #addon-extra-luggage').forEach((cb) => {
-      if (!cb) return;
-      const updateCompact = (checked) => {
-        const container = cb.closest('.addon-item');
-        let compact = null;
-        if (container) {
-          const next = container.nextElementSibling;
-          if (next && next.classList && next.classList.contains('compact')) compact = next;
-          else if (container.parentElement) compact = container.parentElement.querySelector('.compact');
-        } else if (cb.parentElement) {
-          compact = cb.parentElement.querySelector('.compact');
-        }
-        if (compact) {
-          compact.classList.toggle('hidden', !checked);
-          compact.classList.toggle('visible', checked);
-        }
-      };
-      cb.addEventListener('change', (e) => {
-        updateCompact(e.target.checked);
+      cb.addEventListener('change', () => {
+        syncAddOnQuantityVisibility();
         refreshQuote({ silent: true });
       });
-      // initialize state on load
-      updateCompact(cb.checked);
     });
+
+    // initialize addon compact fields on load
+    syncAddOnQuantityVisibility();
 
     const trackForm = qs('#track-form');
     if (trackForm) trackForm.addEventListener('submit', lookupBooking);
@@ -1343,24 +1393,6 @@
     if (modalClose) modalClose.addEventListener('click', () => qs('#cancel-modal').classList.add('hidden'));
     const cancelConfirm = qs('#cancel-confirm-btn');
     if (cancelConfirm) cancelConfirm.addEventListener('click', cancelTrackedBooking);
-  }
-
-  /* Floating label initializer: toggles .filled on .field-float when inputs/selects have values */
-  function initFloatingLabels() {
-    qsa('.field-float').forEach((container) => {
-      const field = container.querySelector('input, textarea, select');
-      if (!field) return;
-      const update = () => {
-        const val = String(field.value || '').trim();
-        const isFilled = val !== '';
-        container.classList.toggle('filled', isFilled);
-      };
-      field.addEventListener('input', update);
-      field.addEventListener('change', update);
-      field.addEventListener('blur', update);
-      // initialize state
-      setTimeout(update, 0);
-    });
   }
 
   function initMinDates() {
@@ -1393,7 +1425,8 @@
 
     bindActions();
     bindLiveRecalculation();
-    initFloatingLabels();
+    setServiceType(state.serviceType);
+    setTransferType(state.transferType);
     bindGeoAutocomplete('pickup-location', 'pickup-suggestions', 'pickup');
     bindGeoAutocomplete('dropoff-location', 'dropoff-suggestions', 'dropoff');
     bindGeoAutocomplete('hourly-pickup', 'hourly-suggestions', 'hourly');
