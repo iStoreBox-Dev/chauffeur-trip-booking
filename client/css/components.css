@@ -398,7 +398,7 @@
 }
 
 .return-only.visible {
-  display: flex;
+  display: grid;
 }
 
 /* ── Actions row ── */
