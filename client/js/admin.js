@@ -495,6 +495,8 @@
     app.whatsapp_number.value = settings.whatsapp_number || '';
     app.enhance_journey_enabled.value = String(toBool(settings.enhance_journey_enabled, false));
     app.enhance_journey_text.value = settings.enhance_journey_text || '';
+    app.addons_enabled = app.addons_enabled || null;
+    if (app.addons_enabled) app.addons_enabled.value = String(toBool(settings.addons_enabled, true));
     app.maintenance_mode.value = String(toBool(settings.maintenance_mode, false));
     app.booking_enabled.value = String(toBool(settings.booking_enabled, true));
 
@@ -663,6 +665,8 @@
       enhance_journey_text: form.enhance_journey_text ? form.enhance_journey_text.value.trim() : '',
       maintenance_mode: form.maintenance_mode.value === 'true',
       booking_enabled: form.booking_enabled.value === 'true'
+      ,
+      addons_enabled: form.addons_enabled ? (form.addons_enabled.value === 'true') : true,
     };
     try {
       await request('/api/admin/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify(payload) });

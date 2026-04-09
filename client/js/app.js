@@ -488,6 +488,24 @@
         }
       });
     }
+
+    // Add-ons visibility and state
+    const addonsEnabled = toBool(settings.addons_enabled, true);
+    const showAddons = enhanceEnabled && addonsEnabled;
+    const addonsCard = qs('.addons-card');
+    if (addonsCard) {
+      addonsCard.classList.toggle('hidden', !showAddons);
+      const addonsTitleEl = addonsCard.querySelector('h3');
+      if (addonsTitleEl) addonsTitleEl.textContent = settings.addons_title || addonsTitleEl.textContent;
+      // Ensure add-on inputs are disabled when the section is hidden or booking is blocked
+      addonsCard.querySelectorAll('input, select, textarea, button').forEach((el) => {
+        if (!showAddons) {
+          el.disabled = true;
+        } else {
+          if (el.id !== 'maintenance-refresh') el.disabled = shouldBlockBooking;
+        }
+      });
+    }
   }
 
   async function loadSettings() {
