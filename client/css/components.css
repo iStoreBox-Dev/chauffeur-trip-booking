@@ -346,7 +346,8 @@
   gap: var(--space-2);
 }
 
-@media (max-width: 639px) {
+/* Keep date + time on one line on most screens; stack only on very narrow viewports */
+@media (max-width: 420px) {
   .field-inline {
     flex-direction: column;
   }
