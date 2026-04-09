@@ -671,10 +671,21 @@
   async function createVehicle(event) {
     event.preventDefault();
     const form = event.currentTarget;
-    const data = Object.fromEntries(new FormData(form).entries());
-    data.capacity = Number(data.capacity);
-    data.base_price = Number(data.base_price);
-    data.features = data.features ? data.features.split(',').map((s) => s.trim()).filter(Boolean) : [];
+    const msgEl = qs('#vehicle-form-message');
+    if (msgEl) { msgEl.textContent = ''; msgEl.style.color = 'var(--admin-muted)'; }
+    const raw = Object.fromEntries(new FormData(form).entries());
+    const data = { ...raw };
+    data.capacity = Number(raw.capacity) || 1;
+    // sanitize base_price: accept comma or dot decimals, remove other chars
+    const rawPrice = String(raw.base_price || '').trim().replace(/,/g, '.').replace(/[^0-9.\-]/g, '');
+    const parsedPrice = parseFloat(rawPrice);
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+      if (msgEl) { msgEl.textContent = 'Please enter a valid base price (e.g., 12.345).'; msgEl.style.color = 'var(--admin-danger)'; }
+      showAdminAlert('Please enter a valid base price.', 'error');
+      return;
+    }
+    data.base_price = Number(parsedPrice.toFixed(3));
+    data.features = raw.features ? raw.features.split(',').map((s) => s.trim()).filter(Boolean) : [];
     try {
       const res = await request('/api/vehicles', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
       form.reset();
@@ -682,6 +693,7 @@
       showAdminAlert('Vehicle created.', 'success');
       return res;
     } catch (err) {
+      if (msgEl) { msgEl.textContent = err.message || 'Unable to create vehicle.'; msgEl.style.color = 'var(--admin-danger)'; }
       showAdminAlert(err.message || 'Unable to create vehicle.', 'error');
       throw err;
     }
@@ -905,6 +917,25 @@
     qs('#user-form').addEventListener('submit', createUser);
     qs('#settings-form').addEventListener('submit', saveAppSettings);
     qs('#seo-form').addEventListener('submit', saveSeoSettings);
+    // sanitize and format base price input for vehicles
+    const vehiclePriceInput = qs('#vehicle-form input[name="base_price"]');
+    if (vehiclePriceInput) {
+      vehiclePriceInput.addEventListener('input', (e) => {
+        const v = String(e.target.value || '');
+        let cleaned = v.replace(/[^0-9.,-]/g, '').replace(/,/g, '.');
+        const parts = cleaned.split('.');
+        if (parts.length > 2) {
+          cleaned = parts.shift() + '.' + parts.join('');
+        }
+        e.target.value = cleaned;
+      });
+      vehiclePriceInput.addEventListener('blur', (e) => {
+        const val = String(e.target.value || '').trim();
+        if (!val) return;
+        const n = parseFloat(val.replace(/,/g, '.'));
+        if (Number.isFinite(n)) e.target.value = Number(n.toFixed(3));
+      });
+    }
   }
 
   bindEvents();
