@@ -23,6 +23,7 @@
     },
     settings: null,
     currencyCode: 'BHD',
+    exchangeRates: {},
     appliedPromo: null,
     quote: null,
     quoteBusy: false,
@@ -317,7 +318,51 @@
   }
 
   function money(value) {
-    return `${state.currencyCode} ${Number(value || 0).toFixed(3)}`;
+    const baseCurrency = (state.settings && state.settings.currency_code) ? state.settings.currency_code : 'BHD';
+    const target = state.currencyCode || baseCurrency;
+    const numeric = Number(value || 0);
+    if (target === baseCurrency) {
+      return `${target} ${numeric.toFixed(3)}`;
+    }
+
+    const cached = state.exchangeRates[target];
+    if (cached && typeof cached.rate === 'number') {
+      const converted = Number((numeric * cached.rate).toFixed(3));
+      return `${target} ${converted.toFixed(3)}`;
+    }
+
+    // Kick off rate fetch in background; show base amount until rate is available
+    fetchRateForCurrency(target).catch(() => {});
+    return `${baseCurrency} ${numeric.toFixed(3)}`;
+  }
+
+  async function fetchRateForCurrency(target) {
+    if (!target) return null;
+    const baseCurrency = (state.settings && state.settings.currency_code) ? state.settings.currency_code : 'BHD';
+    const t = String(target).toUpperCase();
+    if (t === baseCurrency) {
+      state.exchangeRates[t] = { rate: 1, fetchedAt: Date.now(), expiresAt: Date.now() + 3600000 };
+      return state.exchangeRates[t];
+    }
+
+    const cached = state.exchangeRates[t];
+    if (cached && cached.expiresAt && Date.now() < cached.expiresAt) return cached;
+
+    try {
+      const result = await fetchApi(`/api/currency/convert?amount=1&from=${encodeURIComponent(baseCurrency)}&to=${encodeURIComponent(t)}`, { silent: true });
+      if (!result.success) throw new Error(result.error || 'Failed to fetch rate');
+      const converted = result.data.converted;
+      const rate = converted && typeof converted.rate === 'number' ? converted.rate : (typeof converted.amount === 'number' ? converted.amount : null);
+      if (rate == null) throw new Error('Invalid rate');
+      const entry = { rate, fetchedAt: Date.now(), expiresAt: Date.now() + (60 * 60 * 1000) };
+      state.exchangeRates[t] = entry;
+      renderSummary();
+      renderVehicleGrid();
+      return entry;
+    } catch (err) {
+      console.error('Fetch rate failed', err);
+      return null;
+    }
   }
 
   function toRgbTuple(hex) {
@@ -386,6 +431,8 @@
   function setCurrency(currency) {
     state.currencyCode = currency;
     localStorage.setItem('chauffeur_currency', currency);
+    // load rate then refresh UI
+    fetchRateForCurrency(currency).catch(() => {});
     refreshQuote({ silent: true });
     renderSummary();
     renderVehicleGrid();
@@ -1433,7 +1480,12 @@
     initMinDates();
 
     await Promise.all([loadVehicles(), loadSettings(), loadPublicContactSettings()]);
-
+    // Ensure we have an exchange rate for the current currency (background if needed)
+    try {
+      await fetchRateForCurrency(state.currencyCode);
+    } catch (e) {
+      // non-fatal
+    }
     const year = qs('#footer-year');
     if (year) year.textContent = String(new Date().getFullYear());
     renderSummary();

@@ -3,6 +3,7 @@ const rateLimit = require('express-rate-limit');
 const authController = require('../controllers/authController');
 const bookingController = require('../controllers/bookingController');
 const settingsController = require('../controllers/settingsController');
+const currencyController = require('../controllers/currencyController');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { sanitizeBody, requireFields, validateBookingPayload } = require('../middleware/validate');
 
@@ -78,6 +79,8 @@ router.patch('/promo/:id/toggle', authenticate, requireRole('admin'), bookingCon
 
 // ── Geo ──────────────────────────────────────────────────────────────────
 router.get('/geo/search', bookingController.geoSearch);
+// ── Currency ───────────────────────────────────────────────────────────────
+router.get('/currency/convert', currencyController.convert);
 
 // ── Chauffeurs ───────────────────────────────────────────────────────────
 router.get('/chauffeurs', authenticate, requireRole('operator'), bookingController.listChauffeurs);
