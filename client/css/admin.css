@@ -445,6 +445,23 @@ tbody tr:hover {
   gap: 0.7rem;
 }
 
+.pricing-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.pricing-section #fixed-pricing-panel {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.pricing-section #fixed-pricing-list {
+  overflow-x: auto;
+}
+
 .form-panel,
 .list-panel,
 .detail-panel {
@@ -791,6 +808,10 @@ body.modal-open {
     grid-template-columns: 1fr;
   }
 
+  .pricing-section #fixed-pricing-panel {
+    max-width: 100%;
+  }
+
   /* Modal on mobile: full-width with some padding */
   .admin-modal-panel {
     width: 100%;
@@ -837,6 +858,31 @@ body.modal-open {
   }
 
   .section-head button {
+    width: 100%;
+  }
+
+  .pricing-section #fixed-pricing-panel {
+    max-width: 100%;
+    padding: 0.5rem;
+  }
+
+  #category-prices-container {
+    flex-direction: column !important;
+  }
+
+  #category-prices-container label {
+    width: 100%;
+  }
+
+  #category-prices-container label input {
+    width: 100%;
+  }
+
+  #fixed-pricing-form > div:last-child {
+    flex-direction: column;
+  }
+
+  #fixed-pricing-form > div:last-child button {
     width: 100%;
   }
 }
