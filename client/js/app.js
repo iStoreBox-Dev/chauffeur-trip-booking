@@ -709,7 +709,12 @@
 
   function setTransferType(type) {
     state.transferType = type;
-    qsa('.return-only').forEach((el) => el.classList.toggle('hidden', type !== 'roundtrip'));
+    qsa('.return-only').forEach((el) => {
+      // keep existing hidden class behavior for compatibility
+      el.classList.toggle('hidden', type !== 'roundtrip');
+      // also toggle a visible class used by the CSS safety net
+      el.classList.toggle('visible', type === 'roundtrip');
+    });
     refreshQuote({ silent: true });
   }
 
@@ -1305,6 +1310,25 @@
       currencyToggle.addEventListener('change', (e) => setCurrency(e.target.value));
     }
     bindClick('#new-booking-btn', () => window.location.reload());
+
+    // Add-on count visibility: show the adjacent .compact when the checkbox is checked
+    qsa('#addon-child-seat, #addon-extra-luggage').forEach((cb) => {
+      if (!cb) return;
+      const updateCompact = (checked) => {
+        const container = cb.closest('.addon-item');
+        const compact = container ? container.querySelector('.compact') : null;
+        if (compact) {
+          compact.classList.toggle('hidden', !checked);
+          compact.classList.toggle('visible', checked);
+        }
+      };
+      cb.addEventListener('change', (e) => {
+        updateCompact(e.target.checked);
+        refreshQuote({ silent: true });
+      });
+      // initialize state on load
+      updateCompact(cb.checked);
+    });
 
     const trackForm = qs('#track-form');
     if (trackForm) trackForm.addEventListener('submit', lookupBooking);
