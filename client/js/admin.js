@@ -612,6 +612,9 @@
         + state.vehicles.filter((v) => v.is_active).map((v) => `<option value="${v.id}">${v.name}</option>`).join('');
       vehicleSelect.value = currentValue;
     }
+
+    // Re-render category pricing inputs when vehicles change
+    renderCategoryPricing();
   }
 
   function renderChauffeurs() {
@@ -758,7 +761,8 @@
       }));
     }
 
-    // reset form when rendering
+    // Reset and render category pricing inputs
+    renderCategoryPricing();
     resetFixedPricingForm();
 
     // Render per-vehicle price inputs
@@ -776,6 +780,38 @@
     }
   
 
+  function renderCategoryPricing() {
+    const container = qs('#category-prices-container');
+    if (!container) return;
+
+    // Get unique categories from vehicles, maintaining order
+    const categoryOrder = ['economy', 'business', 'suv', 'van'];
+    const availableCategories = state.vehicles && state.vehicles.length
+      ? Array.from(new Set(state.vehicles.map(v => v.category).filter(Boolean)))
+        .filter(cat => categoryOrder.includes(cat))
+        .sort((a, b) => categoryOrder.indexOf(a) - categoryOrder.indexOf(b))
+      : [];
+
+    if (!availableCategories.length) {
+      container.innerHTML = '<p class="muted" style="width:100%;margin:0">No vehicles defined. Create vehicles first to set category pricing.</p>';
+      return;
+    }
+
+    const categoryLabels = {
+      economy: 'Economy',
+      business: 'Business',
+      suv: 'SUV',
+      van: 'Van'
+    };
+
+    container.innerHTML = availableCategories.map((category) => `
+      <label style="flex:1;min-width:140px">
+        ${categoryLabels[category] || category} Price (BHD)
+        <input name="price_${category}" type="number" step="0.001" min="0" placeholder="0.000" />
+      </label>
+    `).join('');
+  }
+
   function resetFixedPricingForm() {
     const form = qs('#fixed-pricing-form');
     if (!form) return;
@@ -791,10 +827,17 @@
     form.idx.value = String(idx);
     form.origin.value = Array.isArray(rule.origin) ? rule.origin.join(', ') : (rule.origin || '');
     form.destination.value = Array.isArray(rule.destination) ? rule.destination.join(', ') : (rule.destination || '');
-    form.price_economy.value = rule.prices?.economy != null ? Number(rule.prices.economy).toFixed(3) : '';
-    form.price_business.value = rule.prices?.business != null ? Number(rule.prices.business).toFixed(3) : '';
-    form.price_suv.value = rule.prices?.suv != null ? Number(rule.prices.suv).toFixed(3) : '';
-    form.price_van.value = rule.prices?.van != null ? Number(rule.prices.van).toFixed(3) : '';
+    
+    // Populate dynamic category inputs
+    const prices = rule.prices || {};
+    const categoryOrder = ['economy', 'business', 'suv', 'van'];
+    categoryOrder.forEach((category) => {
+      const el = form.querySelector(`[name="price_${category}"]`);
+      if (el && prices[category] != null) {
+        el.value = Number(prices[category]).toFixed(3);
+      }
+    });
+
     form.active.value = rule.active === false ? 'false' : 'true';
     form.note.value = rule.note || '';
     form.priority.value = rule.priority != null ? String(rule.priority) : '';
@@ -849,10 +892,7 @@
     const destinationRaw = String(form.destination.value || '').trim();
     const origin = originRaw.split(',').map((s) => s.trim()).filter(Boolean);
     const destination = destinationRaw.split(',').map((s) => s.trim()).filter(Boolean);
-    const economy = form.price_economy.value ? Number(parseFloat(String(form.price_economy.value).replace(/,/g, '.'))) : null;
-    const business = form.price_business.value ? Number(parseFloat(String(form.price_business.value).replace(/,/g, '.'))) : null;
-    const suv = form.price_suv.value ? Number(parseFloat(String(form.price_suv.value).replace(/,/g, '.'))) : null;
-    const van = form.price_van.value ? Number(parseFloat(String(form.price_van.value).replace(/,/g, '.'))) : null;
+    
     const active = form.active.value === 'true';
     const note = String(form.note.value || '').trim();
     const priority = form.priority.value ? Number(form.priority.value) : 0;
@@ -863,10 +903,18 @@
     }
 
     const rule = { origin, destination, prices: { }, active, note, priority };
-    if (Number.isFinite(economy)) rule.prices.economy = Number(economy.toFixed(3));
-    if (Number.isFinite(business)) rule.prices.business = Number(business.toFixed(3));
-    if (Number.isFinite(suv)) rule.prices.suv = Number(suv.toFixed(3));
-    if (Number.isFinite(van)) rule.prices.van = Number(van.toFixed(3));
+    
+    // Collect prices from dynamic category inputs
+    const categoryOrder = ['economy', 'business', 'suv', 'van'];
+    categoryOrder.forEach((category) => {
+      const el = form.querySelector(`[name="price_${category}"]`);
+      if (el && el.value) {
+        const value = Number(parseFloat(String(el.value).replace(/,/g, '.')));
+        if (Number.isFinite(value)) {
+          rule.prices[category] = Number(value.toFixed(3));
+        }
+      }
+    });
 
     // collect per-vehicle prices
     if (state.vehicles && state.vehicles.length) {
