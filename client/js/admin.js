@@ -32,6 +32,71 @@
   function qs(selector, ctx = document) { return ctx.querySelector(selector); }
   function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
 
+  // --- Chart debugging helpers (enable in console with `LuxeAdminEnableChartDebug()`)
+  function chartDebugLog(...args) {
+    if (!window.LUXE_ADMIN_CHART_DEBUG) return;
+    window.__LUXE_ADMIN_LOGS = window.__LUXE_ADMIN_LOGS || [];
+    window.__LUXE_ADMIN_LOGS.push({ ts: Date.now(), args });
+    try { console.debug('[LUXE-CHART-DBG]', ...args); } catch (e) { /* ignore */ }
+  }
+
+  window.LuxeAdminDumpChartLogs = function () { console.log(window.__LUXE_ADMIN_LOGS || []); return window.__LUXE_ADMIN_LOGS || []; };
+  window.LuxeAdminClearChartLogs = function () { window.__LUXE_ADMIN_LOGS = []; console.log('Luxe admin chart logs cleared'); };
+
+  window.LuxeAdminEnableChartDebug = function () {
+    if (window.LUXE_ADMIN_CHART_DEBUG) return;
+    window.LUXE_ADMIN_CHART_DEBUG = true;
+    window.__LUXE_ADMIN_LOGS = window.__LUXE_ADMIN_LOGS || [];
+    chartDebugLog('enabled');
+
+    if (window.Chart && !window.__luxe_admin_chart_wrapped) {
+      window.__luxe_admin_chart_orig = window.__luxe_admin_chart_orig || {};
+      ['update', 'resize', 'render', 'draw'].forEach((name) => {
+        if (window.Chart.prototype[name]) {
+          window.__luxe_admin_chart_orig[name] = window.Chart.prototype[name];
+          window.Chart.prototype[name] = function (...args) {
+            chartDebugLog(name, { id: this?.ctx?.canvas?.id || null, width: this?.width, height: this?.height, datasets: (this?.data?.datasets || []).length });
+            try { return window.__luxe_admin_chart_orig[name].apply(this, args); } catch (e) { chartDebugLog('error', e); throw e; }
+          };
+        }
+      });
+      window.__luxe_admin_chart_wrapped = true;
+    }
+
+    // Attach ResizeObservers to chart containers and canvases
+    try {
+      window.__luxe_admin_chart_ros = window.__luxe_admin_chart_ros || [];
+      document.querySelectorAll('.chart-box, .chart-box canvas').forEach((el, idx) => {
+        try {
+          const ro = new ResizeObserver((entries) => {
+            entries.forEach((e) => {
+              const rect = e.contentRect || e.target.getBoundingClientRect();
+              chartDebugLog('resizeObserver', { target: el.id || el.className || idx, width: rect.width, height: rect.height });
+            });
+          });
+          ro.observe(el);
+          window.__luxe_admin_chart_ros.push(ro);
+        } catch (e) { chartDebugLog('ro-error', e); }
+      });
+    } catch (e) { chartDebugLog('ro-init-error', e); }
+  };
+
+  window.LuxeAdminDisableChartDebug = function () {
+    if (!window.LUXE_ADMIN_CHART_DEBUG) return;
+    window.LUXE_ADMIN_CHART_DEBUG = false;
+    chartDebugLog('disabled');
+    if (window.__luxe_admin_chart_wrapped && window.Chart && window.__luxe_admin_chart_orig) {
+      ['update', 'resize', 'render', 'draw'].forEach((name) => {
+        if (window.__luxe_admin_chart_orig[name]) window.Chart.prototype[name] = window.__luxe_admin_chart_orig[name];
+      });
+      window.__luxe_admin_chart_wrapped = false;
+    }
+    if (window.__luxe_admin_chart_ros) {
+      window.__luxe_admin_chart_ros.forEach((r) => { try { r.disconnect(); } catch (_) {}});
+      window.__luxe_admin_chart_ros = [];
+    }
+  };
+
   function setAuthView(authenticated) {
     document.body.classList.toggle('admin-auth-locked', !authenticated);
     qs('#login-card').hidden = authenticated;
@@ -137,8 +202,10 @@
     const revenueCtx = qs('#revenue-chart');
     if (!bookingsCtx || !revenueCtx) return;
 
-    if (state.charts.bookings) state.charts.bookings.destroy();
-    if (state.charts.revenue) state.charts.revenue.destroy();
+    chartDebugLog('renderCharts start', { bookingsLen: (state.analytics.daily_bookings || []).length, revenueLen: (state.analytics.daily_revenue || []).length });
+
+    if (state.charts.bookings) { chartDebugLog('destroying bookings chart'); state.charts.bookings.destroy(); }
+    if (state.charts.revenue) { chartDebugLog('destroying revenue chart'); state.charts.revenue.destroy(); }
 
     state.charts.bookings = new Chart(bookingsCtx, {
       type: 'bar',
@@ -148,6 +215,7 @@
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
+    try { const br = bookingsCtx.getBoundingClientRect(); chartDebugLog('bookings chart created', { id: bookingsCtx.id, width: br.width, height: br.height }); } catch (e) { chartDebugLog('bookings chart created (no rect)', e); }
 
     state.charts.revenue = new Chart(revenueCtx, {
       type: 'line',
@@ -157,6 +225,7 @@
       },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
     });
+    try { const rr = revenueCtx.getBoundingClientRect(); chartDebugLog('revenue chart created', { id: revenueCtx.id, width: rr.width, height: rr.height }); } catch (e) { chartDebugLog('revenue chart created (no rect)', e); }
   }
 
   function renderBookings() {
