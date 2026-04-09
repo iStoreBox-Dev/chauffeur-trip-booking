@@ -1316,7 +1316,14 @@
       if (!cb) return;
       const updateCompact = (checked) => {
         const container = cb.closest('.addon-item');
-        const compact = container ? container.querySelector('.compact') : null;
+        let compact = null;
+        if (container) {
+          const next = container.nextElementSibling;
+          if (next && next.classList && next.classList.contains('compact')) compact = next;
+          else if (container.parentElement) compact = container.parentElement.querySelector('.compact');
+        } else if (cb.parentElement) {
+          compact = cb.parentElement.querySelector('.compact');
+        }
         if (compact) {
           compact.classList.toggle('hidden', !checked);
           compact.classList.toggle('visible', checked);
