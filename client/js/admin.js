@@ -270,41 +270,82 @@
       return passText && passStatus;
     });
 
-    qs('#bookings-body').innerHTML = rows.map((b) => `
-      <tr data-booking-row="${b.id}">
-        <td>${b.booking_ref}</td>
-        <td>${b.first_name} ${b.last_name}</td>
-        <td>${b.pickup_location || '-'}</td>
-        <td>${b.departure_date || ''} ${b.departure_time || ''}</td>
-        <td>${money(b.final_price)}</td>
-        <td>${statusBadge(b.status)}</td>
-        <td><button data-action="view-booking" data-id="${b.id}">Open</button></td>
-      </tr>
-    `).join('') || '<tr><td colspan="7">No bookings found.</td></tr>';
+    const body = qs('#bookings-body');
+    if (!body) return;
 
-    qsa('[data-action="view-booking"]').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const id = Number(btn.dataset.id);
-        // highlight selected row
-        qsa('#bookings-body tr').forEach((tr) => tr.classList.toggle('selected', Number(tr.dataset.bookingRow) === id));
-        // open detail pane
-        showBookingDetails(id).then(() => {
-          const workspace = qs('.bookings-workspace');
-          if (workspace && window.innerWidth <= 900) workspace.classList.add('detail-open');
-          // hide empty state
-          const empty = qs('#detail-empty'); if (empty) empty.style.display = 'none';
-        }).catch((_) => {});
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="8">No bookings found.</td></tr>';
+    } else {
+      body.innerHTML = rows.map((b) => `
+        <tr class="booking-row" data-booking-row="${b.id}" tabindex="0">
+          <td class="cell-ref"><div class="ref">${b.booking_ref}</div><div class="service">${b.service_type || ''}</div></td>
+          <td class="cell-customer"><div class="name">${b.first_name} ${b.last_name}</div><div class="meta">${b.email || ''}</div></td>
+          <td class="cell-service">${b.service_type || '-'}</td>
+          <td class="cell-pickup">${b.pickup_location || '-'}</td>
+          <td class="cell-date">${b.departure_date || ''} ${b.departure_time || ''}</td>
+          <td class="cell-price">${money(b.final_price)}</td>
+          <td class="cell-status">${statusBadge(b.status)}</td>
+          <td class="cell-actions"><button data-action="view-booking" data-id="${b.id}" aria-label="Open booking ${b.booking_ref}">Open</button></td>
+        </tr>
+      `).join('');
+
+      // attach row click / keyboard handlers
+      qsa('#bookings-body tr.booking-row').forEach((tr) => {
+        const id = Number(tr.dataset.bookingRow);
+        const openRow = async () => {
+          qsa('#bookings-body tr').forEach((r) => r.classList.toggle('selected', Number(r.dataset.bookingRow) === id));
+          try {
+            await showBookingDetails(id);
+            const workspace = qs('.bookings-workspace');
+            if (workspace && window.innerWidth <= 900) workspace.classList.add('detail-open');
+            const empty = qs('#detail-empty'); if (empty) empty.style.display = 'none';
+          } catch (err) { /* ignore */ }
+        };
+
+        // click on row opens detail
+        tr.addEventListener('click', (e) => {
+          // allow clicks on action buttons to bubble normally
+          if (e.target && e.target.matches('button')) return;
+          openRow();
+        });
+
+        // make Enter / Space open row for keyboard users
+        tr.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRow(); }
+        });
       });
-    });
 
-    // keep prior selection visible after re-render
+      // attach viewers for the action buttons (keeps compatibility)
+      qsa('[data-action="view-booking"]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const id = Number(btn.dataset.id);
+          e.stopPropagation();
+          qsa('#bookings-body tr').forEach((tr) => tr.classList.toggle('selected', Number(tr.dataset.bookingRow) === id));
+          showBookingDetails(id).then(() => {
+            const workspace = qs('.bookings-workspace');
+            if (workspace && window.innerWidth <= 900) workspace.classList.add('detail-open');
+            const empty = qs('#detail-empty'); if (empty) empty.style.display = 'none';
+          }).catch(() => {});
+        });
+      });
+    }
+
+    // preserve selected booking if it still exists
     if (state.selectedBooking && Number(state.selectedBooking.id)) {
       const selId = Number(state.selectedBooking.id);
       const matched = qsa('#bookings-body tr').some((tr) => Number(tr.dataset.bookingRow) === selId);
       if (matched) {
         qsa('#bookings-body tr').forEach((tr) => tr.classList.toggle('selected', Number(tr.dataset.bookingRow) === selId));
         const empty = qs('#detail-empty'); if (empty) empty.style.display = 'none';
+      } else {
+        // If the selected booking is not in the current list, keep detail visible but don't highlight any row
+        qsa('#bookings-body tr').forEach((tr) => tr.classList.remove('selected'));
+        const empty = qs('#detail-empty'); if (empty) empty.style.display = 'none';
       }
+    } else {
+      // no booking selected — show empty placeholder and hide detail
+      const detail = qs('#booking-detail'); if (detail) detail.hidden = true;
+      const empty = qs('#detail-empty'); if (empty) empty.style.display = 'flex';
     }
   }
 
@@ -417,7 +458,8 @@
     const head = qs('#booking-detail .detail-head');
     if (head) {
       const h3 = head.querySelector('h3');
-      if (h3) h3.innerHTML = `Booking ${b.booking_ref} <span class="detail-price">${money(b.final_price)}</span>`;
+      const dateStr = `${b.departure_date || ''}${b.departure_date && b.departure_time ? ' ' + b.departure_time : ''}`.trim();
+      if (h3) h3.innerHTML = `Booking ${b.booking_ref} <span class="detail-price">${money(b.final_price)}</span><small class="detail-date">${dateStr || ''}</small>`;
       // remove old badge if present
       const oldBadge = head.querySelector('.booking-status-badge');
       if (oldBadge) oldBadge.remove();

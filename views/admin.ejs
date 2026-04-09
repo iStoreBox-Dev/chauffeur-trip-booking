@@ -66,7 +66,8 @@
 
         <section class="tab-content" id="tab-bookings">
           <div class="bookings-workspace">
-            <aside class="bookings-list">
+            <!-- Left: bookings list pane (sticky filters + scrollable list) -->
+            <aside class="bookings-list-pane bookings-list" role="region" aria-label="Bookings list">
               <div class="filters sticky-filters">
                 <input id="search-bookings" placeholder="Search ref/name/email" />
                 <select id="status-filter">
@@ -81,11 +82,18 @@
                 </select>
               </div>
 
-              <div class="table-wrap compact">
+              <div class="table-wrap compact" aria-live="polite">
                 <table class="compact-table">
                   <thead>
                     <tr>
-                      <th>Ref</th><th>Name</th><th>Pickup</th><th>Date</th><th>Price</th><th>Status</th><th></th>
+                      <th>Ref</th>
+                      <th>Name</th>
+                      <th>Service</th>
+                      <th>Pickup</th>
+                      <th>Date</th>
+                      <th>Price</th>
+                      <th>Status</th>
+                      <th></th>
                     </tr>
                   </thead>
                   <tbody id="bookings-body"></tbody>
@@ -93,11 +101,12 @@
               </div>
             </aside>
 
-            <aside class="booking-detail-pane" id="booking-detail-pane">
+            <!-- Right: booking detail pane (master-detail) -->
+            <aside class="booking-detail-pane" id="booking-detail-pane" role="region" aria-label="Booking details">
               <div class="detail-empty" id="detail-empty">
                 <div style="font-size:46px;color:rgba(193,162,90,0.9)">🚘</div>
                 <h3>Select a booking to view details</h3>
-                <p class="muted">Bookings open here as a rich, operational workspace.</p>
+                <p class="muted">Select any booking on the left to view operations, assignments, and notes here.</p>
               </div>
 
               <article id="booking-detail" class="detail-panel" hidden>
@@ -106,7 +115,7 @@
                     <h3>Booking Details</h3>
                     <button id="booking-detail-close" class="btn-secondary mobile-only">Close</button>
                   </div>
-                  <div>
+                  <div class="detail-head-actions">
                     <button id="print-invoice-btn" class="btn-secondary">Print Invoice</button>
                   </div>
                 </div>
