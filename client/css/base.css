@@ -169,3 +169,29 @@ button { cursor: pointer; background: none; border: none; }
 /* Utility */
 .hidden { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }
+
+/* Skip link: visually hidden but revealed on keyboard focus for accessibility */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.skip-link:focus,
+.skip-link:active {
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  width: auto;
+  height: auto;
+  padding: 8px 12px;
+  background: var(--gold);
+  color: var(--surface);
+  border-radius: 8px;
+  z-index: 9999;
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+}
