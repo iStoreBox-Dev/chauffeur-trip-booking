@@ -1,92 +1,171 @@
+/* ============================================================
+   BASE — Design Tokens + Reset
+   Art direction: Premium luxury chauffeur → cinematic dark,
+   Palette: near-black surfaces, restrained gold accent
+   Typography: Cormorant Garamond (display) + DM Sans (body)
+   Density: spacious, generous breathing room
+   ============================================================ */
+
 :root {
-  --gold: #C9A96E;
-  --gold-light: #E2C98A;
-  --gold-dark: #A07840;
-  --surface: #0F0F0F;
-  --surface-elev: #161616;
-  --surface-2: #1C1C1C;
-  --surface-3: #242424;
-  --border: rgba(201, 169, 110, 0.15);
-  --border-hover: rgba(201, 169, 110, 0.35);
-  --text: #F0EDE8;
-  --text-muted: #8A8680;
-  --text-faint: #4A4844;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-lg: 0 16px 48px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
+  /* Gold Accent */
+  --gold:        #C9A96E;
+  --gold-light:  #E2C98A;
+  --gold-dark:   #A07840;
+  --gold-glow:   rgba(201, 169, 110, 0.18);
+  --gold-ring:   rgba(201, 169, 110, 0.30);
+
+  /* Surfaces */
+  --surface:      #0D0D0D;
+  --surface-elev: #141414;
+  --surface-2:    #1A1A1A;
+  --surface-3:    #222222;
+  --surface-4:    #2A2A2A;
+
+  /* Borders */
+  --border:       rgba(201, 169, 110, 0.13);
+  --border-hover: rgba(201, 169, 110, 0.32);
+  --border-focus: rgba(201, 169, 110, 0.65);
+
+  /* Text */
+  --text:         #F0EDE8;
+  --text-muted:   #8A8680;
+  --text-faint:   #4A4844;
+  --muted:        var(--text-muted);
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.5);
+  --shadow-md:  0 4px 20px rgba(0,0,0,0.55), 0 1px 4px rgba(0,0,0,0.35);
+  --shadow-lg:  0 20px 56px rgba(0,0,0,0.65), 0 6px 16px rgba(0,0,0,0.45);
+  --shadow-gold: 0 0 18px rgba(201, 169, 110, 0.22);
+
+  /* Radius */
   --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --transition: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  --radius-md: 10px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
 
+  /* Transitions */
+  --transition:      200ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 380ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Fonts */
   --font-display: 'Cormorant Garamond', Georgia, serif;
-  --font-body: 'DM Sans', system-ui, sans-serif;
+  --font-body:    'DM Sans', system-ui, sans-serif;
 
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
+  /* Spacing (4px base) */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-6:  24px;
+  --space-8:  32px;
   --space-12: 48px;
   --space-16: 64px;
 
+  /* Aliases */
   --bg: var(--surface);
-  --surface: var(--surface);
-  --surface-elev: var(--surface-elev);
-  --border: var(--border);
-  --text: var(--text);
-  --muted: var(--text-muted);
 }
 
+/* Light mode override */
 :root[data-theme='light'] {
-  --gold: #C9A96E;
-  --gold-light: #E2C98A;
-  --gold-dark: #A07840;
-  --surface: #ffffff;
-  --surface-elev: #f3eee6;
-  --surface-2: #f7f4ef;
-  --border: rgba(26, 26, 38, 0.12);
-  --text: #1a1a26;
-  --text-muted: #6e6a74;
+  --surface:      #FAFAF8;
+  --surface-elev: #F4EFE6;
+  --surface-2:    #EDE8DF;
+  --surface-3:    #E6E0D6;
+  --surface-4:    #DDD7CC;
+  --border:       rgba(26, 22, 14, 0.10);
+  --border-hover: rgba(160, 120, 64, 0.40);
+  --border-focus: rgba(160, 120, 64, 0.70);
+  --text:         #1A160E;
+  --text-muted:   #6B6560;
+  --text-faint:   #AAA49E;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:  0 4px 20px rgba(0,0,0,0.10);
+  --shadow-lg:  0 20px 56px rgba(0,0,0,0.14);
   --bg: var(--surface);
 }
 
+/* Arabic RTL */
 :root[lang='ar'],
 :root[dir='rtl'] {
   --font-display: 'Noto Kufi Arabic', serif;
-  --font-body: 'Noto Kufi Arabic', sans-serif;
+  --font-body:    'Noto Kufi Arabic', sans-serif;
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+  -webkit-text-size-adjust: none;
+  text-size-adjust: none;
 }
 
-html,
 body {
-  margin: 0;
-  padding: 0;
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100dvh;
 }
 
-h1,
-h2,
-h3 {
+h1, h2, h3 {
   font-family: var(--font-display);
   margin: 0;
+  line-height: 1.15;
 }
 
-a {
-  color: inherit;
+a { color: inherit; }
+
+img, picture, video { display: block; max-width: 100%; height: auto; }
+
+input, button, textarea, select { font: inherit; color: inherit; }
+
+button { cursor: pointer; background: none; border: none; }
+
+::selection {
+  background: rgba(201, 169, 110, 0.22);
+  color: var(--text);
 }
 
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Animations */
 @keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+@keyframes goldPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,169,110,0); }
+  50%       { box-shadow: 0 0 0 6px rgba(201,169,110,0.12); }
+}
+
+/* Utility */
+.hidden { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border-width: 0; }

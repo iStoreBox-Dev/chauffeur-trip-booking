@@ -1,43 +1,67 @@
+/* ============================================================
+   LAYOUT — Page-level structure
+   ============================================================ */
+
+/* ── Main booking shell ── */
 .booking-shell {
   max-width: 1440px;
   margin-inline: auto;
-  padding: clamp(36px, 6vw, 84px) var(--space-4) var(--space-16);
+  padding: clamp(32px, 5vw, 80px) var(--space-4) var(--space-16);
 }
 
+/* ── Intro section ── */
 .booking-intro {
-  max-width: 1200px;
+  max-width: 700px;
   margin: 0 auto var(--space-8);
+  text-align: center;
 }
 
 .booking-intro .eyebrow {
-  color: var(--gold);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 0.8rem;
+  margin-bottom: var(--space-3);
+  display: block;
 }
 
 .booking-intro h1 {
-  font-size: clamp(2rem, 3.4vw, 3.4rem);
-  margin: var(--space-2) 0 var(--space-3);
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 4vw, 4rem);
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: var(--text);
+  margin: 0 0 var(--space-4);
+  line-height: 1.1;
 }
 
 .booking-intro p {
-  color: var(--muted);
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  max-width: 52ch;
+  margin-inline: auto;
+  line-height: 1.7;
 }
 
+#enhance-cta {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: var(--space-2);
+}
+
+/* ── Sticky header ── */
 .site-header {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
   border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 .header-inner {
   max-width: 1320px;
   margin-inline: auto;
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-6);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -45,31 +69,33 @@
 }
 
 .brand {
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
   text-decoration: none;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.brand span {
-  color: var(--gold);
-}
+.brand span { color: var(--gold); }
 
 .header-nav {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
 .header-nav a {
   text-decoration: none;
-  color: var(--muted);
-  padding: 8px 10px;
+  color: var(--text-muted);
+  padding: 6px 12px;
   border-radius: var(--radius-md);
+  font-size: 0.83rem;
+  letter-spacing: 0.04em;
+  transition: color var(--transition);
 }
 
-.header-nav a:hover {
-  color: var(--gold);
-}
+.header-nav a:hover { color: var(--gold); }
 
 .header-tools {
   display: flex;
@@ -77,20 +103,27 @@
   align-items: center;
 }
 
+/* ── Service strip ── */
 .service-strip {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  color: var(--muted);
+  gap: var(--space-6);
+  color: var(--text-faint);
   border-top: 1px solid var(--border);
-  padding: var(--space-4);
+  padding: var(--space-5) var(--space-4);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
+/* ── Footer ── */
 .app-footer {
-  padding: var(--space-6) var(--space-4);
+  padding: var(--space-8) var(--space-4);
   text-align: center;
-  color: var(--muted);
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
 }
 
 .footer-inner {
@@ -98,18 +131,19 @@
   margin-inline: auto;
 }
 
+/* ── Track shell ── */
 .track-shell {
-  max-width: 1200px;
+  max-width: 860px;
   margin: 0 auto var(--space-8);
   padding-inline: var(--space-4);
 }
 
-.nav-toggle {
-  display: none;
-}
+/* ── Mobile nav toggle ── */
+.nav-toggle { display: none; }
 
 @media (max-width: 767px) {
   .header-inner {
+    padding: var(--space-3) var(--space-4);
     flex-wrap: wrap;
   }
 
@@ -123,6 +157,12 @@
     border: 1px solid var(--border);
     background: transparent;
     color: var(--text);
+    transition: all var(--transition);
+  }
+
+  .nav-toggle:hover {
+    border-color: var(--border-hover);
+    color: var(--gold);
   }
 
   .header-nav {
@@ -130,18 +170,18 @@
     width: 100%;
     flex-direction: column;
     align-items: flex-start;
-    background: var(--surface);
+    background: var(--surface-2);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: var(--space-3);
   }
 
-  .site-header.nav-open .header-nav {
-    display: flex;
-  }
+  .site-header.nav-open .header-nav { display: flex; }
 
   .header-tools {
     width: 100%;
     justify-content: flex-end;
   }
+
+  .booking-intro h1 { font-size: clamp(1.8rem, 7vw, 2.8rem); }
 }
