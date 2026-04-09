@@ -85,11 +85,29 @@
               <ul class="geo-list" id="dropoff-suggestions"></ul>
             </label>
             <p class="subtext" data-i18n="trip.locationHint">Select locations from the suggestion list to ensure accurate routing.</p>
-            <label class="field"><span data-i18n="fields.departureDate">Departure Date</span><input id="departure-date" type="date" required /></label>
-            <label class="field"><span data-i18n="fields.departureTime">Departure Time</span><input id="departure-time" type="time" required /></label>
+            <div class="field full trip-datetime-grid">
+              <label class="inline-item">
+                <span data-i18n="fields.departureDate">Departure Date</span>
+                <input id="departure-date" type="date" required />
+              </label>
 
-            <label class="field return-only hidden"><span data-i18n="fields.returnDate">Return Date</span><input id="return-date" type="date" /></label>
-            <label class="field return-only hidden"><span data-i18n="fields.returnTime">Return Time</span><input id="return-time" type="time" /></label>
+              <label class="inline-item">
+                <span data-i18n="fields.departureTime">Departure Time</span>
+                <input id="departure-time" type="time" required />
+              </label>
+            </div>
+
+            <div class="field full return-only trip-datetime-grid">
+              <label class="inline-item">
+                <span data-i18n="fields.returnDate">Return Date</span>
+                <input id="return-date" type="date" />
+              </label>
+
+              <label class="inline-item">
+                <span data-i18n="fields.returnTime">Return Time</span>
+                <input id="return-time" type="time" />
+              </label>
+            </div>
             <label class="field"><span data-i18n="fields.passengers">Passengers</span>
               <select id="passengers" required>
                 <option value="" data-i18n="common.select">Select</option>

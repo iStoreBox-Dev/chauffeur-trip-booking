@@ -363,6 +363,35 @@
   font-weight: 500;
 }
 
+/* ── Trip date/time grid (Point-to-Point) ── */
+.trip-datetime-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.trip-datetime-grid .inline-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.trip-datetime-grid .inline-item span {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+@media (max-width: 767px) {
+  .trip-datetime-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── Return fields (hidden by default, shown for round trip) ── */
 .return-only {
   display: none;
