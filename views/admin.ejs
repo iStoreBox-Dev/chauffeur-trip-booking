@@ -128,103 +128,50 @@
         </section>
 
         <section class="tab-content" id="tab-chauffeurs">
+          <div class="section-head">
+            <div>
+              <h3>Chauffeurs</h3>
+              <p>Manage drivers and assignments</p>
+            </div>
+            <button type="button" class="btn-primary" data-open-modal="chauffeur-modal">Add Chauffeur</button>
+          </div>
           <div class="filters">
             <input id="search-chauffeurs" placeholder="Search name/phone/email" />
           </div>
-          <div class="split">
-            <form id="chauffeur-form" class="form-panel">
-              <h3>Create Chauffeur</h3>
-              <label>Full Name<input name="full_name" required /></label>
-              <label>Phone<input name="phone" required /></label>
-              <label>Email<input name="email" type="email" /></label>
-              <label>National ID<input name="national_id" /></label>
-              <label>License Number<input name="license_number" /></label>
-              <label>License Expiry<input name="license_expiry" type="date" /></label>
-              <label>Status
-                <select name="status">
-                  <option value="available">available</option>
-                  <option value="on_trip">on_trip</option>
-                  <option value="off_duty">off_duty</option>
-                  <option value="inactive">inactive</option>
-                </select>
-              </label>
-              <label>Assigned Vehicle
-                <select name="assigned_vehicle_id" id="chauffeur-vehicle-select">
-                  <option value="">No vehicle</option>
-                </select>
-              </label>
-              <label>Notes<textarea name="notes" rows="3"></textarea></label>
-              <button type="submit">Add Chauffeur</button>
-            </form>
-            <div class="list-panel" id="chauffeur-list"></div>
-          </div>
+          <div class="list-panel" id="chauffeur-list"></div>
         </section>
 
         <section class="tab-content" id="tab-vehicles">
-          <div class="split">
-            <form id="vehicle-form" class="form-panel">
-              <h3>Create Vehicle</h3>
-              <label>Name<input name="name" required /></label>
-              <label>Model<input name="model" required /></label>
-              <label>Category
-                <select name="category" required>
-                  <option value="economy">economy</option>
-                  <option value="business">business</option>
-                  <option value="suv">suv</option>
-                  <option value="van">van</option>
-                </select>
-              </label>
-              <label>Capacity<input name="capacity" type="number" min="1" max="12" required /></label>
-              <label>Base Price (BHD)
-                <input name="base_price" type="number" step="0.001" min="0" placeholder="0.000" required class="money-input" />
-              </label>
-              <p id="vehicle-form-message" style="margin:0;padding-top:6px"></p>
-              <label>Features (comma separated)<input name="features" /></label>
-              <button type="submit">Add Vehicle</button>
-            </form>
-            <div class="list-panel" id="vehicle-list"></div>
+          <div class="section-head">
+            <div>
+              <h3>Vehicles</h3>
+              <p>Manage fleet and availability</p>
+            </div>
+            <button type="button" class="btn-primary" data-open-modal="vehicle-modal">Add Vehicle</button>
           </div>
+          <div class="list-panel" id="vehicle-list"></div>
         </section>
 
         <section class="tab-content" id="tab-promos">
-          <div class="split">
-            <form id="promo-form" class="form-panel">
-              <h3>Create Promo</h3>
-              <label>Code<input name="code" required /></label>
-              <label>Type
-                <select name="discount_type">
-                  <option value="percent">percent</option>
-                  <option value="fixed">fixed</option>
-                </select>
-              </label>
-              <label>Value<input name="discount_value" type="number" step="0.001" required /></label>
-              <label>Max Uses<input name="max_uses" type="number" min="1" /></label>
-              <label>Expires At<input name="expires_at" type="datetime-local" /></label>
-              <label>Min Amount<input name="min_amount" type="number" step="0.001" value="0" /></label>
-              <p id="promo-form-message" style="margin:0;padding-top:6px"></p>
-              <button type="submit">Add Promo</button>
-            </form>
-            <div class="list-panel" id="promo-list"></div>
+          <div class="section-head">
+            <div>
+              <h3>Promotions</h3>
+              <p>Manage discount codes</p>
+            </div>
+            <button type="button" class="btn-primary" data-open-modal="promo-modal">Add Promo</button>
           </div>
+          <div class="list-panel" id="promo-list"></div>
         </section>
 
         <section class="tab-content" id="tab-users">
-          <div class="split">
-            <form id="user-form" class="form-panel">
-              <h3>Create User</h3>
-              <label>Full Name<input name="full_name" required /></label>
-              <label>Email<input name="email" type="email" required /></label>
-              <label>Password<input name="password" type="password" required /></label>
-              <label>Role
-                <select name="role">
-                  <option value="operator">operator</option>
-                  <option value="admin">admin</option>
-                </select>
-              </label>
-              <button type="submit">Add User</button>
-            </form>
-            <div class="list-panel" id="user-list"></div>
+          <div class="section-head">
+            <div>
+              <h3>Users</h3>
+              <p>Manage admin and operator accounts</p>
+            </div>
+            <button type="button" class="btn-primary" data-open-modal="user-modal">Add User</button>
           </div>
+          <div class="list-panel" id="user-list"></div>
         </section>
         <section class="tab-content" id="tab-settings">
           <div class="split">
@@ -343,7 +290,126 @@
       </section>
 
       <%- include('partials/admin-footer') %>
-    </main>
+      <!-- Chauffeur Modal -->
+      <div class="admin-modal hidden" id="chauffeur-modal" role="dialog" aria-modal="true" aria-labelledby="chauffeur-modal-title">
+        <div class="admin-modal-backdrop" data-close-modal></div>
+        <div class="admin-modal-panel">
+          <div class="admin-modal-head">
+            <h3 id="chauffeur-modal-title">Create Chauffeur</h3>
+            <button type="button" class="icon-btn" data-close-modal aria-label="Close modal">×</button>
+          </div>
+          <div class="admin-modal-body">
+            <form id="chauffeur-form" class="form-panel">
+              <label>Full Name<input name="full_name" required /></label>
+              <label>Phone<input name="phone" required /></label>
+              <label>Email<input name="email" type="email" /></label>
+              <label>National ID<input name="national_id" /></label>
+              <label>License Number<input name="license_number" /></label>
+              <label>License Expiry<input name="license_expiry" type="date" /></label>
+              <label>Status
+                <select name="status">
+                  <option value="available">available</option>
+                  <option value="on_trip">on_trip</option>
+                  <option value="off_duty">off_duty</option>
+                  <option value="inactive">inactive</option>
+                </select>
+              </label>
+              <label>Assigned Vehicle
+                <select name="assigned_vehicle_id" id="chauffeur-vehicle-select">
+                  <option value="">No vehicle</option>
+                </select>
+              </label>
+              <label>Notes<textarea name="notes" rows="3"></textarea></label>
+              <button type="submit">Add Chauffeur</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vehicle Modal -->
+      <div class="admin-modal hidden" id="vehicle-modal" role="dialog" aria-modal="true" aria-labelledby="vehicle-modal-title">
+        <div class="admin-modal-backdrop" data-close-modal></div>
+        <div class="admin-modal-panel">
+          <div class="admin-modal-head">
+            <h3 id="vehicle-modal-title">Create Vehicle</h3>
+            <button type="button" class="icon-btn" data-close-modal aria-label="Close modal">×</button>
+          </div>
+          <div class="admin-modal-body">
+            <form id="vehicle-form" class="form-panel">
+              <label>Name<input name="name" required /></label>
+              <label>Model<input name="model" required /></label>
+              <label>Category
+                <select name="category" required>
+                  <option value="economy">economy</option>
+                  <option value="business">business</option>
+                  <option value="suv">suv</option>
+                  <option value="van">van</option>
+                </select>
+              </label>
+              <label>Capacity<input name="capacity" type="number" min="1" max="12" required /></label>
+              <label>Base Price (BHD)
+                <input name="base_price" type="number" step="0.001" min="0" placeholder="0.000" required class="money-input" />
+              </label>
+              <p id="vehicle-form-message" style="margin:0;padding-top:6px"></p>
+              <label>Features (comma separated)<input name="features" /></label>
+              <button type="submit">Add Vehicle</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Promo Modal -->
+      <div class="admin-modal hidden" id="promo-modal" role="dialog" aria-modal="true" aria-labelledby="promo-modal-title">
+        <div class="admin-modal-backdrop" data-close-modal></div>
+        <div class="admin-modal-panel">
+          <div class="admin-modal-head">
+            <h3 id="promo-modal-title">Create Promotion</h3>
+            <button type="button" class="icon-btn" data-close-modal aria-label="Close modal">×</button>
+          </div>
+          <div class="admin-modal-body">
+            <form id="promo-form" class="form-panel">
+              <label>Code<input name="code" required /></label>
+              <label>Type
+                <select name="discount_type">
+                  <option value="percent">percent</option>
+                  <option value="fixed">fixed</option>
+                </select>
+              </label>
+              <label>Value<input name="discount_value" type="number" step="0.001" required /></label>
+              <label>Max Uses<input name="max_uses" type="number" min="1" /></label>
+              <label>Expires At<input name="expires_at" type="datetime-local" /></label>
+              <label>Min Amount<input name="min_amount" type="number" step="0.001" value="0" /></label>
+              <p id="promo-form-message" style="margin:0;padding-top:6px"></p>
+              <button type="submit">Add Promo</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Modal -->
+      <div class="admin-modal hidden" id="user-modal" role="dialog" aria-modal="true" aria-labelledby="user-modal-title">
+        <div class="admin-modal-backdrop" data-close-modal></div>
+        <div class="admin-modal-panel">
+          <div class="admin-modal-head">
+            <h3 id="user-modal-title">Create User</h3>
+            <button type="button" class="icon-btn" data-close-modal aria-label="Close modal">×</button>
+          </div>
+          <div class="admin-modal-body">
+            <form id="user-form" class="form-panel">
+              <label>Full Name<input name="full_name" required /></label>
+              <label>Email<input name="email" type="email" required /></label>
+              <label>Password<input name="password" type="password" required /></label>
+              <label>Role
+                <select name="role">
+                  <option value="operator">operator</option>
+                  <option value="admin">admin</option>
+                </select>
+              </label>
+              <button type="submit">Add User</button>
+            </form>
+          </div>
+        </div>
+      </div>    </main>
   </div>
 
   <script src="/js/admin.js?v=20260408" defer></script>

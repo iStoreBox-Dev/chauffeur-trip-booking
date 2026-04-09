@@ -966,6 +966,8 @@
       form.reset();
       await loadVehicles();
       showAdminAlert('Vehicle created.', 'success');
+      const modal = qs('#vehicle-modal');
+      if (modal) closeModal(modal);
       return res;
     } catch (err) {
       if (msgEl) { msgEl.textContent = err.message || 'Unable to create vehicle.'; msgEl.style.color = 'var(--admin-danger)'; }
@@ -1011,6 +1013,8 @@
       form.reset();
       await loadChauffeurs();
       showAdminAlert('Chauffeur created.', 'success');
+      const modal = qs('#chauffeur-modal');
+      if (modal) closeModal(modal);
       return res;
     } catch (err) {
       showAdminAlert(err.message || 'Unable to create chauffeur.', 'error');
@@ -1034,6 +1038,8 @@
       showAdminAlert('Promo created.', 'success');
       form.reset();
       await loadPromos();
+      const modal = qs('#promo-modal');
+      if (modal) closeModal(modal);
       setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 3500);
     } catch (err) {
       if (msgEl) { msgEl.textContent = err.message || 'Unable to create promo.'; msgEl.style.color = 'var(--admin-danger)'; }
@@ -1062,6 +1068,8 @@
       form.reset();
       await loadUsers();
       showAdminAlert('User created.', 'success');
+      const modal = qs('#user-modal');
+      if (modal) closeModal(modal);
       return res;
     } catch (err) {
       showAdminAlert(err.message || 'Unable to create user.', 'error');
@@ -1154,6 +1162,57 @@
     }
   }
 
+  // Modal helpers
+  function openModal(modalId, opener) {
+    const modal = qs(`#${modalId}`);
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    const form = modal.querySelector('form');
+    if (form) form.reset();
+    document.body.classList.add('modal-open');
+    modal._opener = opener;
+    const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if (focusableElements.length) {
+      setTimeout(() => focusableElements[0].focus(), 50);
+    }
+  }
+
+  function closeModal(modal) {
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.classList.remove('modal-open');
+    const opener = modal._opener;
+    if (opener && typeof opener.focus === 'function') {
+      setTimeout(() => opener.focus(), 50);
+    }
+  }
+
+  function bindModalEvents() {
+    // Modal open buttons
+    qsa('[data-open-modal]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const modalId = btn.dataset.openModal;
+        openModal(modalId, btn);
+      });
+    });
+
+    // Modal close buttons and backdrop
+    qsa('[data-close-modal]').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        const modal = el.closest('.admin-modal');
+        if (modal) closeModal(modal);
+      });
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const openModal = qs('.admin-modal:not(.hidden)');
+        if (openModal) closeModal(openModal);
+      }
+    });
+  }
+
   function bindEvents() {
     qs('#login-form').addEventListener('submit', login);
     qs('#btn-logout').addEventListener('click', logout);
@@ -1218,6 +1277,7 @@
   }
 
   bindEvents();
+  bindModalEvents();
   setAuthView(false);
   qs('#admin-footer-year').textContent = String(new Date().getFullYear());
   restoreSession();
