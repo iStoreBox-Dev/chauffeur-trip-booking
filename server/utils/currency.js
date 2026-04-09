@@ -18,6 +18,10 @@ async function tryConvertHost(amount = 1, from = DEFAULT_BASE, to) {
   url.searchParams.set('from', String(from || DEFAULT_BASE).toUpperCase());
   url.searchParams.set('to', String(to).toUpperCase());
   url.searchParams.set('amount', String(amount));
+  // If an API key is provided (some deployments / forks may require one), include it
+  if (process.env.EXCHANGE_RATE_HOST_KEY) {
+    url.searchParams.set('access_key', String(process.env.EXCHANGE_RATE_HOST_KEY));
+  }
 
   const t = timeout(8000);
   try {
@@ -61,23 +65,50 @@ async function tryFrankfurter(amount = 1, from = DEFAULT_BASE, to) {
   }
 }
 
+async function tryOpenErApi(amount = 1, from = DEFAULT_BASE, to) {
+  // https://open.er-api.com/v6/latest/{BASE}
+  const url = new URL(`https://open.er-api.com/v6/latest/${String(from || DEFAULT_BASE).toUpperCase()}`);
+
+  const t = timeout(8000);
+  try {
+    const res = await fetch(url.toString(), { headers: { 'User-Agent': 'chauffeur-trip-booking/1.0' }, signal: t.signal });
+    t.clear();
+    if (!res.ok) throw new Error(`open.er-api responded ${res.status}`);
+    const data = await res.json();
+    if (data && data.rates && typeof data.rates === 'object' && data.rates[String(to).toUpperCase()] != null) {
+      const rate = Number(data.rates[String(to).toUpperCase()]);
+      const converted = Number((Number(amount || 0) * rate).toFixed(3));
+      return { amount: converted, rate };
+    }
+    throw new Error('Invalid response from open.er-api');
+  } catch (err) {
+    try { t.clear(); } catch (_) {}
+    throw err;
+  }
+}
+
 async function convert(amount = 1, from = DEFAULT_BASE, to) {
   if (!to) throw new Error('Target currency required');
   const f = String((from || DEFAULT_BASE)).toUpperCase();
   const t = String(to).toUpperCase();
   if (f === t) return { amount: Number((Number(amount || 0)).toFixed(3)), rate: 1 };
 
-  // Primary: exchangerate.host convert endpoint
+  // Primary: try open.er-api (free public provider)
   try {
-    return await tryConvertHost(amount, f, t);
+    return await tryOpenErApi(amount, f, t);
   } catch (err) {
-    // fallback: frankfurter
+    // Next try exchangerate.host (may require access key via EXCHANGE_RATE_HOST_KEY)
     try {
-      return await tryFrankfurter(amount, f, t);
+      return await tryConvertHost(amount, f, t);
     } catch (err2) {
-      // all failed
-      const e = new Error(`All rate providers failed: ${err.message}; ${err2.message}`);
-      throw e;
+      // fallback: frankfurter (limited currency set)
+      try {
+        return await tryFrankfurter(amount, f, t);
+      } catch (err3) {
+        // all failed
+        const e = new Error(`All rate providers failed: ${err.message}; ${err2.message}; ${err3.message}`);
+        throw e;
+      }
     }
   }
 }

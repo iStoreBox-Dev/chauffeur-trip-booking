@@ -37,6 +37,10 @@ const DEFAULT_SETTINGS = {
   // Fixed area-to-area pricing rules. Admin can edit via admin settings.
   // Each rule: { origin: 'bahrain', destination: 'dammam airport', price: 45, active: true, note: 'BHD' }
   fixed_area_prices: [],
+  // Named zones for multi-area pricing. Each zone: { id: 'manama', name: 'Manama', patterns: ['manama','juffair'] }
+  zones: [],
+  // Zone-to-zone pricing rules. Each rule: { origin_zone: 'manama', destination_zone: 'dammam_airport', prices: { economy: 35, business: 45 }, active: true, note: '', priority: 0 }
+  zone_prices: [],
   seo_indexable: true
 };
 

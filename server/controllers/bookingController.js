@@ -113,45 +113,82 @@ async function calculateQuote(req, payload = req.body) {
   let fixedRule = null;
   try {
     const settings = await loadMergedSettings();
-    const rules = Array.isArray(settings.fixed_area_prices)
-      ? settings.fixed_area_prices.filter((r) => {
-        if (!r) return false;
-        if (r.active === false) return false;
-        if (r.price != null && !Number.isNaN(Number(r.price))) return true;
-        if (r.prices && typeof r.prices === 'object' && Object.keys(r.prices).length > 0) return true;
-        return false;
-      })
-      : [];
     const pickupRaw = String(payload.pickup_location || '').toLowerCase();
     const dropoffRaw = String(payload.dropoff_location || '').toLowerCase();
 
-    const matchesPattern = (text, pattern) => {
-      if (!pattern) return false;
-      const p = String(pattern).trim().toLowerCase();
-      if (!p) return false;
-      if (p === '*' || p === 'any' || p === 'anywhere') return true;
-      return text.includes(p);
+    // Helper: find zone by substring patterns
+    const zones = Array.isArray(settings.zones) ? settings.zones : [];
+    const findZoneForText = (text) => {
+      if (!text) return null;
+      for (const z of zones) {
+        if (!z) continue;
+        const patterns = Array.isArray(z.patterns) ? z.patterns : (typeof z.patterns === 'string' ? z.patterns.split(',').map((s) => s.trim()) : []);
+        for (const p of patterns) {
+          if (!p) continue;
+          const pat = String(p).toLowerCase();
+          if (pat === '*' || pat === 'any' || pat === 'anywhere') return z;
+          if (text.includes(pat)) return z;
+        }
+      }
+      return null;
     };
 
-    if (serviceType === 'trip' && rules.length && pickupRaw && dropoffRaw) {
-      // Find direct matches
-      let candidates = rules.filter((r) => matchesPattern(pickupRaw, r.origin) && matchesPattern(dropoffRaw, r.destination));
-      // If none, try the reverse direction (some rules may be symmetric)
-      if (candidates.length === 0) {
-        candidates = rules.filter((r) => matchesPattern(pickupRaw, r.destination) && matchesPattern(dropoffRaw, r.origin));
-      }
-
-      if (candidates.length > 0) {
-        // Pick the most specific rule: prefer longer origin+destination pattern length, then priority if provided
-        candidates.sort((a, b) => {
-          const aLen = (String(a.origin || '').length + String(a.destination || '').length);
-          const bLen = (String(b.origin || '').length + String(b.destination || '').length);
-          if (bLen !== aLen) return bLen - aLen;
-          const aPr = Number(a.priority || 0);
-          const bPr = Number(b.priority || 0);
-          return bPr - aPr;
+    // Try zone-based pricing first (multi-area)
+    const zonePrices = Array.isArray(settings.zone_prices) ? settings.zone_prices.filter((r) => r && r.active !== false) : [];
+    if (serviceType === 'trip' && zones.length && zonePrices.length && pickupRaw && dropoffRaw) {
+      const pZone = findZoneForText(pickupRaw);
+      const dZone = findZoneForText(dropoffRaw);
+      if (pZone && dZone) {
+        // Find candidate zone-price rules
+        let candidates = zonePrices.filter((r) => {
+          if (!r) return false;
+          const origin = String(r.origin_zone || '').toLowerCase();
+          const dest = String(r.destination_zone || '').toLowerCase();
+          return (origin && dest) && ((origin === String(pZone.id).toLowerCase() && dest === String(dZone.id).toLowerCase()) || (origin === String(dZone.id).toLowerCase() && dest === String(pZone.id).toLowerCase()));
         });
-        fixedRule = candidates[0];
+        if (candidates.length > 0) {
+          candidates.sort((a, b) => Number((b.priority || 0)) - Number((a.priority || 0)));
+          fixedRule = candidates[0];
+        }
+      }
+    }
+
+    // If no zone-based rule matched, fall back to legacy fixed area rules
+    if (!fixedRule) {
+      const rules = Array.isArray(settings.fixed_area_prices)
+        ? settings.fixed_area_prices.filter((r) => {
+          if (!r) return false;
+          if (r.active === false) return false;
+          if (r.price != null && !Number.isNaN(Number(r.price))) return true;
+          if (r.prices && typeof r.prices === 'object' && Object.keys(r.prices).length > 0) return true;
+          return false;
+        })
+        : [];
+
+      const matchesPattern = (text, pattern) => {
+        if (!pattern) return false;
+        const p = String(pattern).trim().toLowerCase();
+        if (!p) return false;
+        if (p === '*' || p === 'any' || p === 'anywhere') return true;
+        return text.includes(p);
+      };
+
+      if (serviceType === 'trip' && rules.length && pickupRaw && dropoffRaw) {
+        let candidates = rules.filter((r) => matchesPattern(pickupRaw, r.origin) && matchesPattern(dropoffRaw, r.destination));
+        if (candidates.length === 0) {
+          candidates = rules.filter((r) => matchesPattern(pickupRaw, r.destination) && matchesPattern(dropoffRaw, r.origin));
+        }
+        if (candidates.length > 0) {
+          candidates.sort((a, b) => {
+            const aLen = (String(a.origin || '').length + String(a.destination || '').length);
+            const bLen = (String(b.origin || '').length + String(b.destination || '').length);
+            if (bLen !== aLen) return bLen - aLen;
+            const aPr = Number(a.priority || 0);
+            const bPr = Number(b.priority || 0);
+            return bPr - aPr;
+          });
+          fixedRule = candidates[0];
+        }
       }
     }
   } catch (e) {
