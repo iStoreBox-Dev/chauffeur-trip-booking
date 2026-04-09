@@ -1338,6 +1338,24 @@
     if (cancelConfirm) cancelConfirm.addEventListener('click', cancelTrackedBooking);
   }
 
+  /* Floating label initializer: toggles .filled on .field-float when inputs/selects have values */
+  function initFloatingLabels() {
+    qsa('.field-float').forEach((container) => {
+      const field = container.querySelector('input, textarea, select');
+      if (!field) return;
+      const update = () => {
+        const val = String(field.value || '').trim();
+        const isFilled = val !== '';
+        container.classList.toggle('filled', isFilled);
+      };
+      field.addEventListener('input', update);
+      field.addEventListener('change', update);
+      field.addEventListener('blur', update);
+      // initialize state
+      setTimeout(update, 0);
+    });
+  }
+
   function initMinDates() {
     const min = new Date(Date.now() + 86400000).toISOString().split('T')[0];
     ['#departure-date', '#return-date', '#hourly-date'].forEach((id) => {
@@ -1368,6 +1386,7 @@
 
     bindActions();
     bindLiveRecalculation();
+    initFloatingLabels();
     bindGeoAutocomplete('pickup-location', 'pickup-suggestions', 'pickup');
     bindGeoAutocomplete('dropoff-location', 'dropoff-suggestions', 'dropoff');
     bindGeoAutocomplete('hourly-pickup', 'hourly-suggestions', 'hourly');

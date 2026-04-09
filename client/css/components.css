@@ -76,9 +76,9 @@
 }
 
 .field span {
-  font-size: 0.75rem;
-  color: var(--muted);
-  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
@@ -374,14 +374,17 @@
 
 /* Floating label */
 .field-float { position:relative; }
-.field-float span { position:absolute; top:50%; left:1rem; transform: translateY(-50%); transition: all 180ms ease; pointer-events:none; color:var(--muted); font-size:0.85rem; }
+.field-float span { position:absolute; top:50%; left:1rem; transform: translateY(-50%); transition: all 180ms ease; pointer-events:none; color:var(--text-muted); font-size:0.85rem; }
+/* move label up when focused, has value, or JS marks container as filled */
 .field-float input:focus ~ span,
-.field-float input:not(:placeholder-shown) ~ span,
 .field-float textarea:focus ~ span,
-.field-float textarea:not(:placeholder-shown) ~ span {
+.field-float select:focus ~ span,
+.field-float.filled span {
   top: 8px; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold-light);
 }
-.field-float input { padding: 1.5rem 1rem 0.5rem; }
+.field-float input,
+.field-float textarea,
+.field-float select { padding: 1.5rem 1rem 0.5rem; }
 
 .btn.gold {
   background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);

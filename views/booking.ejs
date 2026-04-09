@@ -76,25 +76,24 @@
           </div>
 
           <div class="grid-2">
-            <label class="field full"><span data-i18n="fields.pickup">Pickup Location</span>
-              <input id="pickup-location" type="text" data-i18n-placeholder="placeholders.pickup" placeholder="Bahrain International Airport" required />
+            <label class="field full field-float"><input id="pickup-location" type="text" data-i18n-placeholder="placeholders.pickup" placeholder="Bahrain International Airport" required />
+              <span data-i18n="fields.pickup">Pickup Location</span>
               <ul class="geo-list" id="pickup-suggestions"></ul>
             </label>
-            <label class="field full"><span data-i18n="fields.dropoff">Dropoff Location</span>
-              <input id="dropoff-location" type="text" data-i18n-placeholder="placeholders.dropoff" placeholder="Seef District, Manama" required />
+            <label class="field full field-float"><input id="dropoff-location" type="text" data-i18n-placeholder="placeholders.dropoff" placeholder="Seef District, Manama" required />
+              <span data-i18n="fields.dropoff">Dropoff Location</span>
               <ul class="geo-list" id="dropoff-suggestions"></ul>
             </label>
             <p class="subtext" data-i18n="trip.locationHint">Select locations from the suggestion list to ensure accurate routing.</p>
             <div class="field full field-inline">
-              <label class="inline-item"><span data-i18n="fields.departureDate">Departure Date</span><input id="departure-date" type="date" required /></label>
-              <label class="inline-item"><span data-i18n="fields.departureTime">Departure Time</span><input id="departure-time" type="time" required /></label>
+              <label class="inline-item field-float"><input id="departure-date" type="date" required /><span data-i18n="fields.departureDate">Departure Date</span></label>
+              <label class="inline-item field-float"><input id="departure-time" type="time" required /><span data-i18n="fields.departureTime">Departure Time</span></label>
             </div>
             <div class="field full return-only hidden field-inline">
-              <label class="inline-item"><span data-i18n="fields.returnDate">Return Date</span><input id="return-date" type="date" /></label>
-              <label class="inline-item"><span data-i18n="fields.returnTime">Return Time</span><input id="return-time" type="time" /></label>
+              <label class="inline-item field-float"><input id="return-date" type="date" /><span data-i18n="fields.returnDate">Return Date</span></label>
+              <label class="inline-item field-float"><input id="return-time" type="time" /><span data-i18n="fields.returnTime">Return Time</span></label>
             </div>
-            <label class="field"><span data-i18n="fields.passengers">Passengers</span>
-              <select id="passengers" required>
+            <label class="field field-float"><select id="passengers" required>
                 <option value="" data-i18n="common.select">Select</option>
                 <option value="1">1</option>
                 <option value="2">2</option>
@@ -105,30 +104,32 @@
                 <option value="7">7</option>
                 <option value="8">8</option>
               </select>
+              <span data-i18n="fields.passengers">Passengers</span>
             </label>
-            <label class="field"><span data-i18n="fields.luggage">Luggage</span>
-              <select id="luggage">
+            <label class="field field-float"><select id="luggage">
                 <option value="0">0</option>
                 <option value="1">1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>
                 <option value="4">4+</option>
               </select>
+              <span data-i18n="fields.luggage">Luggage</span>
             </label>
-            <label class="field full"><span data-i18n="fields.flightNumber">Flight Number</span><input id="flight-number" type="text" data-i18n-placeholder="placeholders.flight" placeholder="GF 123" /></label>
+            <label class="field full field-float"><input id="flight-number" type="text" data-i18n-placeholder="placeholders.flight" placeholder="GF 123" />
+              <span data-i18n="fields.flightNumber">Flight Number</span>
+            </label>
           </div>
         </div>
 
         <div id="hourly-panel" class="service-panel">
           <div class="grid-2">
-            <label class="field full"><span data-i18n="fields.pickup">Pickup Location</span>
-              <input id="hourly-pickup" type="text" data-i18n-placeholder="placeholders.hourlyPickup" placeholder="Manama City Centre" />
+            <label class="field full field-float"><input id="hourly-pickup" type="text" data-i18n-placeholder="placeholders.hourlyPickup" placeholder="Manama City Centre" />
+              <span data-i18n="fields.pickup">Pickup Location</span>
               <ul class="geo-list" id="hourly-suggestions"></ul>
             </label>
-            <label class="field"><span data-i18n="fields.date">Date</span><input id="hourly-date" type="date" /></label>
-            <label class="field"><span data-i18n="fields.startTime">Start Time</span><input id="hourly-time" type="time" /></label>
-            <label class="field"><span data-i18n="fields.duration">Duration</span>
-              <select id="hourly-duration">
+            <label class="field field-float"><input id="hourly-date" type="date" /><span data-i18n="fields.date">Date</span></label>
+            <label class="field field-float"><input id="hourly-time" type="time" /><span data-i18n="fields.startTime">Start Time</span></label>
+            <label class="field field-float"><select id="hourly-duration">
                 <option value="" data-i18n="common.select">Select</option>
                 <option value="2">2 Hours</option>
                 <option value="3">3 Hours</option>
@@ -139,9 +140,9 @@
                 <option value="10">10 Hours</option>
                 <option value="12">12 Hours</option>
               </select>
+              <span data-i18n="fields.duration">Duration</span>
             </label>
-            <label class="field"><span data-i18n="fields.passengers">Passengers</span>
-              <select id="hourly-passengers">
+            <label class="field field-float"><select id="hourly-passengers">
                 <option value="" data-i18n="common.select">Select</option>
                 <option value="1">1</option>
                 <option value="2">2</option>
@@ -152,6 +153,7 @@
                 <option value="7">7</option>
                 <option value="8">8</option>
               </select>
+              <span data-i18n="fields.passengers">Passengers</span>
             </label>
           </div>
         </div>
@@ -163,22 +165,21 @@
               <input id="addon-child-seat" type="checkbox" />
               <span data-i18n="addons.childSeat">Child seat</span>
             </label>
-            <label class="field compact"><span data-i18n="addons.childSeatCount">Child seats</span>
-              <select id="addon-child-seat-count">
+            <label class="field compact field-float"><select id="addon-child-seat-count">
                 <option value="0">0</option>
                 <option value="1">1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>
                 <option value="4">4</option>
               </select>
+              <span data-i18n="addons.childSeatCount">Child seats</span>
             </label>
 
             <label class="addon-item">
               <input id="addon-extra-luggage" type="checkbox" />
               <span data-i18n="addons.extraLuggage">Extra luggage handling</span>
             </label>
-            <label class="field compact"><span data-i18n="addons.extraLuggageCount">Extra luggage pieces</span>
-              <select id="addon-extra-luggage-count">
+            <label class="field compact field-float"><select id="addon-extra-luggage-count">
                 <option value="0">0</option>
                 <option value="1">1</option>
                 <option value="2">2</option>
@@ -189,6 +190,7 @@
                 <option value="7">7</option>
                 <option value="8">8</option>
               </select>
+              <span data-i18n="addons.extraLuggageCount">Extra luggage pieces</span>
             </label>
 
             <label class="addon-item full">
@@ -216,11 +218,10 @@
       <section class="form-step hidden" id="step-3">
         <h2 data-i18n="sections.contactDetails">Contact Details</h2>
         <div class="grid-2">
-          <label class="field"><span data-i18n="fields.firstName">First Name</span><input id="first-name" type="text" required /></label>
-          <label class="field"><span data-i18n="fields.lastName">Last Name</span><input id="last-name" type="text" required /></label>
-          <label class="field full"><span data-i18n="fields.email">Email</span><input id="email" type="email" required /></label>
-          <label class="field"><span data-i18n="fields.countryCode">Country Code</span>
-            <select id="country-code">
+          <label class="field field-float"><input id="first-name" type="text" required /><span data-i18n="fields.firstName">First Name</span></label>
+          <label class="field field-float"><input id="last-name" type="text" required /><span data-i18n="fields.lastName">Last Name</span></label>
+          <label class="field full field-float"><input id="email" type="email" required /><span data-i18n="fields.email">Email</span></label>
+          <label class="field field-float"><select id="country-code">
               <option value="+973">+973 (BH)</option>
               <option value="+966">+966 (SA)</option>
               <option value="+971">+971 (AE)</option>
@@ -228,9 +229,10 @@
               <option value="+965">+965 (KW)</option>
               <option value="+968">+968 (OM)</option>
             </select>
+            <span data-i18n="fields.countryCode">Country Code</span>
           </label>
-          <label class="field"><span data-i18n="fields.phone">Phone</span><input id="phone" type="tel" required /></label>
-          <label class="field full"><span data-i18n="fields.specialRequests">Special Requests</span><textarea id="special-requests" rows="3"></textarea></label>
+          <label class="field field-float"><input id="phone" type="tel" required /><span data-i18n="fields.phone">Phone</span></label>
+          <label class="field full field-float"><textarea id="special-requests" rows="3"></textarea><span data-i18n="fields.specialRequests">Special Requests</span></label>
         </div>
         <div class="actions">
           <button class="btn" type="button" data-prev="2" data-i18n="actions.back">Back</button>
@@ -243,8 +245,8 @@
         <p id="quote-loading" class="subtext hidden" data-i18n="messages.quoteLoading">Calculating latest quote...</p>
         <div class="summary" id="summary-box"></div>
         <div class="promo-row">
-          <label class="field promo-field"><span data-i18n="fields.promoCode">Promo Code</span>
-            <input id="promo-code" type="text" data-i18n-placeholder="placeholders.promo" placeholder="WELCOME10" />
+          <label class="field promo-field field-float"><input id="promo-code" type="text" data-i18n-placeholder="placeholders.promo" placeholder="WELCOME10" />
+            <span data-i18n="fields.promoCode">Promo Code</span>
           </label>
           <div class="promo-actions">
             <button class="btn" id="apply-promo-btn" type="button" data-i18n="actions.apply">Apply</button>
@@ -279,8 +281,8 @@
       <h2 data-i18n="tracking.title">Track My Booking</h2>
       <p class="subtext" data-i18n="tracking.subtitle">Use your booking reference and email to view status and trip details.</p>
       <form id="track-form" class="grid-2">
-        <label class="field"><span data-i18n="tracking.reference">Booking Reference</span><input id="track-ref" required placeholder="LXR-ABC123" /></label>
-        <label class="field"><span data-i18n="tracking.email">Email</span><input id="track-email" type="email" required placeholder="you@example.com" /></label>
+        <label class="field field-float"><input id="track-ref" required placeholder="LXR-ABC123" /><span data-i18n="tracking.reference">Booking Reference</span></label>
+        <label class="field field-float"><input id="track-email" type="email" required placeholder="you@example.com" /><span data-i18n="tracking.email">Email</span></label>
         <div class="actions"><button class="btn gold" type="submit" data-i18n="tracking.track">Track Booking</button></div>
       </form>
       <div id="track-result" class="track-result hidden"></div>
