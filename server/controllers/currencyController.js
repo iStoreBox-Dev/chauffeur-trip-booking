@@ -11,7 +11,11 @@ async function convertEndpoint(req, res) {
     const converted = await convert(amount, from, to);
     return res.json({ converted, from, to });
   } catch (err) {
-    console.error('Currency convert failed:', err.message);
+    console.error('Currency convert failed:', err && err.stack ? err.stack : err.message);
+    // Allow a debug query param to return provider error for troubleshooting
+    if (req.query?.debug === '1' || process.env.NODE_ENV === 'development') {
+      return res.status(502).json({ error: 'Currency conversion unavailable', details: err.message });
+    }
     return res.status(502).json({ error: 'Currency conversion unavailable' });
   }
 }

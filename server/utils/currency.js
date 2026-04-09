@@ -7,47 +7,79 @@ const cache = {
   expiresAt: 0
 };
 
-async function fetchRates(base = DEFAULT_BASE, symbols = null) {
-  const normalizedBase = String((base || DEFAULT_BASE)).toUpperCase();
-  if (cache.base === normalizedBase && cache.rates && Date.now() < cache.expiresAt) {
-    return cache.rates;
-  }
-
-  const url = new URL('https://api.exchangerate.host/latest');
-  url.searchParams.set('base', normalizedBase);
-  if (symbols) url.searchParams.set('symbols', Array.isArray(symbols) ? symbols.join(',') : String(symbols));
-
-  const res = await fetch(url.toString(), { headers: { 'User-Agent': 'chauffeur-trip-booking/1.0' } });
-  if (!res.ok) {
-    throw new Error(`Rate provider responded ${res.status}`);
-  }
-
-  const data = await res.json();
-  if (!data || !data.rates) {
-    throw new Error('Invalid response from rate provider');
-  }
-
-  cache.base = normalizedBase;
-  cache.rates = data.rates;
-  cache.expiresAt = Date.now() + CACHE_TTL_MS;
-  return cache.rates;
+function timeout(ms) {
+  const ac = new AbortController();
+  const id = setTimeout(() => ac.abort(), ms);
+  return { signal: ac.signal, clear: () => clearTimeout(id) };
 }
 
-async function getRate(from = DEFAULT_BASE, to) {
-  if (!to) throw new Error('Target currency required');
-  const f = String((from || DEFAULT_BASE)).toUpperCase();
-  const t = String(to).toUpperCase();
-  if (f === t) return 1;
-  const rates = await fetchRates(f, t);
-  const rate = rates[t];
-  if (typeof rate !== 'number') throw new Error('Rate not available');
-  return rate;
+async function tryConvertHost(amount = 1, from = DEFAULT_BASE, to) {
+  const url = new URL('https://api.exchangerate.host/convert');
+  url.searchParams.set('from', String(from || DEFAULT_BASE).toUpperCase());
+  url.searchParams.set('to', String(to).toUpperCase());
+  url.searchParams.set('amount', String(amount));
+
+  const t = timeout(8000);
+  try {
+    const res = await fetch(url.toString(), { headers: { 'User-Agent': 'chauffeur-trip-booking/1.0' }, signal: t.signal });
+    t.clear();
+    if (!res.ok) throw new Error(`exchangerate.host responded ${res.status}`);
+    const data = await res.json();
+    if (data && (data.result != null || (data.info && data.info.rate != null))) {
+      const rate = data.info?.rate ?? (data.result ? Number(data.result) / Number(amount || 1) : null);
+      const converted = data.result != null ? Number(Number(data.result).toFixed(3)) : Number((Number(amount || 0) * rate).toFixed(3));
+      return { amount: converted, rate };
+    }
+    throw new Error('Invalid response from exchangerate.host');
+  } catch (err) {
+    try { t.clear(); } catch (_) {}
+    throw err;
+  }
+}
+
+async function tryFrankfurter(amount = 1, from = DEFAULT_BASE, to) {
+  // Frankfurter supports latest rates: /latest?from=USD&to=EUR
+  const url = new URL('https://api.frankfurter.app/latest');
+  url.searchParams.set('from', String(from || DEFAULT_BASE).toUpperCase());
+  url.searchParams.set('to', String(to).toUpperCase());
+
+  const t = timeout(8000);
+  try {
+    const res = await fetch(url.toString(), { headers: { 'User-Agent': 'chauffeur-trip-booking/1.0' }, signal: t.signal });
+    t.clear();
+    if (!res.ok) throw new Error(`frankfurter responded ${res.status}`);
+    const data = await res.json();
+    if (data && data.rates && typeof data.rates === 'object' && data.rates[String(to).toUpperCase()] != null) {
+      const rate = Number(data.rates[String(to).toUpperCase()]);
+      const converted = Number((Number(amount || 0) * rate).toFixed(3));
+      return { amount: converted, rate };
+    }
+    throw new Error('Invalid response from frankfurter');
+  } catch (err) {
+    try { t.clear(); } catch (_) {}
+    throw err;
+  }
 }
 
 async function convert(amount = 1, from = DEFAULT_BASE, to) {
-  const rate = await getRate(from, to);
-  const converted = Number((Number(amount || 0) * rate).toFixed(3));
-  return { amount: converted, rate };
+  if (!to) throw new Error('Target currency required');
+  const f = String((from || DEFAULT_BASE)).toUpperCase();
+  const t = String(to).toUpperCase();
+  if (f === t) return { amount: Number((Number(amount || 0)).toFixed(3)), rate: 1 };
+
+  // Primary: exchangerate.host convert endpoint
+  try {
+    return await tryConvertHost(amount, f, t);
+  } catch (err) {
+    // fallback: frankfurter
+    try {
+      return await tryFrankfurter(amount, f, t);
+    } catch (err2) {
+      // all failed
+      const e = new Error(`All rate providers failed: ${err.message}; ${err2.message}`);
+      throw e;
+    }
+  }
 }
 
 function clearCache() {
@@ -58,7 +90,5 @@ function clearCache() {
 
 module.exports = {
   convert,
-  getRate,
-  fetchRates,
   clearCache
 };
