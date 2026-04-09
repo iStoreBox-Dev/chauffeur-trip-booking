@@ -491,11 +491,14 @@ async function geoSearch(req, res) {
   try {
     const q = req.query.q;
     if (!q || String(q).trim().length < 2) return res.status(400).json({ error: msg(req, 'errors.geoQueryShort') });
+    const lang = normalizeLocale(req.query?.lang || req.headers['x-lang'] || req.locale || 'en');
     const url = new URL('https://nominatim.openstreetmap.org/search');
     url.searchParams.set('q', q);
     url.searchParams.set('format', 'jsonv2');
     url.searchParams.set('limit', '15');
-    const response = await fetch(url, { headers: { 'User-Agent': 'chauffeur-trip-booking/1.0' } });
+    // Hint Nominatim to return localized names
+    url.searchParams.set('accept-language', lang);
+    const response = await fetch(url, { headers: { 'User-Agent': 'chauffeur-trip-booking/1.0', 'Accept-Language': lang } });
     if (!response.ok) return res.status(502).json({ error: msg(req, 'errors.geoUnavailable') });
     const data = await response.json();
     return res.json({ results: data.map((item) => ({ display_name: item.display_name, lat: item.lat, lon: item.lon })) });
