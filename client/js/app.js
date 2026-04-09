@@ -394,10 +394,11 @@
   function applySettings(settings) {
     const toBool = (value, fallback = false) => {
       if (typeof value === 'boolean') return value;
+      if (typeof value === 'number') return value !== 0;
       if (typeof value === 'string') {
         const v = value.trim().toLowerCase();
-        if (v === 'true') return true;
-        if (v === 'false') return false;
+        if (['1', 'true', 'yes', 'on'].includes(v)) return true;
+        if (['0', 'false', 'no', 'off'].includes(v)) return false;
       }
       return fallback;
     };
