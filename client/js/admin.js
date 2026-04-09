@@ -735,10 +735,14 @@
     } else {
       container.innerHTML = `<table class="compact-table"><thead><tr><th>Origin</th><th>Destination</th><th>Prices</th><th>Active</th><th></th></tr></thead><tbody>${rules.map((r, i) => {
         const prices = r.prices || {};
-        const parts = ['economy','business','suv','van'].map((k) => `${k}: ${typeof prices[k] === 'number' ? prices[k].toFixed(3) : '-'} `).join('<br/>');
-        return `<tr data-idx="${i}"><td>${escapeHtml(r.origin || '')}</td><td>${escapeHtml(r.destination || '')}</td><td>${parts}</td><td>${r.active === false ? 'false' : 'true'}</td><td><button data-edit-rule="${i}">Edit</button> <button data-delete-rule="${i}">Delete</button> <button data-toggle-rule="${i}">${r.active === false ? 'Enable' : 'Disable'}</button></td></tr>`;
+        let parts = ['economy','business','suv','van'].map((k) => `${k}: ${typeof prices[k] === 'number' ? prices[k].toFixed(3) : '-'} `).join('<br/>');
+        const vehicleCount = r.vehicle_prices ? Object.keys(r.vehicle_prices).length : 0;
+        if (vehicleCount) parts += `<br/><small>Vehicles: ${vehicleCount}</small>`;
+        const originDisplay = Array.isArray(r.origin) ? r.origin.join(', ') : (r.origin || '');
+        const destDisplay = Array.isArray(r.destination) ? r.destination.join(', ') : (r.destination || '');
+        return `<tr data-idx="${i}"><td>${escapeHtml(originDisplay)}</td><td>${escapeHtml(destDisplay)}</td><td>${parts}</td><td>${r.active === false ? 'false' : 'true'}</td><td><button data-edit-rule="${i}">Edit</button> <button data-delete-rule="${i}">Delete</button> <button data-toggle-rule="${i}">${r.active === false ? 'Enable' : 'Disable'}</button></td></tr>`;
       }).join('')}</tbody></table>`;
-
+    }
       // bind actions
       qsa('[data-edit-rule]').forEach((btn) => btn.addEventListener('click', (e) => {
         const idx = Number(btn.dataset.editRule);
@@ -756,7 +760,21 @@
 
     // reset form when rendering
     resetFixedPricingForm();
-  }
+
+    // Render per-vehicle price inputs
+    const vehiclePricesList = qs('#vehicle-prices-list');
+    if (vehiclePricesList) {
+      if (!state.vehicles || !state.vehicles.length) {
+        vehiclePricesList.innerHTML = '<p class="muted">No vehicles loaded. Please refresh or create vehicles to set per-vehicle prices.</p>';
+      } else {
+        vehiclePricesList.innerHTML = state.vehicles.map((v) => `
+          <label style="display:flex;gap:8px;align-items:center"><span style="flex:1">${escapeHtml(v.name)} (${escapeHtml(v.category)})</span>
+            <input name="vehicle_price_${v.id}" data-vehicle-id="${v.id}" type="number" step="0.001" min="0" placeholder="" style="width:140px" />
+          </label>
+        `).join('');
+      }
+    }
+  
 
   function resetFixedPricingForm() {
     const form = qs('#fixed-pricing-form');
@@ -771,8 +789,8 @@
     if (!rule) return;
     const form = qs('#fixed-pricing-form');
     form.idx.value = String(idx);
-    form.origin.value = rule.origin || '';
-    form.destination.value = rule.destination || '';
+    form.origin.value = Array.isArray(rule.origin) ? rule.origin.join(', ') : (rule.origin || '');
+    form.destination.value = Array.isArray(rule.destination) ? rule.destination.join(', ') : (rule.destination || '');
     form.price_economy.value = rule.prices?.economy != null ? Number(rule.prices.economy).toFixed(3) : '';
     form.price_business.value = rule.prices?.business != null ? Number(rule.prices.business).toFixed(3) : '';
     form.price_suv.value = rule.prices?.suv != null ? Number(rule.prices.suv).toFixed(3) : '';
@@ -781,6 +799,20 @@
     form.note.value = rule.note || '';
     form.priority.value = rule.priority != null ? String(rule.priority) : '';
     form.origin.focus();
+
+    // populate per-vehicle inputs if present
+    try {
+      const vehiclePrices = rule.vehicle_prices || {};
+      if (state.vehicles && state.vehicles.length) {
+        state.vehicles.forEach((v) => {
+          const el = form.querySelector(`[name="vehicle_price_${v.id}"]`);
+          if (el) {
+            const val = vehiclePrices[String(v.id)] ?? vehiclePrices[v.id] ?? '';
+            el.value = (val != null && val !== '') ? Number(val).toFixed(3) : '';
+          }
+        });
+      }
+    } catch (e) { /* ignore */ }
   }
 
   async function deleteFixedRule(idx) {
@@ -813,8 +845,10 @@
     event.preventDefault();
     const form = event.currentTarget;
     const idx = form.idx.value === '' ? -1 : Number(form.idx.value);
-    const origin = String(form.origin.value || '').trim();
-    const destination = String(form.destination.value || '').trim();
+    const originRaw = String(form.origin.value || '').trim();
+    const destinationRaw = String(form.destination.value || '').trim();
+    const origin = originRaw.split(',').map((s) => s.trim()).filter(Boolean);
+    const destination = destinationRaw.split(',').map((s) => s.trim()).filter(Boolean);
     const economy = form.price_economy.value ? Number(parseFloat(String(form.price_economy.value).replace(/,/g, '.'))) : null;
     const business = form.price_business.value ? Number(parseFloat(String(form.price_business.value).replace(/,/g, '.'))) : null;
     const suv = form.price_suv.value ? Number(parseFloat(String(form.price_suv.value).replace(/,/g, '.'))) : null;
@@ -823,8 +857,8 @@
     const note = String(form.note.value || '').trim();
     const priority = form.priority.value ? Number(form.priority.value) : 0;
 
-    if (!origin || !destination) {
-      showAdminAlert('Origin and destination patterns are required.', 'error');
+    if (!origin.length || !destination.length) {
+      showAdminAlert('Origin and destination patterns are required. Use comma to add multiple patterns.', 'error');
       return;
     }
 
@@ -833,6 +867,20 @@
     if (Number.isFinite(business)) rule.prices.business = Number(business.toFixed(3));
     if (Number.isFinite(suv)) rule.prices.suv = Number(suv.toFixed(3));
     if (Number.isFinite(van)) rule.prices.van = Number(van.toFixed(3));
+
+    // collect per-vehicle prices
+    if (state.vehicles && state.vehicles.length) {
+      const vehiclePrices = {};
+      state.vehicles.forEach((v) => {
+        const el = form.querySelector(`[name="vehicle_price_${v.id}"]`);
+        if (!el) return;
+        const raw = String(el.value || '').trim().replace(/,/g, '.');
+        if (!raw) return;
+        const n = Number(parseFloat(raw));
+        if (Number.isFinite(n)) vehiclePrices[String(v.id)] = Number(n.toFixed(3));
+      });
+      if (Object.keys(vehiclePrices).length) rule.vehicle_prices = vehiclePrices;
+    }
 
     const rules = Array.isArray(state.settings?.fixed_area_prices) ? state.settings.fixed_area_prices.slice() : [];
     if (idx >= 0 && idx < rules.length) {

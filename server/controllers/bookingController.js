@@ -167,6 +167,10 @@ async function calculateQuote(req, payload = req.body) {
 
       const matchesPattern = (text, pattern) => {
         if (!pattern) return false;
+        // support arrays of patterns
+        if (Array.isArray(pattern)) {
+          return pattern.some((pat) => matchesPattern(text, pat));
+        }
         const p = String(pattern).trim().toLowerCase();
         if (!p) return false;
         if (p === '*' || p === 'any' || p === 'anywhere') return true;
@@ -180,8 +184,12 @@ async function calculateQuote(req, payload = req.body) {
         }
         if (candidates.length > 0) {
           candidates.sort((a, b) => {
-            const aLen = (String(a.origin || '').length + String(a.destination || '').length);
-            const bLen = (String(b.origin || '').length + String(b.destination || '').length);
+            const aOrigin = Array.isArray(a.origin) ? a.origin.join(',') : String(a.origin || '');
+            const aDest = Array.isArray(a.destination) ? a.destination.join(',') : String(a.destination || '');
+            const bOrigin = Array.isArray(b.origin) ? b.origin.join(',') : String(b.origin || '');
+            const bDest = Array.isArray(b.destination) ? b.destination.join(',') : String(b.destination || '');
+            const aLen = (aOrigin.length + aDest.length);
+            const bLen = (bOrigin.length + bDest.length);
             if (bLen !== aLen) return bLen - aLen;
             const aPr = Number(a.priority || 0);
             const bPr = Number(b.priority || 0);
@@ -195,23 +203,40 @@ async function calculateQuote(req, payload = req.body) {
     console.warn('Fixed pricing check failed:', e.message);
   }
 
-  let effectiveBasePrice = fixedRule ? Number(fixedRule.price) : Number(vehicle.base_price || 0);
-  // If fixed rule provides per-category prices, prefer that for the selected vehicle category
+  // Default to vehicle's base price, then apply fixed rule overrides in priority:
+  // 1) vehicle-specific price (rule.vehicle_prices[vehicle.id])
+  // 2) category-specific price (rule.prices[vehicle.category])
+  // 3) rule-level price (rule.price)
+  let effectiveBasePrice = Number(vehicle.base_price || 0);
   if (fixedRule) {
     try {
+      // vehicle-specific override
+      if (fixedRule.vehicle_prices && typeof fixedRule.vehicle_prices === 'object') {
+        const vidKey = String(vehicle.id);
+        const vp = fixedRule.vehicle_prices[vidKey] ?? fixedRule.vehicle_prices[vehicle.id];
+        if (vp != null && !Number.isNaN(Number(vp))) {
+          effectiveBasePrice = Number(vp);
+        }
+      }
+
+      // category-specific override
       const cat = String(vehicle.category || '').toLowerCase();
       if (fixedRule.prices && typeof fixedRule.prices === 'object') {
         const p = fixedRule.prices[cat];
         if (p != null && !Number.isNaN(Number(p))) {
-          // use category-specific price
-          // eslint-disable-next-line prefer-const
           effectiveBasePrice = Number(p);
-        } else if (fixedRule.price != null && !Number.isNaN(Number(fixedRule.price))) {
+        }
+      }
+
+      // rule-level fallback
+      if ((fixedRule.price != null && !Number.isNaN(Number(fixedRule.price)))) {
+        // if a specific override wasn't applied above, use rule.price
+        if (!fixedRule.vehicle_prices && !(fixedRule.prices && fixedRule.prices[cat] != null)) {
           effectiveBasePrice = Number(fixedRule.price);
         }
       }
     } catch (e) {
-      // swallow and keep previously determined effectiveBasePrice
+      // swallow and keep vehicle base price
     }
   }
 

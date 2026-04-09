@@ -317,6 +317,13 @@
                   <label style="flex:1">Van Price (BHD)<input name="price_van" type="number" step="0.001" min="0" placeholder="0.000" /></label>
                 </div>
 
+                <details id="vehicle-prices-collapse" style="margin-top:8px" class="muted">
+                  <summary style="cursor:pointer">Per-vehicle prices (optional) — set a fixed price for specific vehicles</summary>
+                  <div id="vehicle-prices-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+                    <!-- populated by admin.js with inputs for each vehicle -->
+                  </div>
+                </details>
+
                 <label>Active
                   <select name="active">
                     <option value="true">true</option>
