@@ -1,56 +1,26 @@
 /* Lightweight UI helpers for premium booking UX
-   - Floating labels
-   - Stepper polish (mark completed steps)
-   - Add-on tile toggle visuals
-   - Small accessibility/visual helpers
-   Loaded after /js/app.js (deferred)
+   - Stepper completion + gold line fill
+   - Add-on tile toggle visuals + count select show/hide
+   - Return-date fields show/hide on round-trip toggle
+   - Mobile nav toggle
 */
 (function(){
   'use strict';
-  const DEBUG_MODE = (typeof window !== 'undefined')
-    && (window.location.search.includes('debug=1') || localStorage.getItem('chauffeur_debug') === '1');
-  const debugLog = (...args) => {
-    if (!DEBUG_MODE) return;
-    console.log('[LUXERIDE UI DEBUG]', ...args);
-  };
 
-  function qs(sel, ctx=document){ return ctx.querySelector(sel); }
-  function qsa(sel, ctx=document){ return Array.from((ctx||document).querySelectorAll(sel)); }
+  function qs(sel, ctx){ return (ctx||document).querySelector(sel); }
+  function qsa(sel, ctx){ return Array.from((ctx||document).querySelectorAll(sel)); }
 
-  function initFloatingLabels(){
-    qsa('.field').forEach(field => {
-      const input = field.querySelector('input,textarea,select');
-      if(!input) return;
-
-      // initialize state
-      const update = ()=>{
-        const has = String(input.value||'').trim().length>0;
-        field.classList.toggle('has-value', has);
-      };
-
-      // focus styling
-      input.addEventListener('focus', ()=>{ field.classList.add('has-focus'); field.classList.add('focus-underline'); });
-      input.addEventListener('blur', ()=>{ field.classList.remove('has-focus'); setTimeout(update,0); });
-      input.addEventListener('input', update);
-
-      // run once
-      update();
-    });
-  }
-
+  /* ── Stepper ── */
   function transformStepper(){
     qsa('.step').forEach(step => {
       const spans = step.querySelectorAll('span');
       if(!spans.length) return;
       const first = spans[0];
       const label = spans[1] || null;
-      // add classes
       first.classList.add('step-pill');
       if(label) label.classList.add('step-label');
-
-      // wrap number with num/check spans if not already
       if(!first.querySelector('.num')){
-        const num = document.createElement('span'); num.className='num'; num.textContent = first.textContent.trim();
+        const num   = document.createElement('span'); num.className='num';   num.textContent = first.textContent.trim();
         const check = document.createElement('span'); check.className='check'; check.textContent='✓';
         first.textContent='';
         first.appendChild(num);
@@ -67,89 +37,123 @@
       const n = Number(s.dataset.step||0);
       s.classList.toggle('completed', n < current);
     });
+    // colour connector lines
+    qsa('.stepper .line').forEach((line, i) => {
+      line.classList.toggle('done', i < current - 1);
+    });
   }
 
   function bindStepperEvents(){
-    // when navigation buttons are clicked, update completion after app.js runs
     qsa('[data-next],[data-prev]').forEach(btn => {
-      btn.addEventListener('click', ()=> setTimeout(updateStepperCompletion, 140));
+      btn.addEventListener('click', () => setTimeout(updateStepperCompletion, 140));
     });
-
-    // observe class changes on step elements (in case app.js toggles active programmatically)
-    const observer = new MutationObserver(()=> updateStepperCompletion());
+    const observer = new MutationObserver(() => updateStepperCompletion());
     qsa('.step').forEach(el => observer.observe(el, { attributes: true, attributeFilter: ['class'] }));
   }
 
+  /* ── Add-on tiles + count select show/hide ── */
   function initAddonTiles(){
+    // Child seat
+    const cbChild = qs('#addon-child-seat');
+    const countChild = qs('#addon-child-seat-count')?.closest('.field.compact');
+    if(cbChild && countChild){
+      const sync = () => countChild.classList.toggle('visible', cbChild.checked);
+      sync();
+      cbChild.addEventListener('change', sync);
+    }
+
+    // Extra luggage
+    const cbLuggage = qs('#addon-extra-luggage');
+    const countLuggage = qs('#addon-extra-luggage-count')?.closest('.field.compact');
+    if(cbLuggage && countLuggage){
+      const sync = () => countLuggage.classList.toggle('visible', cbLuggage.checked);
+      sync();
+      cbLuggage.addEventListener('change', sync);
+    }
+
+    // General tile selected class
     qsa('.addon-item').forEach(label => {
       const cb = label.querySelector('input[type="checkbox"]');
       if(!cb) return;
-      // initialize
       label.classList.toggle('selected', !!cb.checked);
-      cb.addEventListener('change', ()=> label.classList.toggle('selected', !!cb.checked));
-      // clicking label should toggle via native behaviour; ensure keyboard works
-      label.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); cb.click(); } });
+      cb.addEventListener('change', () => label.classList.toggle('selected', !!cb.checked));
+      label.addEventListener('keydown', (e) => { if(e.key==='Enter'||e.key===' '){ e.preventDefault(); cb.click(); } });
     });
   }
 
+  /* ── Return date/time fields (round-trip toggle) ── */
+  function initReturnFieldToggle(){
+    const radios = qsa('input[name="transferType"]');
+    const returnFields = qsa('.return-only');
 
+    function syncReturnFields(){
+      const isRound = !!qs('input[name="transferType"][value="roundtrip"]:checked');
+      returnFields.forEach(el => {
+        el.classList.toggle('visible', isRound);
+        // also toggle required on inputs inside
+        el.querySelectorAll('input').forEach(inp => {
+          inp.required = isRound;
+        });
+      });
+    }
 
+    radios.forEach(r => r.addEventListener('change', syncReturnFields));
+    syncReturnFields(); // run on load
+  }
+
+  /* ── Transfer toggle pill visuals ── */
+  function initTransferToggleVisuals(){
+    qsa('.toggle-row input[type="radio"]').forEach(r => {
+      const parent = r.closest('label');
+      if(!parent) return;
+      parent.classList.toggle('selected', r.checked);
+      r.addEventListener('change', () => {
+        qsa('.toggle-row label').forEach(l => l.classList.remove('selected'));
+        parent.classList.add('selected');
+      });
+    });
+  }
+
+  /* ── Mobile nav ── */
   function initMobileNav(){
     const header = qs('.site-header');
     const toggle = qs('#nav-toggle');
-    const nav = qs('#primary-nav');
-    if(!header || !toggle || !nav) return;
-
-    toggle.addEventListener('click', ()=>{
+    if(!header || !toggle) return;
+    toggle.addEventListener('click', () => {
       const open = header.classList.toggle('nav-open');
       toggle.setAttribute('aria-expanded', String(open));
     });
-
-    qsa('#primary-nav a').forEach(link=>{
-      link.addEventListener('click', ()=>{
+    qsa('#primary-nav a').forEach(link => {
+      link.addEventListener('click', () => {
         header.classList.remove('nav-open');
         toggle.setAttribute('aria-expanded', 'false');
       });
     });
   }
 
-  function updateStickyCta(){
-    qsa('.mobile-sticky-btn').forEach(btn=>btn.classList.remove('mobile-sticky-btn'));
-    const activeStep = qs('.form-step:not(.hidden)');
-    if(!activeStep) return;
-    const target = activeStep.querySelector('.actions .btn.gold, .actions .btn.primary');
-    if(target) target.classList.add('mobile-sticky-btn');
-  }
-
-  function bindStepWatcher(){
-    const observer = new MutationObserver(()=> updateStickyCta());
-    qsa('.form-step').forEach(el=>observer.observe(el, { attributes:true, attributeFilter:['class'] }));
-    qsa('[data-next],[data-prev]').forEach(btn=>btn.addEventListener('click', ()=> setTimeout(updateStickyCta, 150)));
-    updateStickyCta();
-  }
-
-  function initTransferToggleVisuals(){
-    qsa('.toggle-row input[type="radio"]').forEach(r => {
-      const parent = r.closest('label');
-      if(!parent) return;
-      parent.classList.toggle('selected', r.checked);
-      r.addEventListener('change', ()=>{
-        qsa('.toggle-row label').forEach(l=>l.classList.remove('selected'));
-        parent.classList.add('selected');
-      });
+  /* ── Floating label state ── */
+  function initFloatingLabels(){
+    qsa('.field').forEach(field => {
+      const input = field.querySelector('input,textarea,select');
+      if(!input) return;
+      const update = () => field.classList.toggle('has-value', String(input.value||'').trim().length > 0);
+      input.addEventListener('focus',  () => field.classList.add('has-focus'));
+      input.addEventListener('blur',   () => { field.classList.remove('has-focus'); setTimeout(update, 0); });
+      input.addEventListener('input',  update);
+      update();
     });
   }
 
-  document.addEventListener('DOMContentLoaded', ()=>{
-    try{
+  document.addEventListener('DOMContentLoaded', () => {
+    try {
       initFloatingLabels();
       transformStepper();
       updateStepperCompletion();
       bindStepperEvents();
       initAddonTiles();
+      initReturnFieldToggle();
       initTransferToggleVisuals();
       initMobileNav();
-      bindStepWatcher();
-    }catch(e){ console.error('UI helper init failed', e); }
+    } catch(e){ console.error('UI helper init failed', e); }
   });
 })();
