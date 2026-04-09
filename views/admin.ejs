@@ -243,46 +243,14 @@
         </section>
 
         <section class="tab-content" id="tab-pricing">
-          <div class="pricing-section">
-            <section id="fixed-pricing-panel" class="form-panel">
+          <div class="section-head">
+            <div>
               <h3>Fixed Area Pricing</h3>
-              <p class="muted">Define origin → destination fixed fares per vehicle category. Use simple substrings (e.g., "bahrain", "dammam airport").</p>
-
-              <div id="fixed-pricing-list" style="margin-bottom:12px">
-                <!-- Filled by admin.js -->
-              </div>
-
-              <form id="fixed-pricing-form">
-                <input type="hidden" name="idx" />
-                <label>Origin pattern<input name="origin" placeholder="e.g. bahrain or manama" /></label>
-                <label>Destination pattern<input name="destination" placeholder="e.g. dammam or dammam airport" /></label>
-
-                <div id="category-prices-container" style="display:flex;gap:8px;flex-wrap:wrap">
-                  <!-- Dynamically populated by admin.js based on vehicles in database -->
-                </div>
-
-                <details id="vehicle-prices-collapse" style="margin-top:8px" class="muted">
-                  <summary style="cursor:pointer">Per-vehicle prices (optional) — set a fixed price for specific vehicles</summary>
-                  <div id="vehicle-prices-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
-                    <!-- populated by admin.js with inputs for each vehicle -->
-                  </div>
-                </details>
-
-                <label>Active
-                  <select name="active">
-                    <option value="true">true</option>
-                    <option value="false">false</option>
-                  </select>
-                </label>
-                <label>Note<input name="note" placeholder="Optional note shown to users" /></label>
-                <label>Priority<input name="priority" type="number" min="0" placeholder="0" /></label>
-                <div style="display:flex;gap:8px;margin-top:8px">
-                  <button type="submit" class="btn">Save Rule</button>
-                  <button type="button" id="fixed-pricing-reset" class="btn">Reset</button>
-                </div>
-              </form>
-            </section>
+              <p>Define origin → destination fixed fares per vehicle category</p>
+            </div>
+            <button type="button" class="btn-primary" data-open-modal="pricing-modal">Add Pricing Rule</button>
           </div>
+          <div class="list-panel" id="fixed-pricing-list"></div>
         </section>
       </section>
 
@@ -406,7 +374,50 @@
             </form>
           </div>
         </div>
-      </div>    </main>
+      </div>
+
+      <!-- Pricing Modal -->
+      <div class="admin-modal hidden" id="pricing-modal" role="dialog" aria-modal="true" aria-labelledby="pricing-modal-title">
+        <div class="admin-modal-backdrop" data-close-modal></div>
+        <div class="admin-modal-panel admin-modal-lg">
+          <div class="admin-modal-head">
+            <h3 id="pricing-modal-title">Add Pricing Rule</h3>
+            <button type="button" class="icon-btn" data-close-modal aria-label="Close modal">×</button>
+          </div>
+          <div class="admin-modal-body">
+            <form id="fixed-pricing-form" class="form-panel">
+              <input type="hidden" name="idx" />
+              <label>Origin pattern<input name="origin" placeholder="e.g. bahrain or manama" required /></label>
+              <label>Destination pattern<input name="destination" placeholder="e.g. dammam or dammam airport" required /></label>
+
+              <div id="category-prices-container" style="display:flex;gap:8px;flex-wrap:wrap">
+                <!-- Dynamically populated by admin.js based on vehicles in database -->
+              </div>
+
+              <details id="vehicle-prices-collapse" style="margin-top:8px" class="muted">
+                <summary style="cursor:pointer">Per-vehicle prices (optional) — set a fixed price for specific vehicles</summary>
+                <div id="vehicle-prices-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+                  <!-- populated by admin.js with inputs for each vehicle -->
+                </div>
+              </details>
+
+              <label>Active
+                <select name="active">
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </label>
+              <label>Note<input name="note" placeholder="Optional note shown to users" /></label>
+              <label>Priority<input name="priority" type="number" min="0" placeholder="0" /></label>
+              <div style="display:flex;gap:8px;margin-top:12px">
+                <button type="submit" class="btn-primary">Save Rule</button>
+                <button type="button" class="btn-secondary" data-close-modal>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
   </div>
 
   <script src="/js/admin.js?v=20260408" defer></script>

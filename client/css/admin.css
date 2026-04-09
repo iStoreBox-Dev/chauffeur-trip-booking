@@ -67,6 +67,27 @@ body {
 
 .booking-status-badge { vertical-align: middle; }
 
+.badge {
+  display: inline-block;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.85em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-success {
+  background: rgba(76, 175, 80, 0.18);
+  color: #90ee90;
+  border: 1px solid rgba(76, 175, 80, 0.35);
+}
+
+.badge-secondary {
+  background: rgba(156, 156, 156, 0.18);
+  color: #b0b0b0;
+  border: 1px solid rgba(156, 156, 156, 0.35);
+}
+
 .tab-btn.active,
 .tab-btn:hover {
   background: var(--admin-surface);
@@ -445,23 +466,6 @@ tbody tr:hover {
   gap: 0.7rem;
 }
 
-.pricing-section {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-}
-
-.pricing-section #fixed-pricing-panel {
-  width: 100%;
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.pricing-section #fixed-pricing-list {
-  overflow-x: auto;
-}
-
 .form-panel,
 .list-panel,
 .detail-panel {
@@ -474,6 +478,29 @@ tbody tr:hover {
   background: #151b23;
   padding: 0.55rem;
   margin-bottom: 0.5rem;
+}
+
+.list-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.list-item-head > div {
+  flex: 1;
+}
+
+.list-item-actions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.list-item-actions button {
+  flex: 1;
+  min-width: 80px;
 }
 
 .list-item p,
@@ -808,10 +835,6 @@ body.modal-open {
     grid-template-columns: 1fr;
   }
 
-  .pricing-section #fixed-pricing-panel {
-    max-width: 100%;
-  }
-
   /* Modal on mobile: full-width with some padding */
   .admin-modal-panel {
     width: 100%;
@@ -859,11 +882,6 @@ body.modal-open {
 
   .section-head button {
     width: 100%;
-  }
-
-  .pricing-section #fixed-pricing-panel {
-    max-width: 100%;
-    padding: 0.5rem;
   }
 
   #category-prices-container {

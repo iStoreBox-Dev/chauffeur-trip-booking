@@ -736,15 +736,32 @@
     if (!rules.length) {
       container.innerHTML = '<p class="muted">No fixed pricing rules defined.</p>';
     } else {
-      container.innerHTML = `<table class="compact-table"><thead><tr><th>Origin</th><th>Destination</th><th>Prices</th><th>Active</th><th></th></tr></thead><tbody>${rules.map((r, i) => {
+      container.innerHTML = rules.map((r, i) => {
         const prices = r.prices || {};
-        let parts = ['economy','business','suv','van'].map((k) => `${k}: ${typeof prices[k] === 'number' ? prices[k].toFixed(3) : '-'} `).join('<br/>');
+        const priceStr = ['economy','business','suv','van'].map((k) => `${k}: ${typeof prices[k] === 'number' ? prices[k].toFixed(2) : '-'}`).join(' • ');
         const vehicleCount = r.vehicle_prices ? Object.keys(r.vehicle_prices).length : 0;
-        if (vehicleCount) parts += `<br/><small>Vehicles: ${vehicleCount}</small>`;
         const originDisplay = Array.isArray(r.origin) ? r.origin.join(', ') : (r.origin || '');
         const destDisplay = Array.isArray(r.destination) ? r.destination.join(', ') : (r.destination || '');
-        return `<tr data-idx="${i}"><td>${escapeHtml(originDisplay)}</td><td>${escapeHtml(destDisplay)}</td><td>${parts}</td><td>${r.active === false ? 'false' : 'true'}</td><td><button data-edit-rule="${i}">Edit</button> <button data-delete-rule="${i}">Delete</button> <button data-toggle-rule="${i}">${r.active === false ? 'Enable' : 'Disable'}</button></td></tr>`;
-      }).join('')}</tbody></table>`;
+        const statusLabel = r.active === false ? 'Inactive' : 'Active';
+        const statusClass = r.active === false ? 'badge-secondary' : 'badge-success';
+        return `
+          <div class="list-item" data-idx="${i}">
+            <div class="list-item-head">
+              <div>
+                <div style="font-weight:600">${escapeHtml(originDisplay)} → ${escapeHtml(destDisplay)}</div>
+                <div class="muted" style="font-size:0.9em;margin-top:4px"><strong>Prices:</strong> ${priceStr}${vehicleCount > 0 ? ` • <strong>${vehicleCount}</strong> vehicle-specific prices` : ''}</div>
+                ${r.note ? `<div class="muted" style="font-size:0.9em;margin-top:2px"><strong>Note:</strong> ${escapeHtml(r.note)}</div>` : ''}
+              </div>
+              <span class="badge ${statusClass}">${statusLabel}</span>
+            </div>
+            <div class="list-item-actions">
+              <button type="button" class="btn-secondary" data-edit-rule="${i}">Edit</button>
+              <button type="button" class="btn-danger" data-delete-rule="${i}">Delete</button>
+              <button type="button" class="btn-secondary" data-toggle-rule="${i}">${r.active === false ? 'Enable' : 'Disable'}</button>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
       // bind actions
       qsa('[data-edit-rule]').forEach((btn) => btn.addEventListener('click', (e) => {
@@ -841,7 +858,6 @@
     form.active.value = rule.active === false ? 'false' : 'true';
     form.note.value = rule.note || '';
     form.priority.value = rule.priority != null ? String(rule.priority) : '';
-    form.origin.focus();
 
     // populate per-vehicle inputs if present
     try {
@@ -856,6 +872,10 @@
         });
       }
     } catch (e) { /* ignore */ }
+
+    // Open the modal
+    openModal('pricing-modal', qs('[data-open-modal="pricing-modal"]'));
+    form.origin.focus();
   }
 
   async function deleteFixedRule(idx) {
@@ -938,6 +958,8 @@
     }
 
     await updateFixedAreaPrices(rules);
+    const modal = qs('#pricing-modal');
+    if (modal) closeModal(modal);
     resetFixedPricingForm();
   }
 
@@ -1219,6 +1241,16 @@
     if (form) form.reset();
     document.body.classList.add('modal-open');
     modal._opener = opener;
+    
+    // Update pricing modal title based on whether we're editing or creating
+    if (modalId === 'pricing-modal') {
+      const titleEl = modal.querySelector('#pricing-modal-title');
+      const idx = form && form.idx ? Number(form.idx.value) : -1;
+      if (titleEl) {
+        titleEl.textContent = (idx >= 0) ? 'Edit Pricing Rule' : 'Add Pricing Rule';
+      }
+    }
+    
     const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
     if (focusableElements.length) {
       setTimeout(() => focusableElements[0].focus(), 50);
