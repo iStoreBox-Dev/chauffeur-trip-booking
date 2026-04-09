@@ -32,6 +32,33 @@
   function qs(selector, ctx = document) { return ctx.querySelector(selector); }
   function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
 
+  // Admin alert helper
+  function showAdminAlert(message, type = 'info', title = '') {
+    const container = document.getElementById('admin-alert-container');
+    if (!container) return;
+
+    const icons = { error: '❌', success: '✅', warning: '⚠️', info: 'ℹ️' };
+    const alertId = `admin-alert-${Date.now()}`;
+    const alert = document.createElement('div');
+    alert.className = `alert ${type}`;
+    alert.id = alertId;
+    alert.setAttribute('role', 'alert');
+    alert.innerHTML = `
+      <span class="alert-icon">${icons[type] || ''}</span>
+      <div class="alert-content">
+        <div class="alert-title">${title || (type === 'error' ? 'Error' : type === 'success' ? 'Success' : '')}</div>
+        <div class="alert-message">${String(message || '')}</div>
+      </div>
+      <button class="alert-close" type="button" aria-label="Close alert">×</button>
+    `;
+
+    container.appendChild(alert);
+    const closeBtn = alert.querySelector('.alert-close');
+    const removeAlert = () => { if (alert.parentNode) alert.remove(); };
+    closeBtn.addEventListener('click', removeAlert);
+    if (type !== 'error') setTimeout(removeAlert, 5000);
+  }
+
   // --- Chart debugging helpers (enable in console with `LuxeAdminEnableChartDebug()`)
   function chartDebugLog(...args) {
     if (!window.LUXE_ADMIN_CHART_DEBUG) return;
@@ -643,36 +670,65 @@
 
   async function createVehicle(event) {
     event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const form = event.currentTarget;
+    const data = Object.fromEntries(new FormData(form).entries());
     data.capacity = Number(data.capacity);
     data.base_price = Number(data.base_price);
     data.features = data.features ? data.features.split(',').map((s) => s.trim()).filter(Boolean) : [];
-    await request('/api/vehicles', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
-    event.currentTarget.reset();
-    await loadVehicles();
+    try {
+      const res = await request('/api/vehicles', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
+      form.reset();
+      await loadVehicles();
+      showAdminAlert('Vehicle created.', 'success');
+      return res;
+    } catch (err) {
+      showAdminAlert(err.message || 'Unable to create vehicle.', 'error');
+      throw err;
+    }
   }
 
   async function toggleVehicle(id) {
     const v = state.vehicles.find((x) => x.id === id);
     if (!v) return;
-    await request(`/api/vehicles/${id}`, {
-      method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ...v, is_active: !v.is_active, features: v.features || [] })
-    });
-    await loadVehicles();
+    try {
+      const updated = await request(`/api/vehicles/${id}`, {
+        method: 'PUT', headers: authHeaders(), body: JSON.stringify({ ...v, is_active: !v.is_active, features: v.features || [] })
+      });
+      await loadVehicles();
+      showAdminAlert(`Vehicle ${updated.vehicle?.is_active ? 'activated' : 'deactivated'}.`, 'success');
+      return updated;
+    } catch (err) {
+      showAdminAlert(err.message || 'Unable to toggle vehicle.', 'error');
+      throw err;
+    }
   }
 
   async function deleteVehicle(id) {
-    await request(`/api/vehicles/${id}`, { method: 'DELETE', headers: authHeaders() });
-    await loadVehicles();
+    try {
+      await request(`/api/vehicles/${id}`, { method: 'DELETE', headers: authHeaders() });
+      await loadVehicles();
+      showAdminAlert('Vehicle deleted.', 'success');
+    } catch (err) {
+      showAdminAlert(err.message || 'Unable to delete vehicle.', 'error');
+      throw err;
+    }
   }
 
   async function createChauffeur(event) {
     event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const form = event.currentTarget;
+    const data = Object.fromEntries(new FormData(form).entries());
     data.assigned_vehicle_id = data.assigned_vehicle_id ? Number(data.assigned_vehicle_id) : null;
-    await request('/api/chauffeurs', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
-    event.currentTarget.reset();
-    await loadChauffeurs();
+    try {
+      const res = await request('/api/chauffeurs', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
+      form.reset();
+      await loadChauffeurs();
+      showAdminAlert('Chauffeur created.', 'success');
+      return res;
+    } catch (err) {
+      showAdminAlert(err.message || 'Unable to create chauffeur.', 'error');
+      throw err;
+    }
   }
 
   async function createPromo(event) {
@@ -688,31 +744,54 @@
       data.expires_at = data.expires_at ? new Date(data.expires_at).toISOString() : null;
       const created = await request('/api/promo', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
       if (msgEl) { msgEl.textContent = 'Promo created.'; msgEl.style.color = 'var(--admin-success)'; }
+      showAdminAlert('Promo created.', 'success');
       form.reset();
       await loadPromos();
       setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 3500);
     } catch (err) {
       if (msgEl) { msgEl.textContent = err.message || 'Unable to create promo.'; msgEl.style.color = 'var(--admin-danger)'; }
-      else alert(err.message || 'Unable to create promo.');
+      showAdminAlert(err.message || 'Unable to create promo.', 'error');
     }
   }
 
   async function togglePromo(id) {
-    await request(`/api/promo/${id}/toggle`, { method: 'PATCH', headers: authHeaders(), body: '{}' });
-    await loadPromos();
+    try {
+      const res = await request(`/api/promo/${id}/toggle`, { method: 'PATCH', headers: authHeaders(), body: '{}' });
+      await loadPromos();
+      showAdminAlert(`Promo ${res.promo?.is_active ? 'enabled' : 'disabled'}.`, 'success');
+      return res;
+    } catch (err) {
+      showAdminAlert(err.message || 'Unable to toggle promo.', 'error');
+      throw err;
+    }
   }
 
   async function createUser(event) {
     event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.currentTarget).entries());
-    await request('/api/admin/users', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
-    event.currentTarget.reset();
-    await loadUsers();
+    const form = event.currentTarget;
+    const data = Object.fromEntries(new FormData(form).entries());
+    try {
+      const res = await request('/api/admin/users', { method: 'POST', headers: authHeaders(), body: JSON.stringify(data) });
+      form.reset();
+      await loadUsers();
+      showAdminAlert('User created.', 'success');
+      return res;
+    } catch (err) {
+      showAdminAlert(err.message || 'Unable to create user.', 'error');
+      throw err;
+    }
   }
 
   async function toggleUser(id) {
-    await request(`/api/admin/users/${id}/toggle`, { method: 'PATCH', headers: authHeaders(), body: '{}' });
-    await loadUsers();
+    try {
+      const res = await request(`/api/admin/users/${id}/toggle`, { method: 'PATCH', headers: authHeaders(), body: '{}' });
+      await loadUsers();
+      showAdminAlert('User status updated.', 'success');
+      return res;
+    } catch (err) {
+      showAdminAlert(err.message || 'Unable to toggle user.', 'error');
+      throw err;
+    }
   }
 
   async function saveAppSettings(event) {
