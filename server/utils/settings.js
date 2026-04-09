@@ -34,6 +34,9 @@ const DEFAULT_SETTINGS = {
   enhance_journey_text: 'Enhance Your Journey',
   addons_enabled: true,
   addons_title: 'Enhance Your Journey',
+  // Fixed area-to-area pricing rules. Admin can edit via admin settings.
+  // Each rule: { origin: 'bahrain', destination: 'dammam airport', price: 45, active: true, note: 'BHD' }
+  fixed_area_prices: [],
   seo_indexable: true
 };
 

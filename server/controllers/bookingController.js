@@ -11,6 +11,7 @@ const {
 const { sendBookingConfirmation, sendBookingCancellation, sendBookingAssigned } = require('../utils/email');
 const { notifyWhatsapp } = require('../utils/whatsapp');
 const { t, normalizeLocale } = require('../utils/i18n');
+const { loadMergedSettings } = require('../utils/settings');
 const mockDb = require('../utils/mockDb');
 
 const USE_MOCK_DB = process.env.USE_MOCK_DB === 'true';
@@ -108,10 +109,79 @@ async function calculateQuote(req, payload = req.body) {
   const vehicle = await findVehicle(payload.vehicle_id, false);
   if (!vehicle) return { error: msg(req, 'errors.invalidVehicle'), status: 400 };
   const normalizedAddOns = normalizeAddOns(payload.add_ons || {});
-  const baseQuote = calcBookingQuote({ serviceType, vehicleBasePrice: vehicle.base_price, hourlyDuration: payload.hourly_duration, transferType: payload.transfer_type, distanceKm: payload.distance_km, addOns: normalizedAddOns, promo: null });
+  // Allow admin-defined fixed area pricing to override vehicle base price when applicable
+  let fixedRule = null;
+  try {
+    const settings = await loadMergedSettings();
+    const rules = Array.isArray(settings.fixed_area_prices)
+      ? settings.fixed_area_prices.filter((r) => {
+        if (!r) return false;
+        if (r.active === false) return false;
+        if (r.price != null && !Number.isNaN(Number(r.price))) return true;
+        if (r.prices && typeof r.prices === 'object' && Object.keys(r.prices).length > 0) return true;
+        return false;
+      })
+      : [];
+    const pickupRaw = String(payload.pickup_location || '').toLowerCase();
+    const dropoffRaw = String(payload.dropoff_location || '').toLowerCase();
+
+    const matchesPattern = (text, pattern) => {
+      if (!pattern) return false;
+      const p = String(pattern).trim().toLowerCase();
+      if (!p) return false;
+      if (p === '*' || p === 'any' || p === 'anywhere') return true;
+      return text.includes(p);
+    };
+
+    if (serviceType === 'trip' && rules.length && pickupRaw && dropoffRaw) {
+      // Find direct matches
+      let candidates = rules.filter((r) => matchesPattern(pickupRaw, r.origin) && matchesPattern(dropoffRaw, r.destination));
+      // If none, try the reverse direction (some rules may be symmetric)
+      if (candidates.length === 0) {
+        candidates = rules.filter((r) => matchesPattern(pickupRaw, r.destination) && matchesPattern(dropoffRaw, r.origin));
+      }
+
+      if (candidates.length > 0) {
+        // Pick the most specific rule: prefer longer origin+destination pattern length, then priority if provided
+        candidates.sort((a, b) => {
+          const aLen = (String(a.origin || '').length + String(a.destination || '').length);
+          const bLen = (String(b.origin || '').length + String(b.destination || '').length);
+          if (bLen !== aLen) return bLen - aLen;
+          const aPr = Number(a.priority || 0);
+          const bPr = Number(b.priority || 0);
+          return bPr - aPr;
+        });
+        fixedRule = candidates[0];
+      }
+    }
+  } catch (e) {
+    console.warn('Fixed pricing check failed:', e.message);
+  }
+
+  let effectiveBasePrice = fixedRule ? Number(fixedRule.price) : Number(vehicle.base_price || 0);
+  // If fixed rule provides per-category prices, prefer that for the selected vehicle category
+  if (fixedRule) {
+    try {
+      const cat = String(vehicle.category || '').toLowerCase();
+      if (fixedRule.prices && typeof fixedRule.prices === 'object') {
+        const p = fixedRule.prices[cat];
+        if (p != null && !Number.isNaN(Number(p))) {
+          // use category-specific price
+          // eslint-disable-next-line prefer-const
+          effectiveBasePrice = Number(p);
+        } else if (fixedRule.price != null && !Number.isNaN(Number(fixedRule.price))) {
+          effectiveBasePrice = Number(fixedRule.price);
+        }
+      }
+    } catch (e) {
+      // swallow and keep previously determined effectiveBasePrice
+    }
+  }
+
+  const baseQuote = calcBookingQuote({ serviceType, vehicleBasePrice: effectiveBasePrice, hourlyDuration: payload.hourly_duration, transferType: payload.transfer_type, distanceKm: payload.distance_km, addOns: normalizedAddOns, promo: null });
   const promoCheck = await validatePromoCode({ code: payload.promo_code, amount: baseQuote.subtotal_price, req });
-  const finalQuote = calcBookingQuote({ serviceType, vehicleBasePrice: vehicle.base_price, hourlyDuration: payload.hourly_duration, transferType: payload.transfer_type, distanceKm: payload.distance_km, addOns: normalizedAddOns, promo: promoCheck.promo });
-  return { status: 200, vehicle, promo: promoCheck.promo, promoError: promoCheck.error, promoStatus: promoCheck.status, quote: finalQuote };
+  const finalQuote = calcBookingQuote({ serviceType, vehicleBasePrice: effectiveBasePrice, hourlyDuration: payload.hourly_duration, transferType: payload.transfer_type, distanceKm: payload.distance_km, addOns: normalizedAddOns, promo: promoCheck.promo });
+  return { status: 200, vehicle, promo: promoCheck.promo, promoError: promoCheck.error, promoStatus: promoCheck.status, quote: finalQuote, fixed_price_rule: fixedRule || null };
 }
 
 async function quoteBooking(req, res) {
@@ -122,7 +192,13 @@ async function quoteBooking(req, res) {
     if (USE_MOCK_DB) { vehicles = mockDb.getAllVehicles(); } else { vehicles = await Vehicle.getActive(); }
     const criteria = { service_type: req.body.service_type, passengers: toNumber(req.body.passengers, 1), luggage: toNumber(req.body.luggage, 0), add_ons: normalizeAddOns(req.body.add_ons || {}) };
     const recommendations = vehicles.map((vehicle) => ({ id: vehicle.id, name: vehicle.name, model: vehicle.model, category: vehicle.category, capacity: vehicle.capacity, base_price: Number(vehicle.base_price), score: scoreVehicleFit(vehicle, { passengers: criteria.passengers, luggage: criteria.luggage, addOns: criteria.add_ons, serviceType: criteria.service_type }), reason: buildRecommendationReason(vehicle, criteria) })).sort((a, b) => b.score - a.score).slice(0, 3);
-    return res.json({ quote: result.quote, promo: result.promo ? { code: result.promo.code, discount_type: result.promo.discount_type, discount_value: Number(result.promo.discount_value) } : null, promo_error: result.promoError || null, recommendations });
+    return res.json({
+      quote: result.quote,
+      promo: result.promo ? { code: result.promo.code, discount_type: result.promo.discount_type, discount_value: Number(result.promo.discount_value) } : null,
+      promo_error: result.promoError || null,
+      recommendations,
+      fixed_price_rule: result.fixed_price_rule || null
+    });
   } catch (error) {
     console.error('Quote failed:', error.message);
     return res.status(500).json({ error: msg(req, 'errors.quoteFailed') });

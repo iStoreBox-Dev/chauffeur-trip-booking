@@ -24,6 +24,7 @@
     settings: null,
     currencyCode: 'BHD',
     exchangeRates: {},
+    fixedPriceRule: null,
     appliedPromo: null,
     quote: null,
     quoteBusy: false,
@@ -1086,6 +1087,7 @@
       if (result.success) {
         const data = result.data;
         state.quote = data.quote || fallbackQuote();
+        state.fixedPriceRule = data.fixed_price_rule || null;
 
         if (data.promo) {
           state.appliedPromo = data.promo;
@@ -1141,6 +1143,12 @@
 
     const quote = state.quote || fallbackQuote();
     const addOnNames = collectAddOnNames(quote.add_ons || collectAddOns());
+
+    if (state.fixedPriceRule) {
+      const rule = state.fixedPriceRule;
+      const ruleLabel = rule.note || `${rule.origin || ''} → ${rule.destination || ''}`;
+      rows.push([tr('summary.fixedPriceApplied') || 'Fixed price', `${ruleLabel} (${money(quote.base_price)})`]);
+    }
 
     if (Number(quote.distance_km || 0) > 0) {
       rows.push([tr('summary.distance'), `${Number(quote.distance_km).toFixed(2)} km`]);

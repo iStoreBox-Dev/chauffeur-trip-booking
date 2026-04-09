@@ -287,6 +287,42 @@
               <button type="submit">Save SEO & Social</button>
             </form>
           </div>
+          <div class="split">
+            <section id="fixed-pricing-panel" class="form-panel">
+              <h3>Fixed Area Pricing</h3>
+              <p class="muted">Define origin → destination fixed fares per vehicle category. Use simple substrings (e.g., "bahrain", "dammam airport").</p>
+
+              <div id="fixed-pricing-list" style="margin-bottom:12px">
+                <!-- Filled by admin.js -->
+              </div>
+
+              <form id="fixed-pricing-form">
+                <input type="hidden" name="idx" />
+                <label>Origin pattern<input name="origin" placeholder="e.g. bahrain or manama" /></label>
+                <label>Destination pattern<input name="destination" placeholder="e.g. dammam or dammam airport" /></label>
+
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <label style="flex:1">Economy Price (BHD)<input name="price_economy" type="number" step="0.001" min="0" placeholder="0.000" /></label>
+                  <label style="flex:1">Business Price (BHD)<input name="price_business" type="number" step="0.001" min="0" placeholder="0.000" /></label>
+                  <label style="flex:1">SUV Price (BHD)<input name="price_suv" type="number" step="0.001" min="0" placeholder="0.000" /></label>
+                  <label style="flex:1">Van Price (BHD)<input name="price_van" type="number" step="0.001" min="0" placeholder="0.000" /></label>
+                </div>
+
+                <label>Active
+                  <select name="active">
+                    <option value="true">true</option>
+                    <option value="false">false</option>
+                  </select>
+                </label>
+                <label>Note<input name="note" placeholder="Optional note shown to users" /></label>
+                <label>Priority<input name="priority" type="number" min="0" placeholder="0" /></label>
+                <div style="display:flex;gap:8px;margin-top:8px">
+                  <button type="submit" class="btn">Save Rule</button>
+                  <button type="button" id="fixed-pricing-reset" class="btn">Reset</button>
+                </div>
+              </form>
+            </section>
+          </div>
         </section>
       </section>
 

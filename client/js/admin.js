@@ -32,6 +32,10 @@
   function qs(selector, ctx = document) { return ctx.querySelector(selector); }
   function qsa(selector, ctx = document) { return Array.from(ctx.querySelectorAll(selector)); }
 
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   // Admin alert helper
   function showAdminAlert(message, type = 'info', title = '') {
     const container = document.getElementById('admin-alert-container');
@@ -717,6 +721,128 @@
     if (settings.app_name) {
       document.title = `${settings.app_name} Admin Control Center`;
     }
+    // Render fixed area pricing rules in admin UI
+    renderFixedPricing();
+  }
+
+  function renderFixedPricing() {
+    const container = qs('#fixed-pricing-list');
+    const form = qs('#fixed-pricing-form');
+    if (!container || !form) return;
+    const rules = Array.isArray(state.settings?.fixed_area_prices) ? state.settings.fixed_area_prices : [];
+    if (!rules.length) {
+      container.innerHTML = '<p class="muted">No fixed pricing rules defined.</p>';
+    } else {
+      container.innerHTML = `<table class="compact-table"><thead><tr><th>Origin</th><th>Destination</th><th>Prices</th><th>Active</th><th></th></tr></thead><tbody>${rules.map((r, i) => {
+        const prices = r.prices || {};
+        const parts = ['economy','business','suv','van'].map((k) => `${k}: ${typeof prices[k] === 'number' ? prices[k].toFixed(3) : '-'} `).join('<br/>');
+        return `<tr data-idx="${i}"><td>${escapeHtml(r.origin || '')}</td><td>${escapeHtml(r.destination || '')}</td><td>${parts}</td><td>${r.active === false ? 'false' : 'true'}</td><td><button data-edit-rule="${i}">Edit</button> <button data-delete-rule="${i}">Delete</button> <button data-toggle-rule="${i}">${r.active === false ? 'Enable' : 'Disable'}</button></td></tr>`;
+      }).join('')}</tbody></table>`;
+
+      // bind actions
+      qsa('[data-edit-rule]').forEach((btn) => btn.addEventListener('click', (e) => {
+        const idx = Number(btn.dataset.editRule);
+        editFixedRule(idx);
+      }));
+      qsa('[data-delete-rule]').forEach((btn) => btn.addEventListener('click', (e) => {
+        const idx = Number(btn.dataset.deleteRule);
+        deleteFixedRule(idx);
+      }));
+      qsa('[data-toggle-rule]').forEach((btn) => btn.addEventListener('click', (e) => {
+        const idx = Number(btn.dataset.toggleRule);
+        toggleFixedRuleActive(idx);
+      }));
+    }
+
+    // reset form when rendering
+    resetFixedPricingForm();
+  }
+
+  function resetFixedPricingForm() {
+    const form = qs('#fixed-pricing-form');
+    if (!form) return;
+    form.reset();
+    form.idx.value = '';
+  }
+
+  function editFixedRule(idx) {
+    const rules = Array.isArray(state.settings?.fixed_area_prices) ? state.settings.fixed_area_prices : [];
+    const rule = rules[idx];
+    if (!rule) return;
+    const form = qs('#fixed-pricing-form');
+    form.idx.value = String(idx);
+    form.origin.value = rule.origin || '';
+    form.destination.value = rule.destination || '';
+    form.price_economy.value = rule.prices?.economy != null ? Number(rule.prices.economy).toFixed(3) : '';
+    form.price_business.value = rule.prices?.business != null ? Number(rule.prices.business).toFixed(3) : '';
+    form.price_suv.value = rule.prices?.suv != null ? Number(rule.prices.suv).toFixed(3) : '';
+    form.price_van.value = rule.prices?.van != null ? Number(rule.prices.van).toFixed(3) : '';
+    form.active.value = rule.active === false ? 'false' : 'true';
+    form.note.value = rule.note || '';
+    form.priority.value = rule.priority != null ? String(rule.priority) : '';
+    form.origin.focus();
+  }
+
+  async function deleteFixedRule(idx) {
+    if (!confirm('Delete this fixed pricing rule?')) return;
+    const rules = Array.isArray(state.settings?.fixed_area_prices) ? state.settings.fixed_area_prices.slice() : [];
+    rules.splice(idx, 1);
+    await updateFixedAreaPrices(rules);
+  }
+
+  async function toggleFixedRuleActive(idx) {
+    const rules = Array.isArray(state.settings?.fixed_area_prices) ? state.settings.fixed_area_prices.slice() : [];
+    const rule = rules[idx];
+    if (!rule) return;
+    rule.active = !(rule.active !== true);
+    await updateFixedAreaPrices(rules);
+  }
+
+  async function updateFixedAreaPrices(rules) {
+    try {
+      await request('/api/admin/settings', { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ fixed_area_prices: rules }) });
+      await loadSettings();
+      showAdminAlert('Fixed pricing rules updated.', 'success');
+    } catch (err) {
+      showAdminAlert(err.message || 'Failed to update rules.', 'error');
+      throw err;
+    }
+  }
+
+  async function saveFixedPricing(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const idx = form.idx.value === '' ? -1 : Number(form.idx.value);
+    const origin = String(form.origin.value || '').trim();
+    const destination = String(form.destination.value || '').trim();
+    const economy = form.price_economy.value ? Number(parseFloat(String(form.price_economy.value).replace(/,/g, '.'))) : null;
+    const business = form.price_business.value ? Number(parseFloat(String(form.price_business.value).replace(/,/g, '.'))) : null;
+    const suv = form.price_suv.value ? Number(parseFloat(String(form.price_suv.value).replace(/,/g, '.'))) : null;
+    const van = form.price_van.value ? Number(parseFloat(String(form.price_van.value).replace(/,/g, '.'))) : null;
+    const active = form.active.value === 'true';
+    const note = String(form.note.value || '').trim();
+    const priority = form.priority.value ? Number(form.priority.value) : 0;
+
+    if (!origin || !destination) {
+      showAdminAlert('Origin and destination patterns are required.', 'error');
+      return;
+    }
+
+    const rule = { origin, destination, prices: { }, active, note, priority };
+    if (Number.isFinite(economy)) rule.prices.economy = Number(economy.toFixed(3));
+    if (Number.isFinite(business)) rule.prices.business = Number(business.toFixed(3));
+    if (Number.isFinite(suv)) rule.prices.suv = Number(suv.toFixed(3));
+    if (Number.isFinite(van)) rule.prices.van = Number(van.toFixed(3));
+
+    const rules = Array.isArray(state.settings?.fixed_area_prices) ? state.settings.fixed_area_prices.slice() : [];
+    if (idx >= 0 && idx < rules.length) {
+      rules[idx] = rule;
+    } else {
+      rules.push(rule);
+    }
+
+    await updateFixedAreaPrices(rules);
+    resetFixedPricingForm();
   }
 
   async function loadStats() {
@@ -1018,6 +1144,10 @@
     qs('#user-form').addEventListener('submit', createUser);
     qs('#settings-form').addEventListener('submit', saveAppSettings);
     qs('#seo-form').addEventListener('submit', saveSeoSettings);
+    const fixedForm = qs('#fixed-pricing-form');
+    if (fixedForm) fixedForm.addEventListener('submit', saveFixedPricing);
+    const fixedReset = qs('#fixed-pricing-reset');
+    if (fixedReset) fixedReset.addEventListener('click', resetFixedPricingForm);
     // sanitize and format base price input for vehicles
     const vehiclePriceInput = qs('#vehicle-form input[name="base_price"]');
     if (vehiclePriceInput) {
